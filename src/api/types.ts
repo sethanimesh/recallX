@@ -1,0 +1,20 @@
+export interface ImageInput {
+  type: 'image';
+  base64: string;
+  mimeType: string;
+}
+
+export interface TextInput {
+  type: 'text';
+  content: string;
+}
+
+export interface ExtractedWord {
+  word: string;
+  definition: string;
+  example_sentence: string;
+}
+
+export interface ExtractionClient {
+  extractWords(input: ImageInput | TextInput): Promise<ExtractedWord[]>;
+}

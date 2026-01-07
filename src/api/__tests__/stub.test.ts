@@ -21,6 +21,7 @@ describe('StubExtractionClient', () => {
   it('accepts an ImageInput without error', async () => {
     const result = await client.extractWords({
       type: 'image',
+      uri: 'file://test.jpg',
       base64: 'abc123',
       mimeType: 'image/jpeg',
     });

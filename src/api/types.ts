@@ -1,5 +1,6 @@
 export interface ImageInput {
   type: 'image';
+  uri: string;
   base64: string;
   mimeType: string;
 }

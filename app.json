@@ -14,7 +14,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "RecallX needs camera access to capture vocabulary sources.",
+        "NSPhotoLibraryUsageDescription": "RecallX needs photo library access to select vocabulary sources."
+      }
     },
     "android": {
       "adaptiveIcon": {

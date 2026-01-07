@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,20 +19,28 @@ type ModalState =
 export default function IngestScreen() {
   const [modalState, setModalState] = useState<ModalState>({ phase: 'idle' });
   const lastActivePhaseRef = useRef<'uploading' | 'analyzing' | 'done'>('uploading');
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   async function startExtraction(input: ImageInput | TextInput) {
-    setModalState({ phase: 'uploading' });
+    if (isMountedRef.current) setModalState({ phase: 'uploading' });
     lastActivePhaseRef.current = 'uploading';
-    await new Promise(resolve => setTimeout(resolve, 400)); // visible with stub
-    setModalState({ phase: 'analyzing' });
+    if (isMountedRef.current) setModalState({ phase: 'analyzing' });
     lastActivePhaseRef.current = 'analyzing';
     try {
       await activeExtractionClient.extractWords(input);
-      setModalState({ phase: 'done' });
+      if (isMountedRef.current) setModalState({ phase: 'done' });
       lastActivePhaseRef.current = 'done';
-      setTimeout(() => router.back(), 800);
+      timerRef.current = setTimeout(() => router.back(), 800);
     } catch (err) {
-      setModalState({ phase: 'error', message: err instanceof Error ? err.message : 'Unknown error' });
+      if (isMountedRef.current) setModalState({ phase: 'error', message: err instanceof Error ? err.message : 'Unknown error' });
     }
   }
 
@@ -40,34 +48,36 @@ export default function IngestScreen() {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) return;
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: 'images' as const,
       quality: 0.8,
       base64: true,
     });
     if (result.canceled) return;
-    await startExtraction({
-      type: 'image',
-      uri: result.assets[0].uri,
-      base64: result.assets[0].base64 ?? '',
-      mimeType: result.assets[0].mimeType ?? 'image/jpeg',
-    });
+    const b64 = result.assets[0].base64;
+    const mimeType = result.assets[0].mimeType ?? 'image/jpeg';
+    if (!b64) {
+      Alert.alert('Error', 'Could not read image data. Please try again.');
+      return;
+    }
+    await startExtraction({ type: 'image', uri: result.assets[0].uri, base64: b64, mimeType });
   }
 
   async function handleLibrary() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return;
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: 'images' as const,
       quality: 0.8,
       base64: true,
     });
     if (result.canceled) return;
-    await startExtraction({
-      type: 'image',
-      uri: result.assets[0].uri,
-      base64: result.assets[0].base64 ?? '',
-      mimeType: result.assets[0].mimeType ?? 'image/jpeg',
-    });
+    const b64 = result.assets[0].base64;
+    const mimeType = result.assets[0].mimeType ?? 'image/jpeg';
+    if (!b64) {
+      Alert.alert('Error', 'Could not read image data. Please try again.');
+      return;
+    }
+    await startExtraction({ type: 'image', uri: result.assets[0].uri, base64: b64, mimeType });
   }
 
   async function handleDocument() {

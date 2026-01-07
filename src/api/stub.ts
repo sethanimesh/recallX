@@ -30,6 +30,7 @@ const SAMPLE_WORDS: ExtractedWord[] = [
 
 export class StubExtractionClient implements ExtractionClient {
   async extractWords(_input: ImageInput | TextInput): Promise<ExtractedWord[]> {
+    await new Promise(resolve => setTimeout(resolve, 400));
     return SAMPLE_WORDS;
   }
 }

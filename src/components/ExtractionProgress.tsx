@@ -18,25 +18,28 @@ export default function ExtractionProgress({ phase, errorMessage, onRetry, faile
   const scale0 = useSharedValue(0.5);
   const scale1 = useSharedValue(0.5);
   const scale2 = useSharedValue(0.5);
-  const scales = [scale0, scale1, scale2];
 
   useEffect(() => {
+    // reset all to 0.5 first
+    scale0.value = 0.5;
+    scale1.value = 0.5;
+    scale2.value = 0.5;
+    // animate active step
     if (phase === 'uploading') {
-      scales[0].value = withTiming(1.0, { duration: 300 });
-      scales[1].value = 0.5;
-      scales[2].value = 0.5;
+      scale0.value = withTiming(1.0, { duration: 300 });
     } else if (phase === 'analyzing') {
-      scales[0].value = 1.0;
-      scales[1].value = withTiming(1.0, { duration: 300 });
-      scales[2].value = 0.5;
+      scale0.value = 1.0;
+      scale1.value = withTiming(1.0, { duration: 300 });
     } else if (phase === 'done') {
-      scales[0].value = 1.0;
-      scales[1].value = 1.0;
-      scales[2].value = withTiming(1.0, { duration: 300 });
+      scale0.value = 1.0;
+      scale1.value = 1.0;
+      scale2.value = withTiming(1.0, { duration: 300 });
     } else if (phase === 'error') {
-      // keep current
+      const idx = failedAtPhase === 'analyzing' ? 1 : failedAtPhase === 'done' ? 2 : 0;
+      const scaleRefs = [scale0, scale1, scale2];
+      scaleRefs[idx].value = withTiming(1.0, { duration: 300 });
     }
-  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [phase, failedAtPhase, scale0, scale1, scale2]);
 
   const animStyle0 = useAnimatedStyle(() => ({ transform: [{ scale: scale0.value }] }));
   const animStyle1 = useAnimatedStyle(() => ({ transform: [{ scale: scale1.value }] }));

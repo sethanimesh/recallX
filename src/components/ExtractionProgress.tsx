@@ -9,20 +9,12 @@ interface Props {
   phase: Phase;
   errorMessage?: string;
   onRetry?: () => void;
+  failedAtPhase?: 'uploading' | 'analyzing' | 'done';
 }
 
 const STEPS = ['Uploading', 'Analyzing', 'Done'] as const;
 
-function phaseToActiveStep(phase: Phase): number {
-  switch (phase) {
-    case 'uploading': return 0;
-    case 'analyzing': return 1;
-    case 'done': return 3; // all completed
-    case 'error': return -1; // handled separately
-  }
-}
-
-export default function ExtractionProgress({ phase, errorMessage, onRetry }: Props) {
+export default function ExtractionProgress({ phase, errorMessage, onRetry, failedAtPhase }: Props) {
   const scale0 = useSharedValue(0.5);
   const scale1 = useSharedValue(0.5);
   const scale2 = useSharedValue(0.5);
@@ -64,13 +56,9 @@ export default function ExtractionProgress({ phase, errorMessage, onRetry }: Pro
       return 'inactive';
     }
     if (phase === 'error') {
-      // Find which step was active: we show error on the currently active step
-      // We don't have previous phase info, so we use a heuristic:
-      // errorMessage presence means something failed — mark step 1 (uploading) unless we know further
-      // Actually per spec: replace the active step's circle. We need to track this externally,
-      // but since we only receive `phase === 'error'`, we'll show error on step 0 (first active-looking step).
-      // The parent always transitions uploading -> analyzing -> done, so we assume uploading failed if error.
-      if (index === 0) return 'error';
+      const failedIndex = failedAtPhase === 'uploading' ? 0 : failedAtPhase === 'analyzing' ? 1 : 2;
+      if (index < failedIndex) return 'completed';
+      if (index === failedIndex) return 'error';
       return 'inactive';
     }
     return 'inactive';

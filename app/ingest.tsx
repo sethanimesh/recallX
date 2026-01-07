@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -18,14 +18,18 @@ type ModalState =
 
 export default function IngestScreen() {
   const [modalState, setModalState] = useState<ModalState>({ phase: 'idle' });
+  const lastActivePhaseRef = useRef<'uploading' | 'analyzing' | 'done'>('uploading');
 
   async function startExtraction(input: ImageInput | TextInput) {
     setModalState({ phase: 'uploading' });
+    lastActivePhaseRef.current = 'uploading';
     await new Promise(resolve => setTimeout(resolve, 400)); // visible with stub
     setModalState({ phase: 'analyzing' });
+    lastActivePhaseRef.current = 'analyzing';
     try {
       await activeExtractionClient.extractWords(input);
       setModalState({ phase: 'done' });
+      lastActivePhaseRef.current = 'done';
       setTimeout(() => router.back(), 800);
     } catch (err) {
       setModalState({ phase: 'error', message: err instanceof Error ? err.message : 'Unknown error' });
@@ -38,9 +42,10 @@ export default function IngestScreen() {
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8,
+      base64: true,
     });
     if (result.canceled) return;
-    startExtraction({
+    await startExtraction({
       type: 'image',
       uri: result.assets[0].uri,
       base64: result.assets[0].base64 ?? '',
@@ -54,9 +59,10 @@ export default function IngestScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8,
+      base64: true,
     });
     if (result.canceled) return;
-    startExtraction({
+    await startExtraction({
       type: 'image',
       uri: result.assets[0].uri,
       base64: result.assets[0].base64 ?? '',
@@ -67,7 +73,7 @@ export default function IngestScreen() {
   async function handleDocument() {
     const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf' });
     if (result.canceled) return;
-    startExtraction({ type: 'text', content: result.assets[0].uri });
+    await startExtraction({ type: 'text', content: result.assets[0].uri });
   }
 
   return (
@@ -83,6 +89,7 @@ export default function IngestScreen() {
           phase={modalState.phase === 'error' ? 'error' : modalState.phase}
           errorMessage={modalState.phase === 'error' ? modalState.message : undefined}
           onRetry={() => setModalState({ phase: 'idle' })}
+          failedAtPhase={modalState.phase === 'error' ? lastActivePhaseRef.current : undefined}
         />
       ) : (
         <View style={styles.buttonGroup}>

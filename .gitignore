@@ -1,11 +1,15 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
+# git worktrees
+.worktrees/
+
 # dependencies
 node_modules/
 
 .claude
 specs/
 docs/
+.vscode
 
 # Expo
 .expo/

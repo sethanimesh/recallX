@@ -130,7 +130,7 @@ export default function ExtractionProgress({ phase, errorMessage, onRetry, faile
       {phase === 'error' && (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{errorMessage}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={() => onRetry?.()}>
+          <TouchableOpacity testID="retry-button" style={styles.retryButton} onPress={() => onRetry?.()}>
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>

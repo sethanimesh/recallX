@@ -49,18 +49,26 @@ describe('ExtractionProgress', () => {
       );
     });
 
-    const root = instance.root;
-    // TouchableOpacity renders as a View in the test environment;
-    // find the host node that has an onPress prop
-    const nodeWithPress = root.findAll(
-      (node) => typeof node.props?.onPress === 'function',
+    // Find the node with testID="retry-button" in the tree
+    function findByTestId(node: any, testId: string): any {
+      if (!node) return null;
+      if (node.props?.testID === testId) return node;
+      for (const child of (Array.isArray(node.children) ? node.children : [])) {
+        const found = findByTestId(child, testId);
+        if (found) return found;
+      }
+      return null;
+    }
+
+    const retryButton = findByTestId(instance.toJSON(), 'retry-button');
+    expect(retryButton).not.toBeNull();
+    // toJSON() nodes don't carry onPress; use the fiber tree to fire the press
+    const retryFiber = instance.root.findAll(
+      (node) => node.props?.testID === 'retry-button',
       { deep: true }
-    );
-    expect(nodeWithPress.length).toBeGreaterThan(0);
-    // Press the Retry button
-    await act(async () => {
-      nodeWithPress[0].props.onPress();
-    });
+    )[0];
+    expect(retryFiber).toBeDefined();
+    retryFiber.props.onPress();
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 });

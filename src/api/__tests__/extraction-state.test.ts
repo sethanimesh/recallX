@@ -38,7 +38,7 @@ describe('StubExtractionClient shape + fake timers', () => {
 
     const client = new StubExtractionClient();
     const promise = client.extractWords({ type: 'text', content: 'test' });
-    jest.advanceTimersByTime(400);
+    jest.runAllTimers();
     const result = await promise;
 
     expect(result).toHaveLength(5);

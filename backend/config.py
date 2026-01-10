@@ -1,5 +1,11 @@
 import os
 from typing import Any
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env.local
+env_file = Path(__file__).parent / ".env.local"
+load_dotenv(dotenv_path=str(env_file))
 
 _DEFAULT_PRIORITY = "groq,openrouter,ollama,gemini,mistral,huggingface"
 
@@ -8,7 +14,7 @@ _PROVIDER_CONFIGS: dict[str, dict[str, Any]] = {
         "api_key_env": "GROQ_API_KEY",
         "base_url": "https://api.groq.com/openai/v1",
         "vision_model": "meta-llama/llama-4-scout-17b-16e-instruct",
-        "text_model": "llama3-8b-8192",
+        "text_model": "llama-3.1-8b-instant",
     },
     "openrouter": {
         "api_key_env": "OPENROUTER_API_KEY",

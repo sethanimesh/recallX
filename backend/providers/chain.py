@@ -32,7 +32,6 @@ class ProviderChain:
     async def extract(self, req: ExtractionRequest) -> list[ExtractedWord]:
         failures: list[str] = []
         for provider in self._providers:
-            # Skip vision-incapable providers for image requests
             if req.input_type == "image" and not provider.supports_vision:
                 logger.debug("Skipping %s — no vision support", provider.name)
                 continue

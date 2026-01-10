@@ -49,4 +49,10 @@ describe('insertExtraction', () => {
     await insertExtraction('file://photo.jpg', 'image', []);
     expect(db.transaction).not.toHaveBeenCalled();
   });
+
+  it('inserts exactly 1 word row for a single-word result', async () => {
+    await insertExtraction('file://photo.jpg', 'image', [sampleWords[0]]);
+    const wordRows = mockValues.mock.calls[1][0] as unknown[];
+    expect(wordRows).toHaveLength(1);
+  });
 });

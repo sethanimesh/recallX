@@ -13,10 +13,15 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      let active = true;
       db.select({ count: sql<number>`count(*)` })
         .from(words)
-        .then((rows) => setWordCount(Number(rows[0]?.count ?? 0)))
-        .catch(() => setWordCount(0));
+        .then((rows) => { if (active) setWordCount(Number(rows[0]?.count ?? 0)); })
+        .catch((err) => {
+          if (__DEV__) console.warn('[HomeScreen] word count query failed', err);
+          if (active) setWordCount(0);
+        });
+      return () => { active = false; };
     }, []),
   );
 

@@ -28,6 +28,8 @@ export default function ReviewScreen() {
     setWords(pending.words);
     setSourceUri(pending.sourceUri);
     setSourceType(pending.sourceType);
+    // All entries are explicitly set before finishReview is called; the initial
+    // false values are never used as final decisions.
     setDecisions(new Array(pending.words.length).fill(false));
     setInitialized(true);
   }, []);
@@ -63,7 +65,7 @@ export default function ReviewScreen() {
         );
       }
     },
-    [],
+    [setSaving], // setSaving is stable; buildReviewResult + insertExtraction are module imports
   );
 
   const handleDecision = useCallback(

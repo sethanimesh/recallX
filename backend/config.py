@@ -47,9 +47,11 @@ def get_provider_order() -> list[str]:
 
 def get_provider_config(name: str) -> dict[str, Any]:
     cfg = _PROVIDER_CONFIGS.get(name, {}).copy()
-    # Resolve env var values
-    if "api_key_env" in cfg and cfg["api_key_env"]:
-        cfg["api_key"] = os.environ.get(cfg["api_key_env"])
+    if "api_key_env" in cfg:
+        cfg["api_key"] = os.environ.get(cfg["api_key_env"]) if cfg["api_key_env"] else None
+        del cfg["api_key_env"]  # don't expose the env-var name
     if "base_url_env" in cfg:
-        cfg["base_url"] = os.environ.get(cfg["base_url_env"], cfg.get("default_base_url", ""))
+        cfg["base_url"] = os.environ.get(cfg["base_url_env"]) or cfg.get("default_base_url")
+        del cfg["base_url_env"]
+        cfg.pop("default_base_url", None)
     return cfg

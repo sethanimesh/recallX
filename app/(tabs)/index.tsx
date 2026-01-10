@@ -1,14 +1,36 @@
+import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { sql } from 'drizzle-orm';
+import { db } from '@/src/db/client';
+import { words } from '@/src/db/schema';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const [wordCount, setWordCount] = useState<number | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      db.select({ count: sql<number>`count(*)` })
+        .from(words)
+        .then((rows) => setWordCount(Number(rows[0]?.count ?? 0)))
+        .catch(() => setWordCount(0));
+    }, []),
+  );
+
+  const countLabel =
+    wordCount === null
+      ? ''
+      : wordCount === 0
+        ? 'No words yet'
+        : `${wordCount} word${wordCount === 1 ? '' : 's'} in your library`;
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Home</Text>
-      <Text style={styles.body}>Coming soon</Text>
+      {countLabel ? <Text style={styles.body}>{countLabel}</Text> : null}
       <TouchableOpacity
         style={[styles.fab, { bottom: 24 + insets.bottom }]}
         onPress={() => router.push('/ingest')}

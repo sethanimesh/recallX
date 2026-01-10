@@ -233,6 +233,21 @@ def test_ollama_missing_base_url_raises(monkeypatch):
             OllamaProvider()
 
 
+def test_ollama_uses_cloud_base_url_when_cloud_key_present(monkeypatch):
+    monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
+    monkeypatch.setenv("OLLAMA_CLOUD_API_KEY", "cloud-key")
+
+    with patch("providers.ollama_provider.AsyncOpenAI") as MockClient:
+        MockClient.return_value = make_mock_client(SAMPLE_JSON)
+        provider = OllamaProvider()
+
+    init_kwargs = MockClient.call_args.kwargs
+    assert provider._base_url == "https://ollama.com/v1"
+    assert provider._api_key == "cloud-key"
+    assert init_kwargs["base_url"] == "https://ollama.com/v1"
+    assert init_kwargs["api_key"] == "cloud-key"
+
+
 @pytest.mark.asyncio
 async def test_ollama_rate_limit_propagates():
     from openai import RateLimitError

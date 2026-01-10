@@ -1,8 +1,7 @@
 import logging
-from openai import AsyncOpenAI, RateLimitError  # noqa: F401 — re-exported for callers
+import httpx
 from providers.base import LLMProvider, ExtractionRequest, ExtractedWord
 from providers._parse import parse_llm_response
-from config import get_provider_config
 
 logger = logging.getLogger(__name__)
 
@@ -22,35 +21,43 @@ class OllamaProvider:
     supports_vision = True
 
     def __init__(self) -> None:
+        from config import get_provider_config
         cfg = get_provider_config("ollama")
-        base_url: str | None = cfg.get("base_url")
-        if not base_url:
-            raise ValueError("OLLAMA_BASE_URL not configured")
-        self._base_url = base_url
+        self._base_url: str = cfg["base_url"]
+        self._api_key: str | None = cfg.get("api_key")
         self._vision_model: str = cfg["vision_model"]
         self._text_model: str = cfg["text_model"]
-        self._client = AsyncOpenAI(
-            api_key="ollama",
-            base_url=base_url,
-        )
+        self._client = httpx.AsyncClient()
 
     async def extract_words(self, req: ExtractionRequest) -> list[ExtractedWord]:
         if req.input_type == "image":
             model = self._vision_model
-            messages = [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": [
-                    {"type": "image_url", "image_url": {"url": f"data:{req.mime_type};base64,{req.content}"}},
-                    {"type": "text", "text": "Extract vocabulary words from this image."},
-                ]},
-            ]
+            message = {
+                "role": "user",
+                "content": "Extract vocabulary words from this image.",
+                "images": [req.content],
+            }
         else:
             model = self._text_model
-            messages = [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": req.content},
-            ]
-        response = await self._client.chat.completions.create(
-            model=model, messages=messages, temperature=0.1
+            message = {"role": "user", "content": req.content}
+
+        headers = {}
+        if self._api_key:
+            headers["Authorization"] = f"Bearer {self._api_key}"
+
+        response = await self._client.post(
+            f"{self._base_url}/api/chat",
+            json={
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    message,
+                ],
+                "stream": False,
+            },
+            headers=headers,
+            timeout=60.0,
         )
-        return parse_llm_response(response.choices[0].message.content or "")
+        response.raise_for_status()
+        data = response.json()
+        return parse_llm_response(data["message"]["content"])

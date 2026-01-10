@@ -1,3 +1,11 @@
+/**
+ * NOTE: As of Task Group 1, `app/ingest.tsx` no longer calls `insertExtraction` directly.
+ * Persistence is now gated behind the review screen: ingest stores extracted words in the
+ * module-level pending store (`src/store/pendingWords.ts`) and navigates to `/review`.
+ * The review screen is responsible for calling `insertExtraction` for each accepted word.
+ *
+ * The tests below verify the `insertExtraction` function itself, which remains intact.
+ */
 import { insertExtraction } from '../operations/insertExtraction';
 import { db } from '@/src/db/client';
 

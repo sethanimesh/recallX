@@ -9,7 +9,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { activeExtractionClient } from '@/src/api/index';
 import type { ImageInput, TextInput } from '@/src/api/types';
 import ExtractionProgress from '@/src/components/ExtractionProgress';
-import { insertExtraction } from '@/src/db/operations/insertExtraction';
+import { setPendingExtraction } from '@/src/store/pendingWords';
 
 type ModalState =
   | { phase: 'idle' }
@@ -49,10 +49,10 @@ export default function IngestScreen() {
       const extracted = await activeExtractionClient.extractWords(input);
       const sourceType = input.type === 'image' ? 'image' : 'pdf';
       const sourceUri = input.type === 'image' ? input.uri : input.content;
-      await insertExtraction(sourceUri, sourceType, extracted);
+      setPendingExtraction({ words: extracted, sourceUri, sourceType });
       if (isMountedRef.current) setModalState({ phase: 'done' });
       lastActivePhaseRef.current = 'done';
-      timerRef.current = setTimeout(() => router.back(), 800);
+      timerRef.current = setTimeout(() => router.replace('/review'), 600);
     } catch (err) {
       if (isMountedRef.current)
         setModalState({ phase: 'error', message: err instanceof Error ? err.message : 'Unknown error' });

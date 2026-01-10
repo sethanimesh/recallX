@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from providers.base import ExtractionRequest
 from providers._parse import parse_llm_response
+from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT
 from providers.groq_provider import GroqProvider
 from providers.openrouter_provider import OpenRouterProvider
 from providers.ollama_provider import OllamaProvider
@@ -59,6 +60,20 @@ def test_parse_llm_response_no_array_raises():
         parse_llm_response("This is not JSON at all.")
 
 
+def test_parse_llm_response_accepts_string_array():
+    result = parse_llm_response('["Photosynthesis", "Cellular respiration"]')
+    assert [item.word for item in result] == ["Photosynthesis", "Cellular respiration"]
+    assert all(item.definition == "" for item in result)
+    assert all(item.example_sentence == "" for item in result)
+
+
+def test_parse_llm_response_fills_missing_optional_fields():
+    result = parse_llm_response('[{"word":"Mitochondria"}]')
+    assert result[0].word == "Mitochondria"
+    assert result[0].definition == ""
+    assert result[0].example_sentence == ""
+
+
 # ---------------------------------------------------------------------------
 # GroqProvider tests
 # ---------------------------------------------------------------------------
@@ -89,9 +104,12 @@ async def test_groq_image_extraction():
         assert len(result) == 1
         call_kwargs = MockClient.return_value.chat.completions.create.call_args
         assert call_kwargs.kwargs["model"] == provider._vision_model
+        assert call_kwargs.kwargs["messages"][0]["content"] == IMAGE_SYSTEM_PROMPT
         # Verify data URL format in messages
         user_content = call_kwargs.kwargs["messages"][1]["content"]
+        text_part = next(p for p in user_content if p["type"] == "text")
         image_part = next(p for p in user_content if p["type"] == "image_url")
+        assert text_part["text"] == IMAGE_USER_PROMPT
         assert image_part["image_url"]["url"] == "data:image/jpeg;base64,abc123"
 
 
@@ -148,8 +166,11 @@ async def test_openrouter_image_extraction():
         assert len(result) == 1
         call_kwargs = MockClient.return_value.chat.completions.create.call_args
         assert call_kwargs.kwargs["model"] == provider._vision_model
+        assert call_kwargs.kwargs["messages"][0]["content"] == IMAGE_SYSTEM_PROMPT
         user_content = call_kwargs.kwargs["messages"][1]["content"]
+        text_part = next(p for p in user_content if p["type"] == "text")
         image_part = next(p for p in user_content if p["type"] == "image_url")
+        assert text_part["text"] == IMAGE_USER_PROMPT
         assert image_part["image_url"]["url"] == "data:image/png;base64,imgdata"
 
 
@@ -194,72 +215,80 @@ def test_openrouter_sends_extra_headers():
 
 @pytest.mark.asyncio
 async def test_ollama_text_extraction():
-    with patch("providers.ollama_provider.AsyncOpenAI") as MockClient:
-        MockClient.return_value = make_mock_client(SAMPLE_JSON)
+    with patch("providers.ollama_provider.httpx.AsyncClient") as MockClient:
+        response = MagicMock()
+        response.json.return_value = {"message": {"content": SAMPLE_JSON}}
+        response.raise_for_status.return_value = None
+        mock_client = MagicMock()
+        mock_client.post = AsyncMock(return_value=response)
+        MockClient.return_value = mock_client
         provider = OllamaProvider()
         result = await provider.extract_words(
             ExtractionRequest(input_type="text", content="some text")
         )
         assert len(result) == 1
-        call_kwargs = MockClient.return_value.chat.completions.create.call_args
-        assert call_kwargs.kwargs["model"] == provider._text_model
+        call_kwargs = mock_client.post.call_args
+        assert call_kwargs.args[0] == f"{provider._base_url}/api/chat"
+        assert call_kwargs.kwargs["json"]["model"] == provider._text_model
+        assert call_kwargs.kwargs["json"]["messages"][1]["content"] == "some text"
 
 
 @pytest.mark.asyncio
 async def test_ollama_image_extraction():
-    with patch("providers.ollama_provider.AsyncOpenAI") as MockClient:
-        MockClient.return_value = make_mock_client(SAMPLE_JSON)
+    with patch("providers.ollama_provider.httpx.AsyncClient") as MockClient:
+        response = MagicMock()
+        response.json.return_value = {"message": {"content": SAMPLE_JSON}}
+        response.raise_for_status.return_value = None
+        mock_client = MagicMock()
+        mock_client.post = AsyncMock(return_value=response)
+        MockClient.return_value = mock_client
         provider = OllamaProvider()
         req = ExtractionRequest(input_type="image", content="imgdata", mime_type="image/jpeg")
         result = await provider.extract_words(req)
         assert len(result) == 1
-        call_kwargs = MockClient.return_value.chat.completions.create.call_args
-        assert call_kwargs.kwargs["model"] == provider._vision_model
-        user_content = call_kwargs.kwargs["messages"][1]["content"]
-        image_part = next(p for p in user_content if p["type"] == "image_url")
-        assert image_part["image_url"]["url"] == "data:image/jpeg;base64,imgdata"
+        call_kwargs = mock_client.post.call_args
+        payload = call_kwargs.kwargs["json"]
+        assert payload["model"] == provider._vision_model
+        assert payload["messages"][0]["content"] == IMAGE_SYSTEM_PROMPT
+        assert payload["messages"][1]["content"] == IMAGE_USER_PROMPT
+        assert payload["messages"][1]["images"] == ["imgdata"]
 
 
-def test_ollama_missing_base_url_raises(monkeypatch):
-    """When OLLAMA_BASE_URL is unset and no default, __init__ should raise ValueError."""
-    # Patch get_provider_config to return config without base_url
-    with patch("providers.ollama_provider.get_provider_config") as mock_cfg:
-        mock_cfg.return_value = {
-            "base_url": None,
-            "vision_model": "llama3.2-vision",
-            "text_model": "llama3.2",
-        }
-        with pytest.raises(ValueError, match="OLLAMA_BASE_URL"):
-            OllamaProvider()
+def test_ollama_uses_default_base_url(monkeypatch):
+    monkeypatch.delenv("OLLAMA_API_KEY", raising=False)
+    monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
+    with patch("providers.ollama_provider.httpx.AsyncClient"):
+        provider = OllamaProvider()
+        assert provider._base_url == "http://localhost:11434"
 
 
 def test_ollama_uses_cloud_base_url_when_cloud_key_present(monkeypatch):
     monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
-    monkeypatch.setenv("OLLAMA_CLOUD_API_KEY", "cloud-key")
+    monkeypatch.setenv("OLLAMA_API_KEY", "cloud-key")
 
-    with patch("providers.ollama_provider.AsyncOpenAI") as MockClient:
-        MockClient.return_value = make_mock_client(SAMPLE_JSON)
+    with patch("providers.ollama_provider.httpx.AsyncClient"):
         provider = OllamaProvider()
 
-    init_kwargs = MockClient.call_args.kwargs
-    assert provider._base_url == "https://ollama.com/v1"
+    assert provider._base_url == "https://ollama.com"
     assert provider._api_key == "cloud-key"
-    assert init_kwargs["base_url"] == "https://ollama.com/v1"
-    assert init_kwargs["api_key"] == "cloud-key"
 
 
 @pytest.mark.asyncio
-async def test_ollama_rate_limit_propagates():
-    from openai import RateLimitError
-    with patch("providers.ollama_provider.AsyncOpenAI") as MockClient:
-        instance = make_mock_client("")
-        instance.chat.completions.create = AsyncMock(
-            side_effect=RateLimitError("rate limit", response=MagicMock(), body={})
-        )
-        MockClient.return_value = instance
+async def test_ollama_sends_auth_header_when_api_key_present():
+    with patch("providers.ollama_provider.httpx.AsyncClient") as MockClient:
+        response = MagicMock()
+        response.json.return_value = {"message": {"content": SAMPLE_JSON}}
+        response.raise_for_status.return_value = None
+        mock_client = MagicMock()
+        mock_client.post = AsyncMock(return_value=response)
+        MockClient.return_value = mock_client
         provider = OllamaProvider()
-        with pytest.raises(RateLimitError):
-            await provider.extract_words(ExtractionRequest(input_type="text", content="text"))
+        provider._api_key = "secret"
+
+        await provider.extract_words(ExtractionRequest(input_type="text", content="text"))
+
+        call_kwargs = mock_client.post.call_args
+        assert call_kwargs.kwargs["headers"]["Authorization"] == "Bearer secret"
 
 
 # ---------------------------------------------------------------------------

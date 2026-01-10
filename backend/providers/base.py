@@ -9,6 +9,10 @@ class ExtractedWord(BaseModel):
     example_sentence: str
 
 
+class ExtractionResult(BaseModel):
+    words: list[ExtractedWord]
+
+
 class ExtractionRequest(BaseModel):
     input_type: Literal["image", "text"]
     content: str        # base64 string for images, raw text for text

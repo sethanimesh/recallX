@@ -1,19 +1,33 @@
 import logging
 from openai import AsyncOpenAI, RateLimitError  # noqa: F401 — re-exported for callers
-from providers.base import LLMProvider, ExtractionRequest, ExtractedWord
-from providers._parse import parse_llm_response
+from providers.base import LLMProvider, ExtractionRequest, ExtractedWord, ExtractionResult
+from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, TEXT_SYSTEM_PROMPT
 from config import get_provider_config
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You are a vocabulary extraction assistant. Extract all notable English vocabulary words from the provided content.
-For each word return a JSON array of objects with exactly these keys:
-- "word": the vocabulary word (lowercase)
-- "definition": a plain English definition in 1-2 sentences
-- "example_sentence": one memorable example sentence using the word in context
 
-Return ONLY valid JSON array, no markdown, no explanation. Example:
-[{"word": "ephemeral", "definition": "Lasting for a very short time.", "example_sentence": "The ephemeral beauty of cherry blossoms draws thousands of visitors."}]"""
+def _strict_schema(schema: dict) -> dict:
+    """Recursively add additionalProperties: false to all object nodes."""
+    schema = dict(schema)
+    if schema.get("type") == "object":
+        schema["additionalProperties"] = False
+    for key in ("properties", "$defs"):
+        if key in schema:
+            schema[key] = {k: _strict_schema(v) for k, v in schema[key].items()}
+    if "items" in schema:
+        schema["items"] = _strict_schema(schema["items"])
+    return schema
+
+
+_RESPONSE_FORMAT = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "ExtractionResult",
+        "schema": _strict_schema(ExtractionResult.model_json_schema()),
+        "strict": True,
+    },
+}
 
 
 class GroqProvider:
@@ -37,19 +51,23 @@ class GroqProvider:
         if req.input_type == "image":
             model = self._vision_model
             messages = [
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": IMAGE_SYSTEM_PROMPT},
                 {"role": "user", "content": [
                     {"type": "image_url", "image_url": {"url": f"data:{req.mime_type};base64,{req.content}"}},
-                    {"type": "text", "text": "Extract vocabulary words from this image."},
+                    {"type": "text", "text": IMAGE_USER_PROMPT},
                 ]},
             ]
         else:
             model = self._text_model
             messages = [
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": TEXT_SYSTEM_PROMPT},
                 {"role": "user", "content": req.content},
             ]
         response = await self._client.chat.completions.create(
-            model=model, messages=messages, temperature=0.1
+            model=model, messages=messages, temperature=0.1,
+            response_format=_RESPONSE_FORMAT,
         )
-        return parse_llm_response(response.choices[0].message.content or "")
+        print(response)
+        return ExtractionResult.model_validate_json(
+            response.choices[0].message.content or "{}"
+        ).words

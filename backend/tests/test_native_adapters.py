@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from providers.base import ExtractionRequest
 from providers.gemini_provider import GeminiProvider
 from providers.huggingface_provider import HuggingFaceProvider
+from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT
 
 SAMPLE_JSON = '[{"word":"test","definition":"A trial or examination.","example_sentence":"This is a test sentence."}]'
 
@@ -94,6 +95,7 @@ async def test_gemini_image_extraction():
         # The first part of the content should be the image part (from_bytes),
         # and the second should be a text part
         assert len(contents[0].parts) == 2
+        assert contents[0].parts[1].text == f"{IMAGE_SYSTEM_PROMPT}\n\n{IMAGE_USER_PROMPT}"
 
 
 @pytest.mark.asyncio

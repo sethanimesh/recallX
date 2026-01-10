@@ -3,18 +3,10 @@ import logging
 from huggingface_hub import InferenceClient
 from providers.base import LLMProvider, ExtractionRequest, ExtractedWord
 from providers._parse import parse_llm_response
+from providers._prompts import TEXT_SYSTEM_PROMPT
 from config import get_provider_config
 
 logger = logging.getLogger(__name__)
-
-SYSTEM_PROMPT = """You are a vocabulary extraction assistant. Extract all notable English vocabulary words from the provided content.
-For each word return a JSON array of objects with exactly these keys:
-- "word": the vocabulary word (lowercase)
-- "definition": a plain English definition in 1-2 sentences
-- "example_sentence": one memorable example sentence using the word in context
-
-Return ONLY valid JSON array, no markdown, no explanation. Example:
-[{"word": "ephemeral", "definition": "Lasting for a very short time.", "example_sentence": "The ephemeral beauty of cherry blossoms draws thousands of visitors."}]"""
 
 
 class HuggingFaceProvider:
@@ -40,7 +32,7 @@ class HuggingFaceProvider:
             lambda: self._client.chat_completion(
                 model=self._model,
                 messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "system", "content": TEXT_SYSTEM_PROMPT},
                     {"role": "user", "content": req.content},
                 ],
                 max_tokens=1024,

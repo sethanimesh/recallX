@@ -2,17 +2,9 @@ import logging
 import httpx
 from providers.base import LLMProvider, ExtractionRequest, ExtractedWord
 from providers._parse import parse_llm_response
+from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, TEXT_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
-
-SYSTEM_PROMPT = """You are a vocabulary extraction assistant. Extract all notable English vocabulary words from the provided content.
-For each word return a JSON array of objects with exactly these keys:
-- "word": the vocabulary word (lowercase)
-- "definition": a plain English definition in 1-2 sentences
-- "example_sentence": one memorable example sentence using the word in context
-
-Return ONLY valid JSON array, no markdown, no explanation. Example:
-[{"word": "ephemeral", "definition": "Lasting for a very short time.", "example_sentence": "The ephemeral beauty of cherry blossoms draws thousands of visitors."}]"""
 
 
 class OllamaProvider:
@@ -34,7 +26,7 @@ class OllamaProvider:
             model = self._vision_model
             message = {
                 "role": "user",
-                "content": "Extract vocabulary words from this image.",
+                "content": IMAGE_USER_PROMPT,
                 "images": [req.content],
             }
         else:
@@ -50,7 +42,10 @@ class OllamaProvider:
             json={
                 "model": model,
                 "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {
+                        "role": "system",
+                        "content": IMAGE_SYSTEM_PROMPT if req.input_type == "image" else TEXT_SYSTEM_PROMPT,
+                    },
                     message,
                 ],
                 "stream": False,

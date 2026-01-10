@@ -30,14 +30,14 @@ describe('StubExtractionClient', () => {
 });
 
 describe('activeExtractionClient', () => {
-  it('is an instance of StubExtractionClient', () => {
-    expect(activeExtractionClient).toBeInstanceOf(StubFromIndex);
+  it('is an instance of HttpExtractionClient', () => {
+    expect(activeExtractionClient).toBeInstanceOf(HttpExtractionClient);
   });
 });
 
-describe('HttpExtractionClient', () => {
-  it('throws "not implemented"', async () => {
-    const client = new HttpExtractionClient('http://localhost:8000');
-    await expect(client.extractWords({ type: 'text', content: 'x' })).rejects.toThrow('not implemented');
+describe('StubExtractionClient (still exported from index)', () => {
+  it('StubExtractionClient is still exported from index', () => {
+    expect(StubFromIndex).toBeDefined();
+    expect(new StubFromIndex()).toBeInstanceOf(StubFromIndex);
   });
 });

@@ -1,7 +1,7 @@
 export { StubExtractionClient } from './stub';
-export { HttpExtractionClient } from './http';
+export { HttpExtractionClient, ExtractionError } from './http';
 export type { ExtractionClient, ExtractedWord, ImageInput, TextInput } from './types';
 
-import { StubExtractionClient } from './stub';
+import { HttpExtractionClient } from './http';
 
-export const activeExtractionClient = new StubExtractionClient();
+export const activeExtractionClient = new HttpExtractionClient();

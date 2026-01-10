@@ -11,6 +11,8 @@ import type { ImageInput, TextInput } from '@/src/api/types';
 import ExtractionProgress from '@/src/components/ExtractionProgress';
 import { setPendingExtraction } from '@/src/store/pendingWords';
 
+const DONE_DISPLAY_MS = 600;
+
 type ModalState =
   | { phase: 'idle' }
   | { phase: 'uploading' }
@@ -52,7 +54,7 @@ export default function IngestScreen() {
       setPendingExtraction({ words: extracted, sourceUri, sourceType });
       if (isMountedRef.current) setModalState({ phase: 'done' });
       lastActivePhaseRef.current = 'done';
-      timerRef.current = setTimeout(() => router.replace('/review'), 600);
+      timerRef.current = setTimeout(() => router.replace('/review'), DONE_DISPLAY_MS);
     } catch (err) {
       if (isMountedRef.current)
         setModalState({ phase: 'error', message: err instanceof Error ? err.message : 'Unknown error' });

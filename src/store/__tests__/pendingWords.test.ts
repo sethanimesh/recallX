@@ -1,6 +1,16 @@
 import { setPendingExtraction, takePendingExtraction } from '../pendingWords';
 import type { PendingExtraction } from '../pendingWords';
 
+function makeExtraction(sourceType: 'image' | 'pdf'): PendingExtraction {
+  return {
+    words: [
+      { word: 'ephemeral', definition: 'Lasting briefly.', example_sentence: 'The joy was ephemeral.' },
+    ],
+    sourceUri: `file://source.${sourceType === 'pdf' ? 'pdf' : 'jpg'}`,
+    sourceType,
+  };
+}
+
 const sampleExtraction: PendingExtraction = {
   words: [
     { word: 'ephemeral', definition: 'Lasting briefly.', example_sentence: 'The joy was ephemeral.' },
@@ -36,6 +46,15 @@ describe('pendingWords store', () => {
     setPendingExtraction(first);
     setPendingExtraction(second);
     expect(takePendingExtraction()).toEqual(second);
+  });
+
+  it('is reusable: set → take → set → take returns second value', () => {
+    const a = makeExtraction('image');
+    const b = makeExtraction('pdf');
+    setPendingExtraction(a);
+    takePendingExtraction();
+    setPendingExtraction(b);
+    expect(takePendingExtraction()).toEqual(b);
   });
 
   it('preserves sourceType for pdf sources', () => {

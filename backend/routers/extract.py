@@ -1,37 +1,60 @@
-from fastapi import APIRouter
-from models import ExtractRequest, ExtractResponse, ExtractedWord
+import logging
+from io import BytesIO, StringIO
 
+from fastapi import APIRouter, HTTPException, UploadFile, File
+from providers.base import ExtractionRequest, ExtractedWord
+from providers.chain import ProviderChain, ExtractionFailedError
+
+logger = logging.getLogger(__name__)
 router = APIRouter()
-
-_SAMPLE_WORDS = [
-    ExtractedWord(
-        word="ephemeral",
-        definition="Lasting for a very short time.",
-        example_sentence="The ephemeral beauty of cherry blossoms draws thousands of visitors each spring.",
-    ),
-    ExtractedWord(
-        word="perspicacious",
-        definition="Having a ready insight into things; shrewd.",
-        example_sentence="Her perspicacious analysis caught the flaw in the argument immediately.",
-    ),
-    ExtractedWord(
-        word="laconic",
-        definition="Using very few words; brief and concise.",
-        example_sentence="His laconic reply of 'no' ended the discussion.",
-    ),
-    ExtractedWord(
-        word="sanguine",
-        definition="Optimistic, especially in a difficult situation.",
-        example_sentence="Despite the setbacks, she remained sanguine about the project's success.",
-    ),
-    ExtractedWord(
-        word="tenacious",
-        definition="Not readily letting go; persistent and determined.",
-        example_sentence="His tenacious grip on the rope saved him from falling.",
-    ),
-]
+_chain: ProviderChain | None = None
 
 
-@router.post("/extract", response_model=ExtractResponse)
-async def extract_words(request: ExtractRequest) -> ExtractResponse:
-    return ExtractResponse(words=_SAMPLE_WORDS)
+def get_chain() -> ProviderChain:
+    global _chain
+    if _chain is None:
+        _chain = ProviderChain()
+    return _chain
+
+
+@router.post("/extract", response_model=list[ExtractedWord])
+async def extract_words(request: ExtractionRequest) -> list[ExtractedWord]:
+    try:
+        return await get_chain().extract(request)
+    except ExtractionFailedError as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"error": "All providers failed", "failures": e.failures},
+        )
+
+
+@router.post("/extract/pdf", response_model=list[ExtractedWord])
+async def extract_pdf(file: UploadFile = File(...)) -> list[ExtractedWord]:
+    from pdfminer.high_level import extract_text_to_fp
+    from pdfminer.layout import LAParams
+
+    try:
+        content = await file.read()
+        output = StringIO()
+        extract_text_to_fp(
+            BytesIO(content),
+            output,
+            laparams=LAParams(),
+            output_type="text",
+            codec=None,
+        )
+        text = output.getvalue().strip()
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"PDF parsing failed: {e}")
+
+    if not text:
+        raise HTTPException(status_code=422, detail="No text extracted from PDF")
+
+    req = ExtractionRequest(input_type="text", content=text)
+    try:
+        return await get_chain().extract(req)
+    except ExtractionFailedError as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"error": "All providers failed", "failures": e.failures},
+        )

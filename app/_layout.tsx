@@ -27,6 +27,7 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="ingest" options={{ presentation: 'modal', headerShown: false }} />
+        <Stack.Screen name="review" options={{ headerShown: false }} />
       </Stack>
     </ThemeProvider>
   );

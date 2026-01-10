@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as DocumentPicker from 'expo-document-picker';
 import { activeExtractionClient } from '@/src/api/index';
 import type { ImageInput, TextInput } from '@/src/api/types';
@@ -15,6 +16,15 @@ type ModalState =
   | { phase: 'analyzing' }
   | { phase: 'done' }
   | { phase: 'error'; message: string };
+
+async function toJpeg(uri: string): Promise<{ base64: string; mimeType: string }> {
+  const result = await ImageManipulator.manipulateAsync(
+    uri,
+    [],
+    { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+  );
+  return { base64: result.base64!, mimeType: 'image/jpeg' };
+}
 
 export default function IngestScreen() {
   const [modalState, setModalState] = useState<ModalState>({ phase: 'idle' });
@@ -50,15 +60,9 @@ export default function IngestScreen() {
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: 'images' as const,
       quality: 0.8,
-      base64: true,
     });
     if (result.canceled) return;
-    const b64 = result.assets[0].base64;
-    const mimeType = result.assets[0].mimeType ?? 'image/jpeg';
-    if (!b64) {
-      Alert.alert('Error', 'Could not read image data. Please try again.');
-      return;
-    }
+    const { base64: b64, mimeType } = await toJpeg(result.assets[0].uri);
     await startExtraction({ type: 'image', uri: result.assets[0].uri, base64: b64, mimeType });
   }
 
@@ -68,15 +72,9 @@ export default function IngestScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: 'images' as const,
       quality: 0.8,
-      base64: true,
     });
     if (result.canceled) return;
-    const b64 = result.assets[0].base64;
-    const mimeType = result.assets[0].mimeType ?? 'image/jpeg';
-    if (!b64) {
-      Alert.alert('Error', 'Could not read image data. Please try again.');
-      return;
-    }
+    const { base64: b64, mimeType } = await toJpeg(result.assets[0].uri);
     await startExtraction({ type: 'image', uri: result.assets[0].uri, base64: b64, mimeType });
   }
 

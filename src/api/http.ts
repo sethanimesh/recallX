@@ -1,6 +1,6 @@
-import type { ExtractionClient, ExtractedWord, ImageInput, TextInput } from './types';
+import type { ExtractedWord, ExtractionClient, ImageInput, TextInput } from './types';
 
-const DEFAULT_BASE_URL = 'http://localhost:8000';
+const DEFAULT_BASE_URL = 'http://192.168.68.104:8000'; // Phase 8: make configurable in Settings
 
 export class ExtractionError extends Error {
   constructor(
@@ -25,7 +25,8 @@ export class HttpExtractionClient implements ExtractionClient {
         ? { input_type: 'image' as const, content: input.base64, mime_type: input.mimeType }
         : { input_type: 'text' as const, content: input.content, mime_type: null };
 
-    const response = await fetch(`${this.baseUrl}/extract`, {
+    const url = `${this.baseUrl}/extract`;
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

@@ -134,7 +134,7 @@ export default function IngestScreen() {
 
           <TouchableOpacity
             style={styles.sourceButton}
-            onPress={() => router.replace('/add-word')}
+            onPress={() => router.push('/add-word')}
           >
             <Ionicons name="pencil-outline" size={24} color="#007AFF" style={styles.icon} />
             <Text style={styles.buttonLabel}>Add Manually</Text>

@@ -11,6 +11,7 @@ specs/
 docs/
 .vscode
 __pycache__/
+__tests__/
 
 # Expo
 .expo/

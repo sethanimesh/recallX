@@ -118,9 +118,10 @@ export default function LibraryScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Search bar */}
-      <View style={styles.searchRow}>
+      <View testID="library-search-row" style={styles.searchRow}>
         <Ionicons name="search-outline" size={18} color="#999" style={styles.searchIcon} />
         <TextInput
+          testID="library-search-input"
           style={styles.searchInput}
           placeholder="Search words..."
           placeholderTextColor="#999"
@@ -141,6 +142,7 @@ export default function LibraryScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <TouchableOpacity
+            testID="library-tag-chip-all"
             style={[styles.tagChip, activeTagId === null && styles.tagChipActive]}
             onPress={() => { setActiveTagId(null); setQuery(''); }}
           >
@@ -191,9 +193,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     margin: 12,
     paddingHorizontal: 12,
+    paddingVertical: 6,
     backgroundColor: '#f2f2f7',
     borderRadius: 10,
-    height: 40,
+    minHeight: 40,
   },
   searchIcon: {
     marginRight: 6,
@@ -201,6 +204,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
+    lineHeight: 20,
     color: '#000',
   },
   tagStrip: {
@@ -213,12 +217,15 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   tagChip: {
+    minHeight: 36,
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
     backgroundColor: '#F3F4F6',
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tagChipActive: {
     backgroundColor: '#007AFF',
@@ -226,6 +233,7 @@ const styles = StyleSheet.create({
   },
   tagChipText: {
     fontSize: 14,
+    lineHeight: 18,
     color: '#374151',
     fontWeight: '500',
   },

@@ -16,44 +16,24 @@ jest.mock('react-native-safe-area-context', () => {
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
-  Stack: {
-    Screen: ({ options }: any) => null,
-  },
+  useFocusEffect: (cb: () => void) => { cb(); },
 }));
 
 // Mock tags DB operations
 const mockGetAllTags = jest.fn();
 const mockFetchWordsByTag = jest.fn();
+const mockFetchAllWords = jest.fn();
 jest.mock('@/src/db/operations/tags', () => ({
   getAllTags: (...args: unknown[]) => mockGetAllTags(...args),
   fetchWordsByTag: (...args: unknown[]) => mockFetchWordsByTag(...args),
-}));
-
-// Mock db client for the "all words" count query
-const mockDbSelect = jest.fn();
-jest.mock('@/src/db/client', () => ({
-  db: {
-    select: (...args: unknown[]) => mockDbSelect(...args),
-  },
-}));
-
-// Mock schema (just needs to export the words table shape)
-jest.mock('@/src/db/schema', () => ({
-  words: { id: 'id', deleted_at: 'deleted_at' },
-}));
-
-// Mock drizzle-orm operators used in the screen
-jest.mock('drizzle-orm', () => ({
-  isNull: (col: any) => ({ __isNull: col }),
+  fetchAllWords: (...args: unknown[]) => mockFetchAllWords(...args),
 }));
 
 import RecallSetupScreen from '../recall-setup';
 
-// Helper: set up the chained db.select().from().where() mock
-function setupDbSelectMock(returnRows: unknown[]) {
-  const whereMock = jest.fn().mockResolvedValue(returnRows);
-  const fromMock = jest.fn().mockReturnValue({ where: whereMock });
-  mockDbSelect.mockReturnValue({ from: fromMock });
+// Helper: set up fetchAllWords mock return value
+function setupAllWordsMock(returnRows: unknown[]) {
+  mockFetchAllWords.mockResolvedValue(returnRows);
 }
 
 describe('RecallSetupScreen', () => {
@@ -71,7 +51,7 @@ describe('RecallSetupScreen', () => {
 
   it('shows "No words to review" when word count is 0 (no tags, all-words pool empty)', async () => {
     mockGetAllTags.mockResolvedValue([]);
-    setupDbSelectMock([]); // 0 words in "all words" pool
+    setupAllWordsMock([]); // 0 words in "all words" pool
 
     let tree!: renderer.ReactTestRenderer;
     await act(async () => {
@@ -85,7 +65,7 @@ describe('RecallSetupScreen', () => {
 
   it('Start button is disabled when word count is 0', async () => {
     mockGetAllTags.mockResolvedValue([]);
-    setupDbSelectMock([]);
+    setupAllWordsMock([]);
 
     let tree!: renderer.ReactTestRenderer;
     await act(async () => {
@@ -101,7 +81,7 @@ describe('RecallSetupScreen', () => {
   it('Start button is enabled when word count > 0', async () => {
     mockGetAllTags.mockResolvedValue([{ id: 'tag-1', name: 'GRE' }]);
     // All-words pool (selected by default on mount): 3 words
-    setupDbSelectMock([{ id: 'w1' }, { id: 'w2' }, { id: 'w3' }]);
+    setupAllWordsMock([{ id: 'w1' }, { id: 'w2' }, { id: 'w3' }]);
 
     let tree!: renderer.ReactTestRenderer;
     await act(async () => {
@@ -118,7 +98,7 @@ describe('RecallSetupScreen', () => {
     mockGetAllTags.mockResolvedValue([{ id: 'tag-1', name: 'GRE' }]);
     mockFetchWordsByTag.mockResolvedValue([]);
     // All-words pool is also empty to keep button disabled from the start
-    setupDbSelectMock([]);
+    setupAllWordsMock([]);
 
     let tree!: renderer.ReactTestRenderer;
     await act(async () => {

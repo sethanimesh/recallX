@@ -89,6 +89,23 @@ export async function fetchWordsByTag(tagId: string): Promise<WordRow[]> {
     .orderBy(asc(words.word));
 }
 
+export async function fetchAllWords(): Promise<WordRow[]> {
+  return db
+    .select({
+      id: words.id,
+      word: words.word,
+      definition: words.definition,
+      example_sentence: words.example_sentence,
+      source_id: words.source_id,
+      created_at: words.created_at,
+      updated_at: words.updated_at,
+      deleted_at: words.deleted_at,
+    })
+    .from(words)
+    .where(isNull(words.deleted_at))
+    .orderBy(asc(words.word));
+}
+
 export async function getTagWordCounts(): Promise<Record<string, number>> {
   const rows = await db
     .select({ tag_id: wordTags.tag_id, count: sql<number>`count(*)` })

@@ -1,4 +1,3 @@
-import json
 import logging
 from openai import RateLimitError
 from providers.base import ExtractionRequest, ExtractedWord, GradeResult, LLMProvider

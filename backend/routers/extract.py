@@ -13,10 +13,7 @@ router = APIRouter()
 _chain: ProviderChain | None = None
 
 
-class ExtractedWordWithDuplicate(BaseModel):
-    word: str
-    definition: str
-    example_sentence: str
+class ExtractedWordWithDuplicate(ExtractedWord):
     duplicate: bool
 
 

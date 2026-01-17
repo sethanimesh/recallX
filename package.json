@@ -11,7 +11,9 @@
   },
   "jest": {
     "preset": "jest-expo",
-    "testPathIgnorePatterns": ["/node_modules/", "/.worktrees/"]
+    "testPathIgnorePatterns": [
+      "/node_modules/"
+    ]
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

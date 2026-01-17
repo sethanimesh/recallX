@@ -1,5 +1,5 @@
 import * as Crypto from 'expo-crypto';
-import { sql, isNull } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { db } from '@/src/db/client';
 import { sources, words as wordsTable } from '@/src/db/schema';
 import type { ExtractedWord } from '@/src/api/types';

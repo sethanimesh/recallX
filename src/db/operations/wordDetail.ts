@@ -1,6 +1,6 @@
 import { db } from '@/src/db/client';
 import { words, sources, tags, wordTags } from '@/src/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 
 export interface WordWithSource {
   id: string;
@@ -12,7 +12,7 @@ export interface WordWithSource {
 }
 
 export async function fetchWordWithSource(id: string): Promise<WordWithSource | null> {
-  const rows = await db.select().from(words).where(eq(words.id, id));
+  const rows = await db.select().from(words).where(and(eq(words.id, id), isNull(words.deleted_at)));
   if (rows.length === 0) return null;
 
   const row = rows[0];

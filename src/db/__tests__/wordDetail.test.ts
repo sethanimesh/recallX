@@ -160,4 +160,13 @@ describe('fetchWordWithSource', () => {
     expect(result!.word).toBe('ephemeral');
     expect(result!.source).toBeUndefined();
   });
+
+  it('returns null for a soft-deleted word (query filters it out at the DB level)', async () => {
+    // The WHERE clause now includes isNull(words.deleted_at), so the DB
+    // returns an empty array for a word that has been soft-deleted.
+    makeSimpleSelectChain([]);
+
+    const result = await fetchWordWithSource('soft-deleted-id');
+    expect(result).toBeNull();
+  });
 });

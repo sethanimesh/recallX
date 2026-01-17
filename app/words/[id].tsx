@@ -74,7 +74,12 @@ function EditableField({ label, value, onSave, multiline = false, italic = false
     setEditing(false);
     const trimmed = draft.trim();
     if (trimmed && trimmed !== value) {
-      await onSave(trimmed);
+      try {
+        await onSave(trimmed);
+      } catch {
+        setDraft(value); // revert to original value
+        Alert.alert('Save failed', 'Could not save your change. Please try again.');
+      }
     } else {
       // Revert if empty or unchanged
       setDraft(value);

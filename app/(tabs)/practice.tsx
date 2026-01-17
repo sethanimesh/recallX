@@ -1,16 +1,72 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PracticeScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Practice</Text>
-      <Text style={styles.body}>Coming soon</Text>
+    <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Recall Practice</Text>
+        <Text style={styles.cardBody}>Test yourself on your saved words</Text>
+        <TouchableOpacity
+          style={styles.button}
+          // '/recall-setup' is a registered stack screen; cast needed until expo-router types regenerate
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          onPress={() => router.push('/recall-setup' as any)}
+          accessibilityRole="button"
+          testID="begin-button"
+        >
+          <Text style={styles.buttonText}>Start Review</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 8 },
-  body: { fontSize: 16, color: '#666' },
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  card: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    alignItems: 'center',
+  },
+  cardTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  cardBody: {
+    fontSize: 15,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  button: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+  },
 });

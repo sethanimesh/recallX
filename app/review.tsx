@@ -66,7 +66,14 @@ export default function ReviewScreen() {
           .map((_, i) => i)
           .filter((i) => finalDecisions[i]);
 
-        const insertedIds = await insertExtraction(uri, type, accepted);
+        const { insertedIds, duplicates } = await insertExtraction(uri, type, accepted);
+
+        if (duplicates.length > 0) {
+          Alert.alert(
+            'Already in your library',
+            duplicates.join(', '),
+          );
+        }
 
         // Apply per-word tags: accepted[j] corresponds to insertedIds[j] and acceptedOriginalIndices[j]
         const tagOps: Promise<void>[] = [];

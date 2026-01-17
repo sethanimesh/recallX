@@ -229,7 +229,12 @@ export default function WordDetailScreen() {
           title: '',
           headerBackTitle: 'Library',
           headerRight: () => (
-            <TouchableOpacity onPress={handleDelete} accessibilityLabel="Delete word" hitSlop={8}>
+            <TouchableOpacity
+              onPress={handleDelete}
+              accessibilityLabel="Delete word"
+              hitSlop={8}
+              style={styles.headerDeleteButton}
+            >
               <Ionicons name="trash-outline" size={22} color="#FF3B30" />
             </TouchableOpacity>
           ),
@@ -427,6 +432,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#007AFF',
     fontWeight: '500',
+  },
+  headerDeleteButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   noTagsText: {
     fontSize: 14,

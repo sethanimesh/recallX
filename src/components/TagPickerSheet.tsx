@@ -34,6 +34,7 @@ interface Props {
 
 export default function TagPickerSheet({ wordId, currentTags, visible, onClose, onTagsChanged }: Props) {
   const insets = useSafeAreaInsets();
+  const footerBottomPadding = insets.bottom + 16;
   const [query, setQuery] = useState('');
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -111,7 +112,7 @@ export default function TagPickerSheet({ wordId, currentTags, visible, onClose, 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.sheetWrapper}
         >
-          <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
+          <View testID="tag-picker-sheet" style={[styles.sheet, { paddingBottom: footerBottomPadding }]}>
             <View style={styles.handle} />
 
             <View style={styles.headerRow}>
@@ -141,96 +142,103 @@ export default function TagPickerSheet({ wordId, currentTags, visible, onClose, 
               )}
             </View>
 
-            {selectedTags.length > 0 && (
-              <View style={styles.selectedSection}>
-                <Text style={styles.sectionLabel}>Selected tags</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.selectedChipsRow}
-                >
-                  {selectedTags.map((tag) => (
-                    <TouchableOpacity
-                      key={tag.id}
-                      testID={`selected-chip-${tag.id}`}
-                      style={styles.selectedChip}
-                      onPress={() => toggleTag(tag.id)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.selectedChipText}>{tag.name}</Text>
-                      <Ionicons name="close" size={14} color="#1D4ED8" />
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
+            <FlatList
+              testID="tag-picker-list"
+              data={filteredTags}
+              keyExtractor={(item) => item.id}
+              style={styles.list}
+              contentContainerStyle={[styles.listContent, { paddingBottom: 24 }]}
+              keyboardShouldPersistTaps="handled"
+              ListHeaderComponent={
+                <View testID="tag-picker-list-header" style={styles.listHeader}>
+                  {selectedTags.length > 0 && (
+                    <View testID="tag-picker-selected-section" style={styles.selectedSection}>
+                      <Text style={styles.sectionLabel}>Selected tags</Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.selectedChipsRow}
+                      >
+                        {selectedTags.map((tag) => (
+                          <TouchableOpacity
+                            key={tag.id}
+                            testID={`selected-chip-${tag.id}`}
+                            style={styles.selectedChip}
+                            onPress={() => toggleTag(tag.id)}
+                            activeOpacity={0.8}
+                          >
+                            <Text style={styles.selectedChipText}>{tag.name}</Text>
+                            <Ionicons name="close" size={14} color="#1D4ED8" />
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
 
-            {showCreate && (
-              <TouchableOpacity testID="tag-picker-create" style={styles.createRow} onPress={handleCreate}>
-                <View style={styles.createIconWrap}>
-                  <Ionicons name="add" size={16} color="#007AFF" />
+                  {showCreate && (
+                    <TouchableOpacity testID="tag-picker-create" style={styles.createRow} onPress={handleCreate}>
+                      <View style={styles.createIconWrap}>
+                        <Ionicons name="add" size={16} color="#007AFF" />
+                      </View>
+                      <View style={styles.createCopy}>
+                        <Text style={styles.createText}>Create "{trimmedQuery}"</Text>
+                        <Text style={styles.createHint}>Add a new tag and select it right away</Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+
+                  <Text testID="tag-picker-all-tags-label" style={styles.sectionLabel}>
+                    {filteredTags.length > 0 ? 'All tags' : 'Results'}
+                  </Text>
                 </View>
-                <View style={styles.createCopy}>
-                  <Text style={styles.createText}>Create "{trimmedQuery}"</Text>
-                  <Text style={styles.createHint}>Add a new tag and select it right away</Text>
+              }
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <Ionicons name="pricetags-outline" size={26} color="#9CA3AF" />
+                  <Text style={styles.emptyTitle}>
+                    {trimmedQuery.length > 0
+                      ? `No matching tags. Create "${trimmedQuery}".`
+                      : 'No tags yet. Create your first one.'}
+                  </Text>
+                  <Text style={styles.emptyText}>
+                    {trimmedQuery.length > 0
+                      ? 'Try a different search or create a new tag above.'
+                      : 'Tags help group words for review and discovery.'}
+                  </Text>
                 </View>
+              }
+              renderItem={({ item }) => {
+                const isSelected = selected.has(item.id);
+                return (
+                  <TouchableOpacity
+                    testID={`tag-row-${item.id}`}
+                    style={[styles.tagRow, isSelected && styles.tagRowSelected]}
+                    onPress={() => toggleTag(item.id)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.tagRowCopy}>
+                      <Text style={[styles.tagName, isSelected && styles.tagNameSelected]}>{item.name}</Text>
+                      <Text style={styles.tagHint}>
+                        {isSelected ? 'Selected for this word' : 'Tap to add this tag'}
+                      </Text>
+                    </View>
+                    <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                      <Ionicons
+                        name={isSelected ? 'checkmark' : 'add'}
+                        size={16}
+                        color={isSelected ? '#FFFFFF' : '#6B7280'}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+
+            <View style={styles.footer}>
+              <TouchableOpacity testID="tag-picker-done" style={styles.doneButton} onPress={handleDone}>
+                <Text style={styles.doneText}>Done</Text>
               </TouchableOpacity>
-            )}
-
-            <View style={styles.listSection}>
-              <Text style={styles.sectionLabel}>{filteredTags.length > 0 ? 'All tags' : 'Results'}</Text>
-              <FlatList
-                data={filteredTags}
-                keyExtractor={(item) => item.id}
-                style={styles.list}
-                contentContainerStyle={styles.listContent}
-                keyboardShouldPersistTaps="handled"
-                ListEmptyComponent={
-                  <View style={styles.emptyState}>
-                    <Ionicons name="pricetags-outline" size={26} color="#9CA3AF" />
-                    <Text style={styles.emptyTitle}>
-                      {trimmedQuery.length > 0
-                        ? `No matching tags. Create "${trimmedQuery}".`
-                        : 'No tags yet. Create your first one.'}
-                    </Text>
-                    <Text style={styles.emptyText}>
-                      {trimmedQuery.length > 0
-                        ? 'Try a different search or create a new tag above.'
-                        : 'Tags help group words for review and discovery.'}
-                    </Text>
-                  </View>
-                }
-                renderItem={({ item }) => {
-                  const isSelected = selected.has(item.id);
-                  return (
-                    <TouchableOpacity
-                      testID={`tag-row-${item.id}`}
-                      style={[styles.tagRow, isSelected && styles.tagRowSelected]}
-                      onPress={() => toggleTag(item.id)}
-                      activeOpacity={0.8}
-                    >
-                      <View style={styles.tagRowCopy}>
-                        <Text style={[styles.tagName, isSelected && styles.tagNameSelected]}>{item.name}</Text>
-                        <Text style={styles.tagHint}>
-                          {isSelected ? 'Selected for this word' : 'Tap to add this tag'}
-                        </Text>
-                      </View>
-                      <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                        <Ionicons
-                          name={isSelected ? 'checkmark' : 'add'}
-                          size={16}
-                          color={isSelected ? '#FFFFFF' : '#6B7280'}
-                        />
-                      </View>
-                    </TouchableOpacity>
-                  );
-                }}
-              />
             </View>
-
-            <TouchableOpacity testID="tag-picker-done" style={styles.doneButton} onPress={handleDone}>
-              <Text style={styles.doneText}>Done</Text>
-            </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
       </View>
@@ -254,7 +262,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingTop: 12,
     paddingHorizontal: 16,
-    maxHeight: '82%',
+    maxHeight: '88%',
     minHeight: 420,
   },
   handle: {
@@ -296,8 +304,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#111827',
   },
+  listHeader: {
+    paddingTop: 14,
+  },
   selectedSection: {
-    marginTop: 14,
+    marginBottom: 18,
   },
   sectionLabel: {
     marginBottom: 10,
@@ -333,7 +344,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderRadius: 16,
     padding: 14,
-    marginTop: 14,
+    marginBottom: 18,
     borderWidth: 1,
     borderColor: '#DBEAFE',
   },
@@ -360,17 +371,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6B7280',
   },
-  listSection: {
-    flex: 1,
-    minHeight: 180,
-    marginTop: 18,
-  },
   list: {
     flex: 1,
+    minHeight: 0,
   },
   listContent: {
     flexGrow: 1,
-    paddingBottom: 12,
+    paddingBottom: 0,
   },
   tagRow: {
     flexDirection: 'row',
@@ -437,8 +444,11 @@ const styles = StyleSheet.create({
     marginTop: 6,
     lineHeight: 20,
   },
+  footer: {
+    flexShrink: 0,
+    paddingTop: 16,
+  },
   doneButton: {
-    marginTop: 16,
     backgroundColor: '#007AFF',
     borderRadius: 16,
     paddingVertical: 16,

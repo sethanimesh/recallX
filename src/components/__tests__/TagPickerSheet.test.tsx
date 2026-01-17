@@ -1,4 +1,5 @@
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { act } from 'react-test-renderer';
 import renderer from 'react-test-renderer';
 
@@ -156,5 +157,31 @@ describe('TagPickerSheet', () => {
 
     expect(mockCreateOrGetTag).toHaveBeenCalledWith('History');
     expect(onTagsChanged).toHaveBeenCalledWith([{ id: 't9', name: 'History' }]);
+  });
+
+  it('keeps the done button inside a dedicated footer when selected tags are shown', async () => {
+    const tree = await renderSheet();
+
+    const sheet = tree.root.findByProps({ testID: 'tag-picker-sheet' });
+    const list = tree.root.findByProps({ testID: 'tag-picker-list' });
+    const listHeader = tree.root.findByProps({ testID: 'tag-picker-list-header' });
+    const selectedSection = tree.root.findByProps({ testID: 'tag-picker-selected-section' });
+    const allTagsLabel = tree.root.findByProps({ testID: 'tag-picker-all-tags-label' });
+    const doneButton = tree.root.findByProps({ testID: 'tag-picker-done' });
+
+    const sheetStyle = StyleSheet.flatten(sheet.props.style);
+    const listStyle = StyleSheet.flatten(list.props.style);
+    const listContentStyle = StyleSheet.flatten(list.props.contentContainerStyle);
+    const footerStyle = StyleSheet.flatten(doneButton.parent?.props.style);
+
+    expect(sheetStyle.maxHeight).toBe('88%');
+    expect(listHeader).toBeTruthy();
+    expect(selectedSection).toBeTruthy();
+    expect(allTagsLabel).toBeTruthy();
+    expect(listStyle.flex).toBe(1);
+    expect(listStyle.minHeight).toBe(0);
+    expect(listContentStyle.paddingBottom).toBe(24);
+    expect(footerStyle.flexShrink).toBe(0);
+    expect(footerStyle.paddingTop).toBe(16);
   });
 });

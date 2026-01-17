@@ -75,10 +75,16 @@ export default function ReviewScreen() {
           );
         }
 
-        // Apply per-word tags: accepted[j] corresponds to insertedIds[j] and acceptedOriginalIndices[j]
+        // Filter out indices for words that were skipped as duplicates so the
+        // list aligns 1-to-1 with insertedIds.
+        const acceptedAndInsertedOriginalIndices = acceptedOriginalIndices.filter(
+          (_, j) => !duplicates.includes(accepted[j].word),
+        );
+
+        // Apply per-word tags: accepted[j] corresponds to insertedIds[j] and acceptedAndInsertedOriginalIndices[j]
         const tagOps: Promise<void>[] = [];
         insertedIds.forEach((wordId, j) => {
-          const originalIndex = acceptedOriginalIndices[j];
+          const originalIndex = acceptedAndInsertedOriginalIndices[j];
           const wordTags = tags.get(originalIndex) ?? [];
           wordTags.forEach((tag) => tagOps.push(addTagToWord(wordId, tag.id)));
         });

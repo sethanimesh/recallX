@@ -1,6 +1,16 @@
+import { sql } from 'drizzle-orm';
 import { db } from '@/src/db/client';
 import { words, sources, tags, wordTags } from '@/src/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
+
+export async function isDuplicateWord(word: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: words.id })
+    .from(words)
+    .where(sql`lower(${words.word}) = lower(${word}) AND ${words.deleted_at} IS NULL`)
+    .limit(1);
+  return rows.length > 0;
+}
 
 export interface WordWithSource {
   id: string;

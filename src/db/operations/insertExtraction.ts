@@ -1,17 +1,9 @@
 import * as Crypto from 'expo-crypto';
-import { sql } from 'drizzle-orm';
 import { db } from '@/src/db/client';
 import { sources, words as wordsTable } from '@/src/db/schema';
 import type { ExtractedWord } from '@/src/api/types';
-
-export async function isDuplicateWord(word: string): Promise<boolean> {
-  const rows = await db
-    .select({ id: wordsTable.id })
-    .from(wordsTable)
-    .where(sql`lower(${wordsTable.word}) = lower(${word}) AND ${wordsTable.deleted_at} IS NULL`)
-    .limit(1);
-  return rows.length > 0;
-}
+import { isDuplicateWord } from '@/src/db/operations/wordDetail';
+export { isDuplicateWord } from '@/src/db/operations/wordDetail';
 
 export async function insertExtraction(
   sourceUri: string,

@@ -11,9 +11,6 @@ router = APIRouter()
 
 _chain: ProviderChain | None = None
 
-_MIN_ANSWER_WORDS = 2
-
-
 def get_chain() -> ProviderChain:
     global _chain
     if _chain is None:
@@ -29,8 +26,8 @@ class GradeRequest(BaseModel):
 
 @router.post("/grade", response_model=GradeResult)
 async def grade_answer(request: GradeRequest) -> GradeResult:
-    # Short-circuit: fewer than 2 words → no answer provided
-    if len(request.user_answer.strip().split()) < _MIN_ANSWER_WORDS:
+    # Short-circuit only truly empty answers; short valid answers should reach the LLM.
+    if request.user_answer.strip() == "":
         return GradeResult(correct=False, feedback="No answer provided.")
 
     try:

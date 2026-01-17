@@ -15,7 +15,7 @@ def _grade_payload(word="ephemeral", user_answer="lasting for a short time", sto
 
 
 # ---------------------------------------------------------------------------
-# Short / blank answer — no LLM call
+# Blank answer — no LLM call
 # ---------------------------------------------------------------------------
 
 def test_blank_answer_no_llm_call():
@@ -32,18 +32,44 @@ def test_blank_answer_no_llm_call():
     chain.grade.assert_not_called()
 
 
-def test_single_word_answer_no_llm_call():
+def test_single_word_answer_calls_llm():
     with patch("routers.grade.get_chain") as mock_gc:
         chain = MagicMock()
-        chain.grade = AsyncMock()
+        chain.grade = AsyncMock(
+            return_value=GradeResult(correct=True, feedback="Close enough.")
+        )
         mock_gc.return_value = chain
 
         resp = client.post("/grade", json=_grade_payload(user_answer="temporary"))
     assert resp.status_code == 200
     data = resp.json()
-    assert data["correct"] is False
-    assert data["feedback"] == "No answer provided."
-    chain.grade.assert_not_called()
+    assert data["correct"] is True
+    assert data["feedback"] == "Close enough."
+    chain.grade.assert_awaited_once_with(
+        word="ephemeral",
+        user_answer="temporary",
+        stored_definition="lasting for a very short time",
+    )
+
+
+def test_two_word_answer_calls_llm():
+    with patch("routers.grade.get_chain") as mock_gc:
+        chain = MagicMock()
+        chain.grade = AsyncMock(
+            return_value=GradeResult(correct=True, feedback="That works.")
+        )
+        mock_gc.return_value = chain
+
+        resp = client.post("/grade", json=_grade_payload(user_answer="short lived"))
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["correct"] is True
+    assert data["feedback"] == "That works."
+    chain.grade.assert_awaited_once_with(
+        word="ephemeral",
+        user_answer="short lived",
+        stored_definition="lasting for a very short time",
+    )
 
 
 def test_whitespace_only_answer_no_llm_call():

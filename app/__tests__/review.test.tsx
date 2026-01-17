@@ -94,7 +94,7 @@ describe('ReviewScreen tagging flow', () => {
       sourceUri: 'file://scan.png',
       sourceType: 'image',
     });
-    mockInsertExtraction.mockResolvedValue(['word-1', 'word-2']);
+    mockInsertExtraction.mockResolvedValue({ insertedIds: ['word-1', 'word-2'], duplicates: [] });
     mockAddTagToWord.mockResolvedValue(undefined);
   });
 

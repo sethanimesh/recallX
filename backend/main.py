@@ -1,5 +1,17 @@
-from fastapi import FastAPI
-from routers import extract
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="RecallX API", version="0.0.1")
+from fastapi import FastAPI
+
+import database
+from routers import extract, grade
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    database.init_db()
+    yield
+
+
+app = FastAPI(title="RecallX API", version="0.0.1", lifespan=lifespan)
 app.include_router(extract.router)
+app.include_router(grade.router)

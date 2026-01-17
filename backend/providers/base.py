@@ -13,6 +13,11 @@ class ExtractionResult(BaseModel):
     words: list[ExtractedWord]
 
 
+class GradeResult(BaseModel):
+    correct: bool
+    feedback: str
+
+
 class ExtractionRequest(BaseModel):
     input_type: Literal["image", "text"]
     content: str        # base64 string for images, raw text for text

@@ -1,6 +1,7 @@
+import json
 import logging
 from openai import RateLimitError
-from providers.base import ExtractionRequest, ExtractedWord, LLMProvider
+from providers.base import ExtractionRequest, ExtractedWord, GradeResult, LLMProvider
 from config import get_provider_order
 
 logger = logging.getLogger(__name__)
@@ -52,6 +53,89 @@ class ProviderChain:
                 msg = f"{provider.name}: {type(e).__name__}: {e}"
                 logger.error("Provider %s error — %s", provider.name, e)
                 failures.append(msg)
+        raise ExtractionFailedError(failures)
+
+    async def grade(
+        self,
+        word: str,
+        user_answer: str,
+        stored_definition: str,
+    ) -> GradeResult:
+        """Grade a user's definition answer using the first available text provider."""
+        from openai import AsyncOpenAI
+        from config import get_provider_config
+
+        _GRADE_RESPONSE_FORMAT = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "GradeResult",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "correct": {"type": "boolean"},
+                        "feedback": {"type": "string"},
+                    },
+                    "required": ["correct", "feedback"],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        }
+
+        prompt = (
+            f"You are a lenient vocabulary teacher grading a student's answer.\n\n"
+            f"Word: {word}\n"
+            f"Stored definition: {stored_definition}\n"
+            f"Student's answer: {user_answer}\n\n"
+            "Decide if the student's answer captures the core meaning of the stored "
+            "definition. Be lenient — synonyms, paraphrases, and partial but correct "
+            "descriptions count as correct. Return a JSON object with:\n"
+            '  "correct": true or false\n'
+            '  "feedback": a short (1-2 sentence) explanation of the grade'
+        )
+
+        failures: list[str] = []
+        for provider in self._providers:
+            # Skip providers that don't have a text model (vision-only providers)
+            cfg = {}
+            try:
+                cfg = get_provider_config(provider.name)
+            except Exception:
+                pass
+
+            # Build a minimal OpenAI-compatible client from the provider's config.
+            # Only providers with a text_model and api_key are usable here.
+            text_model = cfg.get("text_model")
+            base_url = cfg.get("base_url")
+            api_key = cfg.get("api_key")
+
+            if not text_model:
+                logger.debug("Skipping %s for grading — no text_model", provider.name)
+                continue
+
+            try:
+                logger.info("Trying provider %s for grading", provider.name)
+                client = AsyncOpenAI(
+                    api_key=api_key or "missing",
+                    base_url=base_url,
+                )
+                response = await client.chat.completions.create(
+                    model=text_model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.1,
+                    response_format=_GRADE_RESPONSE_FORMAT,
+                )
+                raw = response.choices[0].message.content or "{}"
+                return GradeResult.model_validate_json(raw)
+            except (RateLimitError, ValueError) as e:
+                msg = f"{provider.name}: {type(e).__name__}: {e}"
+                logger.warning("Provider %s skipped for grading — %s", provider.name, e)
+                failures.append(msg)
+            except Exception as e:
+                msg = f"{provider.name}: {type(e).__name__}: {e}"
+                logger.error("Provider %s error during grading — %s", provider.name, e)
+                failures.append(msg)
+
         raise ExtractionFailedError(failures)
 
 

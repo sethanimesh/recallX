@@ -10,6 +10,10 @@ from providers.chain import ExtractionFailedError
 
 client = TestClient(app)
 
+# Patch insert_word globally so extract tests never touch the real DB.
+# Each test still gets a fresh mock (patch as context manager below where needed).
+_PATCH_INSERT = "routers.extract.database.insert_word"
+
 
 def make_word() -> ExtractedWord:
     return ExtractedWord(
@@ -20,7 +24,8 @@ def make_word() -> ExtractedWord:
 
 
 def test_extract_text_success():
-    with patch("routers.extract.get_chain") as mock_gc:
+    with patch("routers.extract.get_chain") as mock_gc, \
+         patch(_PATCH_INSERT, return_value=True):
         chain = MagicMock()
         chain.extract = AsyncMock(return_value=[make_word()])
         mock_gc.return_value = chain
@@ -29,11 +34,26 @@ def test_extract_text_success():
     data = resp.json()
     assert len(data) == 1
     assert data[0]["word"] == "test"
+    assert "duplicate" in data[0]
+    assert data[0]["duplicate"] is False
+
+
+def test_extract_text_duplicate_word():
+    with patch("routers.extract.get_chain") as mock_gc, \
+         patch(_PATCH_INSERT, return_value=False):
+        chain = MagicMock()
+        chain.extract = AsyncMock(return_value=[make_word()])
+        mock_gc.return_value = chain
+        resp = client.post("/extract", json={"input_type": "text", "content": "Some vocabulary text."})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data[0]["duplicate"] is True
 
 
 def test_extract_image_success():
     fake_image = base64.b64encode(b"fake-jpeg-bytes").decode()
-    with patch("routers.extract.get_chain") as mock_gc:
+    with patch("routers.extract.get_chain") as mock_gc, \
+         patch(_PATCH_INSERT, return_value=True):
         chain = MagicMock()
         chain.extract = AsyncMock(return_value=[make_word()])
         mock_gc.return_value = chain
@@ -87,7 +107,8 @@ def test_extract_pdf_success():
         b"0000000360 00000 n \n"
         b"trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n441\n%%EOF\n"
     )
-    with patch("routers.extract.get_chain") as mock_gc:
+    with patch("routers.extract.get_chain") as mock_gc, \
+         patch(_PATCH_INSERT, return_value=True):
         chain = MagicMock()
         chain.extract = AsyncMock(return_value=[make_word()])
         mock_gc.return_value = chain

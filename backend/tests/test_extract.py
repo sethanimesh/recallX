@@ -18,8 +18,12 @@ def make_word(word: str = "ephemeral") -> ExtractedWord:
     )
 
 
+_PATCH_INSERT = "routers.extract.database.insert_word"
+
+
 def test_extract_text_returns_words():
-    with patch("routers.extract.get_chain") as mock_gc:
+    with patch("routers.extract.get_chain") as mock_gc, \
+         patch(_PATCH_INSERT, return_value=True):
         chain = MagicMock()
         chain.extract = AsyncMock(return_value=[make_word("ephemeral"), make_word("laconic")])
         mock_gc.return_value = chain
@@ -30,7 +34,8 @@ def test_extract_text_returns_words():
 
 
 def test_extract_words_have_required_fields():
-    with patch("routers.extract.get_chain") as mock_gc:
+    with patch("routers.extract.get_chain") as mock_gc, \
+         patch(_PATCH_INSERT, return_value=True):
         chain = MagicMock()
         chain.extract = AsyncMock(return_value=[make_word()])
         mock_gc.return_value = chain
@@ -44,7 +49,8 @@ def test_extract_words_have_required_fields():
 
 def test_extract_accepts_image_input_type():
     fake_image = base64.b64encode(b"fake-jpeg-bytes").decode()
-    with patch("routers.extract.get_chain") as mock_gc:
+    with patch("routers.extract.get_chain") as mock_gc, \
+         patch(_PATCH_INSERT, return_value=True):
         chain = MagicMock()
         chain.extract = AsyncMock(return_value=[make_word()])
         mock_gc.return_value = chain

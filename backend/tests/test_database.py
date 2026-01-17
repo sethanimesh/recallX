@@ -1,36 +1,52 @@
-"""Tests for the database module using an in-memory SQLite database."""
-import pytest
+"""Tests for database.py — expanded schema."""
+import sqlite3
 import database
 
 
-@pytest.fixture
-def db(tmp_path):
-    """Return a path to a fresh temporary database, pre-initialised."""
+def _fresh(tmp_path) -> str:
     path = str(tmp_path / "test.sqlite")
     database.init_db(db_path=path)
     return path
 
 
-def test_insert_word_returns_true_on_first_insert(db):
-    assert database.insert_word("ephemeral", db_path=db) is True
+def test_init_db_creates_words_table(tmp_path):
+    path = _fresh(tmp_path)
+    with sqlite3.connect(path) as conn:
+        info = conn.execute("PRAGMA table_info(words)").fetchall()
+    col_names = {row[1] for row in info}
+    assert col_names >= {"id", "word", "definition", "example_sentence",
+                         "source_type", "created_at", "updated_at", "deleted_at"}
 
 
-def test_insert_word_returns_false_on_duplicate(db):
-    database.insert_word("ephemeral", db_path=db)
-    assert database.insert_word("ephemeral", db_path=db) is False
+def test_init_db_creates_tags_table(tmp_path):
+    path = _fresh(tmp_path)
+    with sqlite3.connect(path) as conn:
+        info = conn.execute("PRAGMA table_info(tags)").fetchall()
+    col_names = {row[1] for row in info}
+    assert col_names >= {"id", "name"}
 
 
-def test_insert_word_case_insensitive(db):
-    assert database.insert_word("Ephemeral", db_path=db) is True
-    assert database.insert_word("ephemeral", db_path=db) is False
+def test_init_db_creates_word_tags_table(tmp_path):
+    path = _fresh(tmp_path)
+    with sqlite3.connect(path) as conn:
+        info = conn.execute("PRAGMA table_info(word_tags)").fetchall()
+    col_names = {row[1] for row in info}
+    assert col_names >= {"word_id", "tag_id"}
 
 
-def test_insert_word_different_words(db):
-    assert database.insert_word("ephemeral", db_path=db) is True
-    assert database.insert_word("ubiquitous", db_path=db) is True
+def test_init_db_is_idempotent(tmp_path):
+    """Calling init_db twice must not raise."""
+    path = _fresh(tmp_path)
+    database.init_db(db_path=path)  # second call — must not raise
 
 
-def test_insert_word_case_insensitive_upper(db):
-    """Lower inserted first, upper should also be treated as duplicate."""
-    assert database.insert_word("serendipity", db_path=db) is True
-    assert database.insert_word("SERENDIPITY", db_path=db) is False
+def test_init_db_migrates_old_schema(tmp_path):
+    """A DB with the old single-column words table is upgraded automatically."""
+    path = str(tmp_path / "old.sqlite")
+    with sqlite3.connect(path) as conn:
+        conn.execute("CREATE TABLE words (word TEXT PRIMARY KEY COLLATE NOCASE)")
+    database.init_db(db_path=path)
+    with sqlite3.connect(path) as conn:
+        info = conn.execute("PRAGMA table_info(words)").fetchall()
+    col_names = {row[1] for row in info}
+    assert "id" in col_names

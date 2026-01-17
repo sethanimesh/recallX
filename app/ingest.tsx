@@ -131,6 +131,14 @@ export default function IngestScreen() {
             <Ionicons name="document-outline" size={24} color="#007AFF" style={styles.icon} />
             <Text style={styles.buttonLabel}>PDF / Document</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.sourceButton}
+            onPress={() => router.replace('/add-word')}
+          >
+            <Ionicons name="pencil-outline" size={24} color="#007AFF" style={styles.icon} />
+            <Text style={styles.buttonLabel}>Add Manually</Text>
+          </TouchableOpacity>
         </View>
       )}
     </SafeAreaView>

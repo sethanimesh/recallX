@@ -15,11 +15,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   fetchWordWithSource,
-  fetchWordTags,
   updateWordField,
   softDeleteWord,
   type WordWithSource,
 } from '@/src/db/operations/wordDetail';
+import { getTagsForWord, removeTagFromWord, type Tag } from '@/src/db/operations/tags';
+import TagPickerSheet from '@/src/components/TagPickerSheet';
 
 // ── Source helpers ────────────────────────────────────────────────────────────
 
@@ -121,7 +122,8 @@ export default function WordDetailScreen() {
 
   const [loading, setLoading] = useState(true);
   const [wordData, setWordData] = useState<WordWithSource | null>(null);
-  const [tagNames, setTagNames] = useState<string[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [tagPickerVisible, setTagPickerVisible] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   const load = useCallback(async () => {
@@ -131,13 +133,13 @@ export default function WordDetailScreen() {
       return;
     }
     try {
-      const [data, tags] = await Promise.all([fetchWordWithSource(id), fetchWordTags(id)]);
+      const [data, wordTags] = await Promise.all([fetchWordWithSource(id), getTagsForWord(id)]);
       if (!data) {
         setNotFound(true);
       } else {
         setWordData(data);
       }
-      setTagNames(tags);
+      setTags(wordTags);
     } catch (err) {
       if (__DEV__) console.warn('[WordDetail] load error', err);
       setNotFound(true);
@@ -280,19 +282,40 @@ export default function WordDetailScreen() {
         {/* Tags */}
         <View style={styles.fieldContainer}>
           <Text style={styles.fieldLabel}>Tags</Text>
-          {tagNames.length === 0 ? (
-            <Text style={styles.noTagsText}>No tags yet — coming in Phase 5</Text>
-          ) : (
-            <View style={styles.chipsRow}>
-              {tagNames.map((tag) => (
-                <View key={tag} style={styles.chip}>
-                  <Text style={styles.chipText}>{tag}</Text>
-                </View>
-              ))}
-            </View>
+          <View style={styles.chipsRow}>
+            {tags.map((tag) => (
+              <View key={tag.id} style={styles.chip}>
+                <Text style={styles.chipText}>{tag.name}</Text>
+                <TouchableOpacity
+                  onPress={async () => {
+                    await removeTagFromWord(id!, tag.id);
+                    setTags((prev) => prev.filter((t) => t.id !== tag.id));
+                  }}
+                  hitSlop={6}
+                  style={styles.chipDelete}
+                >
+                  <Ionicons name="close" size={14} color="#1D4ED8" />
+                </TouchableOpacity>
+              </View>
+            ))}
+            <TouchableOpacity style={styles.chipAdd} onPress={() => setTagPickerVisible(true)}>
+              <Ionicons name="add" size={16} color="#007AFF" />
+              <Text style={styles.chipAddText}>Add tag</Text>
+            </TouchableOpacity>
+          </View>
+          {tags.length === 0 && (
+            <Text style={styles.noTagsText}>No tags — tap + to add</Text>
           )}
         </View>
       </ScrollView>
+
+      <TagPickerSheet
+        wordId={id!}
+        currentTags={tags}
+        visible={tagPickerVisible}
+        onClose={() => setTagPickerVisible(false)}
+        onTagsChanged={setTags}
+      />
     </>
   );
 }
@@ -374,6 +397,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#EFF6FF',
     borderRadius: 20,
     paddingHorizontal: 12,
@@ -382,6 +407,25 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 14,
     color: '#1D4ED8',
+    fontWeight: '500',
+  },
+  chipDelete: {
+    marginLeft: 4,
+  },
+  chipAdd: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#007AFF',
+    borderStyle: 'dashed',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    gap: 2,
+  },
+  chipAddText: {
+    fontSize: 14,
+    color: '#007AFF',
     fontWeight: '500',
   },
   noTagsText: {

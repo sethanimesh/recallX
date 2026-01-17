@@ -7,11 +7,12 @@ export async function insertExtraction(
   sourceUri: string,
   sourceType: 'image' | 'pdf',
   extractedWords: ExtractedWord[],
-): Promise<void> {
-  if (extractedWords.length === 0) return;
+): Promise<string[]> {
+  if (extractedWords.length === 0) return [];
 
   const now = new Date();
   const sourceId = Crypto.randomUUID();
+  const wordIds = extractedWords.map(() => Crypto.randomUUID());
 
   await db.transaction(async (tx) => {
     await tx.insert(sources).values({
@@ -22,8 +23,8 @@ export async function insertExtraction(
     });
 
     await tx.insert(wordsTable).values(
-      extractedWords.map((w) => ({
-        id: Crypto.randomUUID(),
+      extractedWords.map((w, i) => ({
+        id: wordIds[i],
         word: w.word,
         definition: w.definition,
         example_sentence: w.example_sentence,
@@ -33,4 +34,6 @@ export async function insertExtraction(
       })),
     );
   });
+
+  return wordIds;
 }

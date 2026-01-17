@@ -1,6 +1,6 @@
 import type { ExtractedWord, ExtractionClient, ImageInput, TextInput } from './types';
 
-const DEFAULT_BASE_URL = 'http://localhost:8000'; // Phase 8: make configurable in Settings
+const DEFAULT_BASE_URL = 'http://192.168.68.104:8000'; // Phase 8: make configurable in Settings
 
 export class ExtractionError extends Error {
   constructor(

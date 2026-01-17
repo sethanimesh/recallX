@@ -53,22 +53,25 @@ export default function LibraryScreen() {
 
   const filtered = filterWords(allWords, query);
 
-  const renderItem = ({ item }: ListRenderItemInfo<WordRow>) => (
-    <TouchableOpacity
-      style={styles.row}
-      onPress={() => router.push(`/words/${item.id}`)}
-      activeOpacity={0.7}
-    >
-      <Text style={styles.word}>{item.word}</Text>
-      <Text style={styles.definition} numberOfLines={1} ellipsizeMode="tail">
-        {item.definition.length > 80
-          ? item.definition.slice(0, 80)
-          : item.definition}
-      </Text>
-    </TouchableOpacity>
+  const ItemSeparator = useCallback(() => <View style={styles.separator} />, []);
+
+  const renderItem = useCallback(
+    ({ item }: ListRenderItemInfo<WordRow>) => (
+      <TouchableOpacity
+        style={styles.row}
+        onPress={() => router.push(`/words/${item.id}`)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.word}>{item.word}</Text>
+        <Text style={styles.definition} numberOfLines={1} ellipsizeMode="tail">
+          {item.definition}
+        </Text>
+      </TouchableOpacity>
+    ),
+    [],
   );
 
-  const renderEmpty = () => {
+  const renderEmpty = useCallback(() => {
     if (allWords.length === 0) {
       return (
         <View style={styles.emptyContainer}>
@@ -81,7 +84,7 @@ export default function LibraryScreen() {
         <Text style={styles.emptyText}>No matches for '{query}'</Text>
       </View>
     );
-  };
+  }, [query]);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -102,7 +105,7 @@ export default function LibraryScreen() {
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         ListEmptyComponent={renderEmpty}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={ItemSeparator}
         contentContainerStyle={filtered.length === 0 ? styles.listEmpty : undefined}
         keyboardShouldPersistTaps="handled"
       />

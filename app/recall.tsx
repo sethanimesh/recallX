@@ -67,10 +67,9 @@ export default function RecallScreen() {
       setPhase('input');
       setUserAnswer('');
       setGradeResult(null);
-      setLoading(false);
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      router.push({ pathname: '/recall-summary' as any, params: { score: String(score), total: String(total) } });
+      router.replace({ pathname: '/recall-summary' as any, params: { score: String(score), total: String(total) } });
     }
   }
 

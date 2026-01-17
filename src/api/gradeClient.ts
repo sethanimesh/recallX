@@ -5,6 +5,13 @@ export interface GradeResult {
   feedback: string;
 }
 
+export class GradeError extends Error {
+  constructor(message: string, public readonly statusCode: number) {
+    super(message);
+    this.name = 'GradeError';
+  }
+}
+
 export async function gradeAnswer(
   word: string,
   userAnswer: string,
@@ -23,7 +30,7 @@ export async function gradeAnswer(
       const err = await response.json();
       detail = err?.detail ?? detail;
     } catch {}
-    throw new Error(`Grade failed: ${detail}`);
+    throw new GradeError(`Grade failed: ${detail}`, response.status);
   }
-  return response.json() as Promise<GradeResult>;
+  return (await response.json()) as GradeResult;
 }

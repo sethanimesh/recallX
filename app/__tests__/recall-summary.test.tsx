@@ -1,15 +1,6 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 
-jest.mock('react-native-safe-area-context', () => {
-  const React = require('react');
-  const { View } = require('react-native');
-  return {
-    useSafeAreaInsets: () => ({ bottom: 0, top: 0, left: 0, right: 0 }),
-    SafeAreaView: ({ children, ...props }: any) => <View {...props}>{children}</View>,
-  };
-});
-
 const mockReplace = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ replace: mockReplace }),
@@ -39,8 +30,7 @@ describe('RecallSummaryScreen', () => {
     await act(async () => {
       tree = renderer.create(<RecallSummaryScreen />);
     });
-    const instance = tree.root;
-    const fractionNode = instance.findAll((n: any) => n.props?.testID === 'score-fraction')[0];
+    const fractionNode = tree.root.findAll((n: any) => n.props?.testID === 'score-fraction')[0];
     expect(collectText(fractionNode)).toContain('7');
     expect(collectText(fractionNode)).toContain('10');
   });
@@ -62,9 +52,10 @@ describe('RecallSummaryScreen', () => {
     });
     const restartBtn = tree.root.findAll((n: any) => n.props?.testID === 'restart-button')[0];
     await act(async () => { restartBtn.props.onPress(); });
-    expect(mockReplace).toHaveBeenCalledWith(
-      expect.objectContaining({ pathname: expect.stringContaining('recall') }),
-    );
+    expect(mockReplace).toHaveBeenCalledWith({
+      pathname: '/recall',
+      params: { tagId: 'tag1' },
+    });
   });
 
   it('renders without crashing when total is 0', async () => {

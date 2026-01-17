@@ -92,10 +92,9 @@ def get_words() -> list[WordRecord]:
             "SELECT id, word, definition, example_sentence, source_type, "
             "created_at, updated_at, deleted_at FROM words WHERE deleted_at IS NULL ORDER BY word"
         ).fetchall()
-    if not rows:
-        return []
-    word_ids = [r[0] for r in rows]
-    with sqlite3.connect(database._DEFAULT_DB_PATH) as conn:
+        if not rows:
+            return []
+        word_ids = [r[0] for r in rows]
         tags_by_word = _get_tags_for_words(conn, word_ids)
     return [_row_to_record(r, tags_by_word.get(r[0], [])) for r in rows]
 

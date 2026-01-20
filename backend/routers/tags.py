@@ -39,7 +39,8 @@ def get_tags() -> list[TagRecord]:
     with sqlite3.connect(database._DEFAULT_DB_PATH) as conn:
         tags = conn.execute("SELECT id, name FROM tags ORDER BY name").fetchall()
         counts_raw = conn.execute(
-            "SELECT tag_id, COUNT(*) FROM word_tags GROUP BY tag_id"
+            "SELECT wt.tag_id, COUNT(*) FROM word_tags wt "
+            "JOIN words w ON w.id = wt.word_id WHERE w.deleted_at IS NULL GROUP BY wt.tag_id"
         ).fetchall()
     counts = {row[0]: row[1] for row in counts_raw}
     return [TagRecord(id=t[0], name=t[1], word_count=counts.get(t[0], 0)) for t in tags]
@@ -66,8 +67,10 @@ def update_tag(tag_id: str, req: UpdateTagRequest) -> TagRecord:
 def delete_tag(tag_id: str) -> None:
     with sqlite3.connect(database._DEFAULT_DB_PATH) as conn:
         conn.execute("DELETE FROM word_tags WHERE tag_id = ?", (tag_id,))
-        conn.execute("DELETE FROM tags WHERE id = ?", (tag_id,))
+        cursor = conn.execute("DELETE FROM tags WHERE id = ?", (tag_id,))
         conn.commit()
+    if cursor.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Tag not found")
 
 
 @router.post("/words/{word_id}/tags/{tag_id}", status_code=204)

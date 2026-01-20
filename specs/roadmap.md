@@ -93,6 +93,7 @@ Define and migrate the core schema:
 ## Phase 6 — Review / Active Recall ✅ (2026-04-20)
 - Backend `db.sqlite` word store enforces uniqueness (COLLATE NOCASE); client checks locally first; duplicate alert shown to user
 - `POST /grade` FastAPI endpoint: LLM judges user answer against stored definition; structured `{ correct, feedback }` response
+- Recall grading sends any non-empty answer, including short synonym-style replies, to the LLM; only blank answers are short-circuited
 - `app/recall-setup.tsx` — pick tag or "All Words"; shows word count; Start disabled when pool empty
 - `app/recall.tsx` — one word at a time; typed input; graded by LLM; Correct/Incorrect banner; definition + example revealed; score tracked
 - `app/recall-summary.tsx` — session score, progress bar, Restart / Done actions

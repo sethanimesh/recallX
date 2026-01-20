@@ -105,6 +105,19 @@ Define and migrate the core schema:
 
 ---
 
+## Phase 6b — Server Word Store ✅ (2026-04-20)
+- Backend `db.sqlite` expanded to full schema: words (id, definition, source_type, timestamps), tags, word_tags
+- New routers: `POST/GET/PATCH/DELETE /words`, `POST/GET/PATCH/DELETE /tags`, `POST/DELETE /words/{id}/tags/{tag_id}`
+- Client write-through cache: all mutations call server first, mirror to local SQLite on success
+- `syncFromServer()` on app launch: full-replace local words/tags/word_tags from server; loading screen during sync; stale-data banner on failure
+- Duplicate detection moved from local `isDuplicateWord()` to server `POST /words` 409 response
+- Single source of truth: vocabulary survives app reinstall
+- 118 Jest tests, 117 passing (1 pre-existing `http.test` failure); 93 pytest tests, 90 passing (3 pre-existing failures)
+
+**Spec:** `specs/2026-04-20-phase-6b-server-word-store/`
+
+---
+
 ## Phase 7 — Review Polish (Day 8)
 - Progress indicator (X of N) during a review session
 - Session summary: score, words missed

@@ -9,6 +9,10 @@ jest.mock('expo-crypto', () => ({
   randomUUID: jest.fn(() => 'test-uuid'),
 }));
 
+jest.mock('@/src/api/wordServerClient', () => ({
+  postWord: jest.fn().mockResolvedValue(undefined),
+}));
+
 const mockValues = jest.fn();
 const mockInsert = jest.fn(() => ({ values: mockValues }));
 

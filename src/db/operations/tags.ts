@@ -1,7 +1,15 @@
 import * as Crypto from 'expo-crypto';
 import { db } from '@/src/db/client';
 import { tags, wordTags, words } from '@/src/db/schema';
-import { eq, and, ne, isNull, asc, sql } from 'drizzle-orm';
+import { eq, and, isNull, asc, sql } from 'drizzle-orm';
+import {
+  postTag,
+  patchTag as serverPatchTag,
+  deleteTag as serverDeleteTag,
+  addTagToWord as serverAddTagToWord,
+  removeTagFromWord as serverRemoveTagFromWord,
+  WordServerError,
+} from '@/src/api/wordServerClient';
 
 export interface Tag {
   id: string;
@@ -21,16 +29,23 @@ export interface WordRow {
 
 export async function createOrGetTag(name: string): Promise<string> {
   const trimmed = name.trim();
-  const existing = await db
-    .select({ id: tags.id })
-    .from(tags)
-    .where(sql`lower(${tags.name}) = lower(${trimmed})`);
-
-  if (existing.length > 0) return existing[0].id;
-
   const id = Crypto.randomUUID();
-  await db.insert(tags).values({ id, name: trimmed });
-  return id;
+  try {
+    await postTag({ id, name: trimmed });
+    await db.insert(tags).values({ id, name: trimmed });
+    return id;
+  } catch (err) {
+    if (err instanceof WordServerError && err.statusCode === 409) {
+      // Tag already exists on server — find it in local DB (synced on start)
+      const existing = await db
+        .select({ id: tags.id })
+        .from(tags)
+        .where(sql`lower(${tags.name}) = lower(${trimmed})`);
+      if (existing.length > 0) return existing[0].id;
+      throw new Error(`Tag "${trimmed}" exists on server but not found locally`);
+    }
+    throw err;
+  }
 }
 
 export async function getAllTags(): Promise<Tag[]> {
@@ -47,26 +62,31 @@ export async function getTagsForWord(wordId: string): Promise<Tag[]> {
 }
 
 export async function addTagToWord(wordId: string, tagId: string): Promise<void> {
+  await serverAddTagToWord(wordId, tagId);
   await db.insert(wordTags).values({ word_id: wordId, tag_id: tagId }).onConflictDoNothing();
 }
 
 export async function removeTagFromWord(wordId: string, tagId: string): Promise<void> {
+  try {
+    await serverRemoveTagFromWord(wordId, tagId);
+  } catch (err) {
+    if (err instanceof WordServerError && err.statusCode === 404) {
+      // Already gone from server — proceed with local removal
+    } else {
+      throw err;
+    }
+  }
   await db.delete(wordTags).where(and(eq(wordTags.word_id, wordId), eq(wordTags.tag_id, tagId)));
 }
 
 export async function renameTag(tagId: string, newName: string): Promise<void> {
   const trimmed = newName.trim();
-  const collision = await db
-    .select({ id: tags.id })
-    .from(tags)
-    .where(and(sql`lower(${tags.name}) = lower(${trimmed})`, ne(tags.id, tagId)));
-
-  if (collision.length > 0) throw new Error(`A tag named "${trimmed}" already exists`);
-
+  await serverPatchTag(tagId, { name: trimmed }); // throws WordServerError(409) on name collision
   await db.update(tags).set({ name: trimmed }).where(eq(tags.id, tagId));
 }
 
 export async function deleteTag(tagId: string): Promise<void> {
+  await serverDeleteTag(tagId);
   await db.delete(wordTags).where(eq(wordTags.tag_id, tagId));
   await db.delete(tags).where(eq(tags.id, tagId));
 }

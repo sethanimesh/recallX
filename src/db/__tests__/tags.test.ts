@@ -24,6 +24,21 @@ jest.mock('expo-crypto', () => ({
   randomUUID: jest.fn(() => 'mock-uuid'),
 }));
 
+jest.mock('@/src/api/wordServerClient', () => ({
+  postTag: jest.fn().mockResolvedValue(undefined),
+  patchTag: jest.fn().mockResolvedValue(undefined),
+  deleteTag: jest.fn().mockResolvedValue(undefined),
+  addTagToWord: jest.fn().mockResolvedValue(undefined),
+  removeTagFromWord: jest.fn().mockResolvedValue(undefined),
+  WordServerError: class WordServerError extends Error {
+    statusCode: number;
+    constructor(message: string, statusCode: number) {
+      super(message);
+      this.statusCode = statusCode;
+    }
+  },
+}));
+
 // ── chain builders ────────────────────────────────────────────────────────────
 
 type AnyFn = jest.Mock<unknown, unknown[]>;
@@ -93,19 +108,23 @@ function makeDeleteChain() {
 describe('createOrGetTag', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('returns existing tag id when name matches (case-insensitive)', async () => {
+  it('posts to server, inserts locally, and returns new uuid', async () => {
+    const { postTag } = require('@/src/api/wordServerClient');
+    postTag.mockResolvedValue(undefined);
+    makeInsertChain();
+    const id = await createOrGetTag('New Tag');
+    expect(id).toBe('mock-uuid');
+    expect(postTag).toHaveBeenCalledWith({ id: 'mock-uuid', name: 'New Tag' });
+    expect(db.insert).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns existing local id on 409 from server', async () => {
+    const { postTag, WordServerError } = require('@/src/api/wordServerClient');
+    postTag.mockRejectedValue(new WordServerError('conflict', 409));
     makeSelectChainReturning([{ id: 'existing-id' }]);
     const id = await createOrGetTag('GRE Prep');
     expect(id).toBe('existing-id');
     expect(db.insert).not.toHaveBeenCalled();
-  });
-
-  it('inserts and returns new uuid when tag does not exist', async () => {
-    makeSelectChainReturning([]);
-    makeInsertChain();
-    const id = await createOrGetTag('New Tag');
-    expect(id).toBe('mock-uuid');
-    expect(db.insert).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -165,12 +184,15 @@ describe('getTagsForWord', () => {
 describe('addTagToWord', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('calls insert with correct word_id and tag_id', async () => {
+  it('calls server then inserts locally with correct word_id and tag_id', async () => {
+    const { addTagToWord: serverAddTagToWord } = require('@/src/api/wordServerClient');
+    serverAddTagToWord.mockResolvedValue(undefined);
     const onConflictDoNothing = jest.fn().mockResolvedValue(undefined);
     const values = jest.fn().mockReturnValue({ onConflictDoNothing });
     (db.insert as jest.Mock).mockReturnValue({ values });
 
     await addTagToWord('w1', 't1');
+    expect(serverAddTagToWord).toHaveBeenCalledWith('w1', 't1');
     expect(values).toHaveBeenCalledWith({ word_id: 'w1', tag_id: 't1' });
     expect(onConflictDoNothing).toHaveBeenCalled();
   });
@@ -181,7 +203,19 @@ describe('addTagToWord', () => {
 describe('removeTagFromWord', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('calls delete with a where clause', async () => {
+  it('calls server then deletes locally', async () => {
+    const { removeTagFromWord: serverRemoveTagFromWord } = require('@/src/api/wordServerClient');
+    serverRemoveTagFromWord.mockResolvedValue(undefined);
+    const chain = makeDeleteChain();
+    await removeTagFromWord('w1', 't1');
+    expect(serverRemoveTagFromWord).toHaveBeenCalledWith('w1', 't1');
+    expect(db.delete).toHaveBeenCalledTimes(1);
+    expect(chain.where).toHaveBeenCalledTimes(1);
+  });
+
+  it('proceeds with local delete on 404 from server', async () => {
+    const { removeTagFromWord: serverRemoveTagFromWord, WordServerError } = require('@/src/api/wordServerClient');
+    serverRemoveTagFromWord.mockRejectedValue(new WordServerError('not found', 404));
     const chain = makeDeleteChain();
     await removeTagFromWord('w1', 't1');
     expect(db.delete).toHaveBeenCalledTimes(1);
@@ -194,18 +228,21 @@ describe('removeTagFromWord', () => {
 describe('renameTag', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('updates the tag name when no collision exists', async () => {
-    makeSelectChainReturning([]);
+  it('calls server then updates locally', async () => {
+    const { patchTag } = require('@/src/api/wordServerClient');
+    patchTag.mockResolvedValue(undefined);
     makeUpdateChain();
 
     await renameTag('t1', 'New Name');
+    expect(patchTag).toHaveBeenCalledWith('t1', { name: 'New Name' });
     expect(db.update).toHaveBeenCalledTimes(1);
   });
 
-  it('throws when a tag with the new name already exists', async () => {
-    makeSelectChainReturning([{ id: 'other-id' }]);
+  it('throws WordServerError(409) on name collision from server', async () => {
+    const { patchTag, WordServerError } = require('@/src/api/wordServerClient');
+    patchTag.mockRejectedValue(new WordServerError('conflict', 409));
 
-    await expect(renameTag('t1', 'Existing')).rejects.toThrow('already exists');
+    await expect(renameTag('t1', 'Existing')).rejects.toThrow(WordServerError);
     expect(db.update).not.toHaveBeenCalled();
   });
 });
@@ -215,9 +252,12 @@ describe('renameTag', () => {
 describe('deleteTag', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('deletes from word_tags first then tags', async () => {
+  it('calls server then deletes from word_tags and tags locally', async () => {
+    const { deleteTag: serverDeleteTag } = require('@/src/api/wordServerClient');
+    serverDeleteTag.mockResolvedValue(undefined);
     const deleteChain = makeDeleteChain();
     await deleteTag('t1');
+    expect(serverDeleteTag).toHaveBeenCalledWith('t1');
     expect(db.delete).toHaveBeenCalledTimes(2);
     expect(deleteChain.where).toHaveBeenCalledTimes(2);
   });

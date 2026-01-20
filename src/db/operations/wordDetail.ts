@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { db } from '@/src/db/client';
 import { words, sources, tags, wordTags } from '@/src/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
+import { patchWord, deleteWord } from '@/src/api/wordServerClient';
 
 export async function isDuplicateWord(word: string): Promise<boolean> {
   const rows = await db
@@ -67,17 +68,16 @@ export async function updateWordField(
   field: 'definition' | 'example_sentence',
   value: string,
 ): Promise<void> {
+  await patchWord(id, { [field]: value });
   const now = new Date();
   if (field === 'definition') {
     await db.update(words).set({ definition: value, updated_at: now }).where(eq(words.id, id));
   } else {
-    await db
-      .update(words)
-      .set({ example_sentence: value, updated_at: now })
-      .where(eq(words.id, id));
+    await db.update(words).set({ example_sentence: value, updated_at: now }).where(eq(words.id, id));
   }
 }
 
 export async function softDeleteWord(id: string): Promise<void> {
+  await deleteWord(id);
   await db.update(words).set({ deleted_at: new Date() }).where(eq(words.id, id));
 }

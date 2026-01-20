@@ -47,6 +47,9 @@ def test_init_db_migrates_old_schema(tmp_path):
         conn.execute("CREATE TABLE words (word TEXT PRIMARY KEY COLLATE NOCASE)")
     database.init_db(db_path=path)
     with sqlite3.connect(path) as conn:
-        info = conn.execute("PRAGMA table_info(words)").fetchall()
-    col_names = {row[1] for row in info}
-    assert "id" in col_names
+        words_info = conn.execute("PRAGMA table_info(words)").fetchall()
+        tags_info = conn.execute("PRAGMA table_info(tags)").fetchall()
+        word_tags_info = conn.execute("PRAGMA table_info(word_tags)").fetchall()
+    assert "id" in {row[1] for row in words_info}
+    assert {row[1] for row in tags_info} >= {"id", "name"}
+    assert {row[1] for row in word_tags_info} >= {"word_id", "tag_id"}

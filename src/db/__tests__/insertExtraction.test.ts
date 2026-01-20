@@ -4,26 +4,33 @@
  * module-level pending store (`src/store/pendingWords.ts`) and navigates to `/review`.
  * The review screen is responsible for calling `insertExtraction` for each accepted word.
  *
- * The tests below verify the `insertExtraction` function itself, which remains intact.
+ * The tests below verify the `insertExtraction` function itself.
+ * Duplicate detection is now server-first: a 409 from `postWord` means duplicate.
  */
-import { insertExtraction, isDuplicateWord } from '../operations/insertExtraction';
+import { insertExtraction } from '../operations/insertExtraction';
 import { db } from '@/src/db/client';
-
-// Mock the select chain for isDuplicateWord
-const mockLimit = jest.fn();
-const mockWhere = jest.fn(() => ({ limit: mockLimit }));
-const mockFrom = jest.fn(() => ({ where: mockWhere }));
-const mockSelect = jest.fn(() => ({ from: mockFrom }));
+import { postWord, WordServerError } from '@/src/api/wordServerClient';
 
 jest.mock('@/src/db/client', () => ({
   db: {
     transaction: jest.fn(),
-    select: jest.fn(),
   },
 }));
 
 jest.mock('expo-crypto', () => ({
   randomUUID: jest.fn(() => 'test-uuid'),
+}));
+
+jest.mock('@/src/api/wordServerClient', () => ({
+  postWord: jest.fn(),
+  WordServerError: class WordServerError extends Error {
+    statusCode: number;
+    constructor(message: string, statusCode: number) {
+      super(message);
+      this.name = 'WordServerError';
+      this.statusCode = statusCode;
+    }
+  },
 }));
 
 const mockValues = jest.fn();
@@ -37,38 +44,13 @@ beforeEach(() => {
   (db.transaction as jest.Mock).mockImplementation(
     async (fn: (tx: typeof mockTx) => Promise<void>) => fn(mockTx),
   );
-  // Default: no duplicates found
-  mockLimit.mockResolvedValue([]);
-  mockWhere.mockReturnValue({ limit: mockLimit });
-  mockFrom.mockReturnValue({ where: mockWhere });
-  mockSelect.mockReturnValue({ from: mockFrom });
-  (db.select as jest.Mock).mockImplementation(mockSelect);
+  (postWord as jest.Mock).mockResolvedValue(undefined);
 });
 
 const sampleWords = [
   { word: 'ephemeral', definition: 'Lasting briefly.', example_sentence: 'The joy was ephemeral.' },
   { word: 'lucid', definition: 'Clearly expressed.', example_sentence: 'A lucid explanation.' },
 ];
-
-describe('isDuplicateWord', () => {
-  it('returns true when the word already exists in the DB (case-insensitive)', async () => {
-    mockLimit.mockResolvedValueOnce([{ id: 'existing-id' }]);
-    const result = await isDuplicateWord('ephemeral');
-    expect(result).toBe(true);
-  });
-
-  it('returns true for a different case of the same word', async () => {
-    mockLimit.mockResolvedValueOnce([{ id: 'existing-id' }]);
-    const result = await isDuplicateWord('Ephemeral');
-    expect(result).toBe(true);
-  });
-
-  it('returns false when the word does not exist in the DB', async () => {
-    mockLimit.mockResolvedValueOnce([]);
-    const result = await isDuplicateWord('serendipity');
-    expect(result).toBe(false);
-  });
-});
 
 describe('insertExtraction', () => {
   it('runs a transaction when words are provided', async () => {
@@ -106,11 +88,11 @@ describe('insertExtraction', () => {
     expect(result.duplicates).toEqual([]);
   });
 
-  it('skips a duplicate word and returns it in duplicates[]', async () => {
-    // First word is a duplicate, second is not
-    mockLimit
-      .mockResolvedValueOnce([{ id: 'existing-id' }]) // ephemeral is a duplicate
-      .mockResolvedValueOnce([]);                       // lucid is not
+  it('skips a duplicate word (409) and returns it in duplicates[]', async () => {
+    const { WordServerError: WSE } = jest.requireMock('@/src/api/wordServerClient');
+    (postWord as jest.Mock)
+      .mockRejectedValueOnce(new WSE('Conflict', 409)) // ephemeral is duplicate
+      .mockResolvedValueOnce(undefined);               // lucid is not
 
     const result = await insertExtraction('file://photo.jpg', 'image', sampleWords);
     expect(result.duplicates).toEqual(['ephemeral']);
@@ -118,10 +100,10 @@ describe('insertExtraction', () => {
   });
 
   it('only inserts non-duplicate words into the words table', async () => {
-    // ephemeral is duplicate, lucid is not
-    mockLimit
-      .mockResolvedValueOnce([{ id: 'existing-id' }])
-      .mockResolvedValueOnce([]);
+    const { WordServerError: WSE } = jest.requireMock('@/src/api/wordServerClient');
+    (postWord as jest.Mock)
+      .mockRejectedValueOnce(new WSE('Conflict', 409)) // ephemeral is duplicate
+      .mockResolvedValueOnce(undefined);               // lucid is not
 
     await insertExtraction('file://photo.jpg', 'image', sampleWords);
     const wordRows = mockValues.mock.calls[1][0] as Array<{ word: string }>;
@@ -129,15 +111,26 @@ describe('insertExtraction', () => {
     expect(wordRows[0].word).toBe('lucid');
   });
 
-  it('still creates the source row when all words are duplicates', async () => {
-    // Both words are duplicates
-    mockLimit.mockResolvedValue([{ id: 'existing-id' }]);
+  it('skips the transaction when all words are duplicates', async () => {
+    const { WordServerError: WSE } = jest.requireMock('@/src/api/wordServerClient');
+    (postWord as jest.Mock).mockRejectedValue(new WSE('Conflict', 409));
 
     const result = await insertExtraction('file://photo.jpg', 'image', sampleWords);
-    expect(db.transaction).toHaveBeenCalledTimes(1);
-    // Only source insert, no word insert
-    expect(mockInsert).toHaveBeenCalledTimes(1);
+    expect(db.transaction).not.toHaveBeenCalled();
     expect(result.insertedIds).toEqual([]);
     expect(result.duplicates).toEqual(['ephemeral', 'lucid']);
+  });
+
+  it('re-throws non-409 server errors', async () => {
+    const { WordServerError: WSE } = jest.requireMock('@/src/api/wordServerClient');
+    (postWord as jest.Mock).mockRejectedValueOnce(new WSE('Internal Server Error', 500));
+
+    await expect(insertExtraction('file://photo.jpg', 'image', sampleWords)).rejects.toThrow('Internal Server Error');
+  });
+
+  it('re-throws network errors (non-WordServerError)', async () => {
+    (postWord as jest.Mock).mockRejectedValueOnce(new Error('Network failure'));
+
+    await expect(insertExtraction('file://photo.jpg', 'image', sampleWords)).rejects.toThrow('Network failure');
   });
 });

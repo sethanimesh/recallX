@@ -2,8 +2,7 @@ import * as Crypto from 'expo-crypto';
 import { db } from '@/src/db/client';
 import { sources, words as wordsTable } from '@/src/db/schema';
 import type { ExtractedWord } from '@/src/api/types';
-import { isDuplicateWord } from '@/src/db/operations/wordDetail';
-export { isDuplicateWord } from '@/src/db/operations/wordDetail';
+import { postWord, WordServerError } from '@/src/api/wordServerClient';
 
 export async function insertExtraction(
   sourceUri: string,
@@ -12,43 +11,56 @@ export async function insertExtraction(
 ): Promise<{ insertedIds: string[]; duplicates: string[] }> {
   if (extractedWords.length === 0) return { insertedIds: [], duplicates: [] };
 
-  // Check for duplicates before the transaction
+  const now = Date.now();
   const duplicates: string[] = [];
-  const nonDuplicateWords: ExtractedWord[] = [];
+  const toInsert: Array<{ word: ExtractedWord; id: string }> = [];
+
   for (const w of extractedWords) {
-    if (await isDuplicateWord(w.word)) {
-      duplicates.push(w.word);
-    } else {
-      nonDuplicateWords.push(w);
+    const id = Crypto.randomUUID();
+    try {
+      await postWord({
+        id,
+        word: w.word,
+        definition: w.definition,
+        example_sentence: w.example_sentence,
+        source_type: sourceType,
+        created_at: now,
+        updated_at: now,
+      });
+      toInsert.push({ word: w, id });
+    } catch (err) {
+      if (err instanceof WordServerError && err.statusCode === 409) {
+        duplicates.push(w.word);
+      } else {
+        throw err;
+      }
     }
   }
 
-  const now = new Date();
+  if (toInsert.length === 0) return { insertedIds: [], duplicates };
+
   const sourceId = Crypto.randomUUID();
-  const wordIds = nonDuplicateWords.map(() => Crypto.randomUUID());
+  const nowDate = new Date(now);
 
   await db.transaction(async (tx) => {
     await tx.insert(sources).values({
       id: sourceId,
       type: sourceType,
       uri: sourceUri,
-      created_at: now,
+      created_at: nowDate,
     });
-
-    if (nonDuplicateWords.length > 0) {
-      await tx.insert(wordsTable).values(
-        nonDuplicateWords.map((w, i) => ({
-          id: wordIds[i],
-          word: w.word,
-          definition: w.definition,
-          example_sentence: w.example_sentence,
-          source_id: sourceId,
-          created_at: now,
-          updated_at: now,
-        })),
-      );
-    }
+    await tx.insert(wordsTable).values(
+      toInsert.map(({ word: w, id }) => ({
+        id,
+        word: w.word,
+        definition: w.definition,
+        example_sentence: w.example_sentence,
+        source_id: sourceId,
+        created_at: nowDate,
+        updated_at: nowDate,
+      })),
+    );
   });
 
-  return { insertedIds: wordIds, duplicates };
+  return { insertedIds: toInsert.map((x) => x.id), duplicates };
 }

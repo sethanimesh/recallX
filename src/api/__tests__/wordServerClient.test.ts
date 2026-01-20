@@ -7,6 +7,8 @@ import {
   deleteTag,
   addTagToWord,
   removeTagFromWord,
+  getWords,
+  getTags,
   WordServerError,
 } from '../wordServerClient';
 
@@ -56,10 +58,11 @@ describe('patchWord', () => {
     mockResponse(200, { id: 'w1', word: 'ephemeral', definition: 'new def',
       example_sentence: 'ex', source_type: null, created_at: 1000,
       updated_at: 2000, deleted_at: null, tags: [] });
-    await patchWord('w1', { definition: 'new def' }, BASE);
+    const result = await patchWord('w1', { definition: 'new def' }, BASE);
     expect(global.fetch).toHaveBeenCalledWith(`${BASE}/words/w1`, expect.objectContaining({
       method: 'PATCH',
     }));
+    expect(result.definition).toBe('new def');
   });
 });
 
@@ -76,10 +79,11 @@ describe('deleteWord', () => {
 describe('postTag', () => {
   it('calls POST /tags', async () => {
     mockResponse(201, { id: 't1', name: 'GRE', word_count: 0 });
-    await postTag({ id: 't1', name: 'GRE' }, BASE);
+    const result = await postTag({ id: 't1', name: 'GRE' }, BASE);
     expect(global.fetch).toHaveBeenCalledWith(`${BASE}/tags`, expect.objectContaining({
       method: 'POST',
     }));
+    expect(result.id).toBe('t1');
   });
 });
 
@@ -100,6 +104,31 @@ describe('removeTagFromWord', () => {
     expect(global.fetch).toHaveBeenCalledWith(`${BASE}/words/w1/tags/t1`, expect.objectContaining({
       method: 'DELETE',
     }));
+  });
+});
+
+describe('getWords', () => {
+  it('calls GET /words', async () => {
+    mockResponse(200, []);
+    const result = await getWords(BASE);
+    expect(global.fetch).toHaveBeenCalledWith(`${BASE}/words`, expect.objectContaining({ method: 'GET' }));
+    expect(result).toEqual([]);
+  });
+});
+
+describe('getTags', () => {
+  it('calls GET /tags', async () => {
+    mockResponse(200, []);
+    const result = await getTags(BASE);
+    expect(global.fetch).toHaveBeenCalledWith(`${BASE}/tags`, expect.objectContaining({ method: 'GET' }));
+    expect(result).toEqual([]);
+  });
+});
+
+describe('network error', () => {
+  it('throws WordServerError with statusCode 0 when fetch rejects', async () => {
+    (global.fetch as jest.Mock).mockRejectedValueOnce(new TypeError('Network request failed'));
+    await expect(getWords(BASE)).rejects.toMatchObject({ statusCode: 0 });
   });
 });
 

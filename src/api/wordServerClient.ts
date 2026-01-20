@@ -36,10 +36,15 @@ export class WordServerError extends Error {
 }
 
 async function request<T>(url: string, options: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...(options.headers ?? {}) },
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', ...(options.headers ?? {}) },
+    });
+  } catch {
+    throw new WordServerError('Network error', 0);
+  }
   if (!response.ok) {
     let detail = `HTTP ${response.status}`;
     try {
@@ -49,7 +54,11 @@ async function request<T>(url: string, options: RequestInit): Promise<T> {
     throw new WordServerError(`Request failed: ${detail}`, response.status);
   }
   if (response.status === 204) return undefined as T;
-  return (await response.json()) as T;
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return undefined as T;
+  }
 }
 
 export function postWord(payload: CreateWordPayload, baseUrl = DEFAULT_BASE_URL) {

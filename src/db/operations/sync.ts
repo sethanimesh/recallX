@@ -1,7 +1,6 @@
 import { db } from '@/src/db/client';
 import { words, tags, wordTags } from '@/src/db/schema';
 import { fetchWordsFromServer, fetchTagsFromServer } from '@/src/api/syncClient';
-import type { ServerWordRecord } from '@/src/api/wordServerClient';
 
 export async function syncFromServer(): Promise<void> {
   const [serverWords, serverTags] = await Promise.all([
@@ -14,13 +13,14 @@ export async function syncFromServer(): Promise<void> {
     await tx.delete(words);
     await tx.delete(tags);
 
+    // Server does not soft-delete tags; all returned tags are active.
     if (serverTags.length > 0) {
       await tx.insert(tags).values(
         serverTags.map((t) => ({ id: t.id, name: t.name })),
       );
     }
 
-    const activeWords = serverWords.filter((w) => w.deleted_at === null);
+    const activeWords = serverWords.filter((w) => w.deleted_at == null);
 
     if (activeWords.length > 0) {
       await tx.insert(words).values(
@@ -37,7 +37,7 @@ export async function syncFromServer(): Promise<void> {
       );
     }
 
-    const wordTagPairs = activeWords.flatMap((w: ServerWordRecord) =>
+    const wordTagPairs = activeWords.flatMap((w) =>
       w.tags.map((t) => ({ word_id: w.id, tag_id: t.id })),
     );
     if (wordTagPairs.length > 0) {

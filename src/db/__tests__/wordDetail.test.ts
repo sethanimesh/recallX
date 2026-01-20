@@ -5,6 +5,11 @@ jest.mock('@/src/db/client', () => ({
   db: { select: jest.fn(), update: jest.fn() },
 }));
 
+jest.mock('@/src/api/wordServerClient', () => ({
+  patchWord: jest.fn().mockResolvedValue(undefined),
+  deleteWord: jest.fn().mockResolvedValue(undefined),
+}));
+
 // ── shared builder helpers ────────────────────────────────────────────────────
 
 type AnyFn = jest.Mock<unknown, unknown[]>;

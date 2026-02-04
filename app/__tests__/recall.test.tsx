@@ -1,7 +1,7 @@
 import React from 'react';
 import { act } from 'react-test-renderer';
 import renderer from 'react-test-renderer';
-import { Alert } from 'react-native';
+import { Alert, ScrollView } from 'react-native';
 
 // Mock tags DB operations
 const mockFetchWordsByTag = jest.fn();
@@ -16,6 +16,25 @@ const mockGradeAnswer = jest.fn();
 jest.mock('@/src/api/gradeClient', () => ({
   gradeAnswer: (...args: unknown[]) => mockGradeAnswer(...args),
 }));
+
+// Mock voice input dependencies to keep tests isolated from native modules.
+const mockVoiceInput = {
+  state: 'idle',
+  transcript: '',
+  start: jest.fn(),
+  reset: jest.fn(),
+};
+jest.mock('@/src/audio/useVoiceInput', () => ({
+  useVoiceInput: () => mockVoiceInput,
+}));
+jest.mock('@/src/components/VoiceInputButton', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return {
+    VoiceInputButton: ({ onPress }: { onPress: () => void }) =>
+      React.createElement(View, { testID: 'voice-input-button', onTouchEnd: onPress }),
+  };
+});
 
 // Mock router
 const mockPush = jest.fn();
@@ -96,6 +115,19 @@ describe('RecallScreen', () => {
     expect(texts).toContain('ephemeral');
   });
 
+  it('keeps taps actionable while keyboard is open', async () => {
+    mockFetchWordsByTag.mockResolvedValue([WORD_A]);
+
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<RecallScreen />);
+    });
+    await act(async () => { await Promise.resolve(); });
+
+    const container = tree.root.findByType(ScrollView);
+    expect(container.props.keyboardShouldPersistTaps).toBe('handled');
+  });
+
   it('shows green "Correct ✓" banner after correct response', async () => {
     mockFetchWordsByTag.mockResolvedValue([WORD_A]);
     mockGradeAnswer.mockResolvedValue({ correct: true, feedback: 'Great.' });
@@ -105,6 +137,11 @@ describe('RecallScreen', () => {
       tree = renderer.create(<RecallScreen />);
     });
     await act(async () => { await Promise.resolve(); });
+
+    await act(async () => {
+      const input = tree.root.findByProps({ testID: 'answer-input' });
+      input.props.onChangeText('short-lived');
+    });
 
     // Submit the answer
     await act(async () => {
@@ -134,6 +171,11 @@ describe('RecallScreen', () => {
     await act(async () => { await Promise.resolve(); });
 
     await act(async () => {
+      const input = tree.root.findByProps({ testID: 'answer-input' });
+      input.props.onChangeText('wrong meaning');
+    });
+
+    await act(async () => {
       const submitBtn = tree.root.findByProps({ testID: 'submit-button' });
       submitBtn.props.onPress();
     });
@@ -159,6 +201,11 @@ describe('RecallScreen', () => {
     });
     await act(async () => { await Promise.resolve(); });
 
+    await act(async () => {
+      const input = tree.root.findByProps({ testID: 'answer-input' });
+      input.props.onChangeText('short-lived');
+    });
+
     // Submit to move to result phase
     await act(async () => {
       const submitBtn = tree.root.findByProps({ testID: 'submit-button' });
@@ -181,6 +228,11 @@ describe('RecallScreen', () => {
     });
     await act(async () => { await Promise.resolve(); });
 
+    await act(async () => {
+      const input = tree.root.findByProps({ testID: 'answer-input' });
+      input.props.onChangeText('persistent');
+    });
+
     // Submit first card
     await act(async () => {
       const submitBtn = tree.root.findByProps({ testID: 'submit-button' });
@@ -188,8 +240,10 @@ describe('RecallScreen', () => {
     });
     await act(async () => { await Promise.resolve(); });
 
+    const nextButton = tree.root.findByProps({ testID: 'next-button' });
+    expect(nextButton).toBeTruthy();
+
     const texts = collectText(tree.toJSON());
-    expect(texts).toContain('Next Word →');
     expect(texts).not.toContain('See Results');
   });
 });

@@ -141,7 +141,10 @@ export default function RecallScreen() {
   const isLastCard = currentIndex + 1 >= deck.length;
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
       {/* Progress */}
       <Text style={styles.progress}>
         {currentIndex + 1} / {deck.length}

@@ -1,5 +1,7 @@
 import { useRef, useState, useCallback } from 'react';
 import { getWhisperContext } from './whisperClient';
+// @ts-ignore - TranscribeRealtimeEvent exists in whisper.rn but TS can't resolve it due to Expo's react-native customCondition
+import type { TranscribeRealtimeEvent } from 'whisper.rn';
 
 export type VoiceState =
   | 'idle'
@@ -39,6 +41,7 @@ export function useVoiceInput() {
   }, [stop]);
 
   const start = useCallback(async () => {
+    if (state !== 'idle') return;
     try {
       setState('initializing');
       setTranscript('');
@@ -54,7 +57,7 @@ export function useVoiceInput() {
       stopRef.current = stopFn;
       setState('listening');
 
-      subscribe((evt: any) => {
+      subscribe((evt: TranscribeRealtimeEvent) => {
         const text = (evt.data?.result ?? '').trim();
 
         if (text && text !== lastTextRef.current) {

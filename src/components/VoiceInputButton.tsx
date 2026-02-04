@@ -27,7 +27,7 @@ export function VoiceInputButton({ state, onPress }: Props) {
       cancelAnimation(ringScale);
       ringScale.value = withTiming(1, { duration: 150 });
     }
-  }, [state, ringScale]);
+  }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const ringAnimStyle = useAnimatedStyle(() => ({
     transform: [{ scale: ringScale.value }],

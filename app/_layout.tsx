@@ -3,9 +3,10 @@ import 'react-native-reanimated';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { useColorScheme, View, ActivityIndicator, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useColorScheme, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { runMigrations } from '@/src/db/client';
 import { syncFromServer } from '@/src/db/operations/sync';
+import { LoadingScreen } from '@/src/components/LoadingScreen';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -20,6 +21,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     async function init() {
+      const minDelay = new Promise<void>((r) => setTimeout(r, 2800));
       try {
         await runMigrations();
       } catch (err) {
@@ -31,17 +33,14 @@ export default function RootLayout() {
         console.warn('[Sync] Failed — using cached data:', err);
         setSyncError(true);
       }
+      await minDelay;
       setReady(true);
     }
     init();
   }, []);
 
   if (!ready) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
@@ -69,7 +68,6 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   banner: {
     backgroundColor: '#FEF3C7',
     flexDirection: 'row',

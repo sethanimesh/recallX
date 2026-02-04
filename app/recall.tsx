@@ -12,6 +12,8 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { fetchAllWords, fetchWordsByTag, type WordRow } from '@/src/db/operations/tags';
 import { gradeAnswer, type GradeResult } from '@/src/api/gradeClient';
+import { useVoiceInput } from '@/src/audio/useVoiceInput';
+import { VoiceInputButton } from '@/src/components/VoiceInputButton';
 
 type Phase = 'input' | 'result';
 
@@ -29,6 +31,8 @@ export default function RecallScreen() {
   const [score, setScore] = useState(0);
   const [total, setTotal] = useState(0);
 
+  const voiceInput = useVoiceInput();
+
   // Load deck on mount
   useEffect(() => {
     async function loadDeck() {
@@ -43,13 +47,22 @@ export default function RecallScreen() {
     loadDeck().catch(() => setDeckLoaded(true));
   }, [tagId]);
 
+  useEffect(() => {
+    if (voiceInput.state === 'done' && voiceInput.transcript) {
+      setUserAnswer(voiceInput.transcript);
+      handleSubmit(voiceInput.transcript);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voiceInput.state]);
+
   const currentWord = deck[currentIndex];
 
-  async function handleSubmit() {
-    if (!currentWord || loading) return;
+  async function handleSubmit(answerOverride?: string) {
+    const answer = answerOverride ?? userAnswer;
+    if (!currentWord || loading || !answer.trim()) return;
     setLoading(true);
     try {
-      const result = await gradeAnswer(currentWord.word, userAnswer, currentWord.definition);
+      const result = await gradeAnswer(currentWord.word, answer, currentWord.definition);
       setGradeResult(result);
       setTotal((t) => t + 1);
       if (result.correct) setScore((s) => s + 1);
@@ -62,6 +75,7 @@ export default function RecallScreen() {
   }
 
   function handleNext() {
+    voiceInput.reset();
     if (currentIndex + 1 < deck.length) {
       setCurrentIndex((i) => i + 1);
       setPhase('input');
@@ -119,11 +133,19 @@ export default function RecallScreen() {
             style={styles.textInput}
             placeholder="Type the meaning…"
             value={userAnswer}
-            onChangeText={setUserAnswer}
+            onChangeText={(text) => {
+              setUserAnswer(text);
+              if (voiceInput.state === 'done') voiceInput.reset();
+            }}
             autoFocus
             returnKeyType="done"
-            onSubmitEditing={handleSubmit}
-            editable={!loading}
+            onSubmitEditing={() => handleSubmit()}
+            editable={
+              !loading &&
+              (voiceInput.state === 'idle' ||
+                voiceInput.state === 'done' ||
+                voiceInput.state === 'error')
+            }
             testID="answer-input"
           />
           {loading && (
@@ -134,10 +156,37 @@ export default function RecallScreen() {
               testID="loading-indicator"
             />
           )}
+          <VoiceInputButton state={voiceInput.state} onPress={voiceInput.start} />
+          {voiceInput.state === 'listening' && (
+            <Text style={styles.voiceLabel}>Listening…</Text>
+          )}
+          {voiceInput.state === 'speech_detected' && (
+            <Text style={styles.voiceLabel}>Got it, keep going…</Text>
+          )}
+          {voiceInput.state === 'error' && (
+            <View style={styles.voiceErrorRow}>
+              <Text style={styles.voiceError}>Couldn&apos;t understand, try again</Text>
+              <TouchableOpacity onPress={voiceInput.start} style={styles.retryButton}>
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           <TouchableOpacity
-            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={loading}
+            style={[
+              styles.submitButton,
+              (loading ||
+                voiceInput.state === 'initializing' ||
+                voiceInput.state === 'listening' ||
+                voiceInput.state === 'speech_detected') &&
+                styles.submitButtonDisabled,
+            ]}
+            onPress={() => handleSubmit()}
+            disabled={
+              loading ||
+              voiceInput.state === 'initializing' ||
+              voiceInput.state === 'listening' ||
+              voiceInput.state === 'speech_detected'
+            }
             testID="submit-button"
           >
             <Text style={styles.submitButtonText}>Submit</Text>
@@ -336,5 +385,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
+  },
+  voiceLabel: {
+    fontSize: 13,
+    color: '#3B82F6',
+    textAlign: 'center',
+  },
+  voiceErrorRow: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  voiceError: {
+    fontSize: 13,
+    color: '#ef4444',
+    textAlign: 'center',
+  },
+  retryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#FEE2E2',
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#ef4444',
   },
 });

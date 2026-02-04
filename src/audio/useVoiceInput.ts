@@ -27,6 +27,7 @@ export function useVoiceInput() {
 
   const stop = useCallback(() => {
     clearDebounce();
+    isStartingRef.current = false;
     if (stopRef.current) {
       stopRef.current();
       stopRef.current = null;
@@ -51,7 +52,7 @@ export function useVoiceInput() {
       const ctx = await getWhisperContext();
       const { stop: stopFn, subscribe } = await ctx.transcribeRealtime({
         language: 'en',
-        realtimeAudioSec: 60,
+        realtimeAudioSec: 30,
         realtimeAudioSliceSec: 10,
       });
 
@@ -82,9 +83,8 @@ export function useVoiceInput() {
         }
       });
     } catch {
-      setState('error');
-    } finally {
       isStartingRef.current = false;
+      setState('error');
     }
   }, [clearDebounce]);
 

@@ -195,7 +195,7 @@ export default function RecallScreen() {
           )}
           {voiceInput.state === 'error' && (
             <View style={styles.voiceErrorRow}>
-              <Text style={styles.voiceError}>Couldn&apos;t understand, try again</Text>
+              <Text style={styles.voiceError}>Couldn't understand, try again</Text>
               <TouchableOpacity onPress={voiceInput.start} style={styles.retryButton}>
                 <Text style={styles.retryButtonText}>Retry</Text>
               </TouchableOpacity>

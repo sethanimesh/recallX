@@ -35,7 +35,7 @@ def test_create_word_returns_201():
     assert resp.status_code == 201
     data = resp.json()
     assert data["id"] == "w1"
-    assert data["word"] == "ephemeral"
+    assert data["word"] == "Ephemeral"
     assert data["tags"] == []
 
 
@@ -68,7 +68,17 @@ def test_get_words_returns_created_word():
     client.post("/words", json=_word_payload())
     resp = client.get("/words")
     assert len(resp.json()) == 1
-    assert resp.json()[0]["word"] == "ephemeral"
+    assert resp.json()[0]["word"] == "Ephemeral"
+
+
+def test_create_word_capitalizes_each_word_before_storing():
+    resp = client.post("/words", json=_word_payload(word="ice cream"))
+    assert resp.status_code == 201
+    assert resp.json()["word"] == "Ice Cream"
+
+    with sqlite3.connect(database._DEFAULT_DB_PATH) as conn:
+        stored_word = conn.execute("SELECT word FROM words WHERE id = ?", ("w1",)).fetchone()[0]
+    assert stored_word == "Ice Cream"
 
 
 def test_get_words_excludes_soft_deleted():

@@ -1,6 +1,7 @@
 import sqlite3
 import time
 from typing import Optional
+import string
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -8,6 +9,10 @@ from pydantic import BaseModel
 import database
 
 router = APIRouter()
+
+
+def _normalize_stored_word(word: str) -> str:
+    return string.capwords(word.strip())
 
 
 class TagInfo(BaseModel):
@@ -67,19 +72,20 @@ def _row_to_record(row: tuple, tags: list[TagInfo]) -> WordRecord:
 
 @router.post("/words", response_model=WordRecord, status_code=201)
 def create_word(req: CreateWordRequest) -> WordRecord:
+    normalized_word = _normalize_stored_word(req.word)
     try:
         with sqlite3.connect(database._DEFAULT_DB_PATH) as conn:
             conn.execute(
                 "INSERT INTO words (id, word, definition, example_sentence, source_type, "
                 "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (req.id, req.word, req.definition, req.example_sentence,
+                (req.id, normalized_word, req.definition, req.example_sentence,
                  req.source_type, req.created_at, req.updated_at),
             )
             conn.commit()
     except sqlite3.IntegrityError:
         raise HTTPException(status_code=409, detail="Word already exists")
     return WordRecord(
-        id=req.id, word=req.word, definition=req.definition,
+        id=req.id, word=normalized_word, definition=req.definition,
         example_sentence=req.example_sentence, source_type=req.source_type,
         created_at=req.created_at, updated_at=req.updated_at,
     )

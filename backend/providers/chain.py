@@ -86,7 +86,7 @@ class ProviderChain:
             f"Word: {word}\n"
             f"Stored definition: {stored_definition}\n"
             f"Student's answer: {user_answer}\n\n"
-            "Decide if the student's answer captures the core meaning of the stored "
+            "Decide if the answer captures the core meaning of the stored "
             "definition. Be lenient — synonyms, paraphrases, and partial but correct "
             "descriptions count as correct. Return a JSON object with:\n"
             '  "correct": true or false\n'

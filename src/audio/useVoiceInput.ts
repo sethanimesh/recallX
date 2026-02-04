@@ -16,6 +16,7 @@ export function useVoiceInput() {
   const stopRef = useRef<(() => void) | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTextRef = useRef('');
+  const isStartingRef = useRef(false);
 
   const clearDebounce = useCallback(() => {
     if (debounceRef.current) {
@@ -40,7 +41,8 @@ export function useVoiceInput() {
   }, [stop]);
 
   const start = useCallback(async () => {
-    if (state !== 'idle') return;
+    if (isStartingRef.current) return;
+    isStartingRef.current = true;
     try {
       setState('initializing');
       setTranscript('');
@@ -81,6 +83,8 @@ export function useVoiceInput() {
       });
     } catch {
       setState('error');
+    } finally {
+      isStartingRef.current = false;
     }
   }, [clearDebounce]);
 

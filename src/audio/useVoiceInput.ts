@@ -1,6 +1,5 @@
 import { useRef, useState, useCallback } from 'react';
 import { getWhisperContext } from './whisperClient';
-// @ts-ignore - TranscribeRealtimeEvent exists in whisper.rn but TS can't resolve it due to Expo's react-native customCondition
 import type { TranscribeRealtimeEvent } from 'whisper.rn';
 
 export type VoiceState =

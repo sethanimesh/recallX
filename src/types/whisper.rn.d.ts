@@ -6,6 +6,7 @@ declare module 'whisper.rn' {
     WhisperVadContext,
     type TranscribeOptions,
     type TranscribeResult,
+    type TranscribeRealtimeEvent,
     type VadOptions,
     type VadSegment,
     type AudioSessionCategoryIos,

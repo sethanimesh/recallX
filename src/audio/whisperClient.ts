@@ -12,6 +12,10 @@ export async function getWhisperContext(
 ): Promise<WhisperContext> {
   if (_context) return _context;
 
+  if (!FileSystem.documentDirectory) {
+    throw new Error('FileSystem.documentDirectory is not available on this platform');
+  }
+
   const modelPath = `${FileSystem.documentDirectory}${MODEL_FILENAME}`;
   const { exists } = await FileSystem.getInfoAsync(modelPath);
 
@@ -26,7 +30,10 @@ export async function getWhisperContext(
         }
       },
     );
-    await download.downloadAsync();
+    const result = await download.downloadAsync();
+    if (!result) {
+      throw new Error('Model download was cancelled or failed');
+    }
   }
 
   _context = await initWhisper({ filePath: modelPath });

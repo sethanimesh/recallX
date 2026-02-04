@@ -30,6 +30,7 @@ export default function RecallScreen() {
   const [loading, setLoading] = useState(false);
   const [score, setScore] = useState(0);
   const [total, setTotal] = useState(0);
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   const voiceInput = useVoiceInput();
 
@@ -54,6 +55,35 @@ export default function RecallScreen() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voiceInput.state]);
+
+  useEffect(() => {
+    if (phase !== 'result' || !gradeResult?.correct) {
+      setCountdown(null);
+      return;
+    }
+
+    let count = 10;
+    let cancelled = false;
+    setCountdown(count);
+
+    const id = setInterval(() => {
+      if (cancelled) return;
+      count -= 1;
+      if (count <= 0) {
+        clearInterval(id);
+        setCountdown(null);
+        handleNext();
+      } else {
+        setCountdown(count);
+      }
+    }, 1000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, gradeResult?.correct]);
 
   const currentWord = deck[currentIndex];
 
@@ -234,11 +264,18 @@ export default function RecallScreen() {
           {/* Next / Results button */}
           <TouchableOpacity
             style={styles.nextButton}
-            onPress={handleNext}
+            onPress={() => {
+              setCountdown(null);
+              handleNext();
+            }}
             testID="next-button"
           >
             <Text style={styles.nextButtonText}>
-              {isLastCard ? 'See Results' : 'Next Word →'}
+              {isLastCard
+                ? 'See Results'
+                : countdown !== null
+                  ? `Next in ${countdown}s`
+                  : 'Next Word →'}
             </Text>
           </TouchableOpacity>
         </View>

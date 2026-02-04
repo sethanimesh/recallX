@@ -12,10 +12,12 @@ export async function insertManualWord(
   const now = Date.now();
   const nowDate = new Date(now);
 
+  const capitalized = word.trim().replace(/^\w/, (c) => c.toUpperCase());
+
   // Throws WordServerError(409) if duplicate — caller surfaces as alert
   await postWord({
     id,
-    word: word.trim(),
+    word: capitalized,
     definition: definition.trim(),
     example_sentence: exampleSentence.trim(),
     source_type: null,
@@ -25,7 +27,7 @@ export async function insertManualWord(
 
   await db.insert(words).values({
     id,
-    word: word.trim(),
+    word: capitalized,
     definition: definition.trim(),
     example_sentence: exampleSentence.trim(),
     source_id: null,

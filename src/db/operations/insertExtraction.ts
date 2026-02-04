@@ -17,6 +17,7 @@ export async function insertExtraction(
 
   for (const w of extractedWords) {
     const id = Crypto.randomUUID();
+    w.word = w.word.trim().replace(/^\w/, (c) => c.toUpperCase());
     try {
       await postWord({
         id,

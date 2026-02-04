@@ -18,6 +18,7 @@
       "infoPlist": {
         "NSCameraUsageDescription": "RecallX needs camera access to capture vocabulary sources.",
         "NSPhotoLibraryUsageDescription": "RecallX needs photo library access to select vocabulary sources.",
+        "NSMicrophoneUsageDescription": "RecallX uses your microphone to transcribe spoken definitions during recall sessions.",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
         }

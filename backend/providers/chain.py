@@ -82,10 +82,10 @@ class ProviderChain:
         }
 
         prompt = (
-            f"You are a lenient vocabulary teacher grading a student's answer.\n\n"
+            f"You are a lenient vocabulary teacher grading an answer.\n\n"
             f"Word: {word}\n"
             f"Stored definition: {stored_definition}\n"
-            f"Student's answer: {user_answer}\n\n"
+            f"answer: {user_answer}\n\n"
             "Decide if the answer captures the core meaning of the stored "
             "definition. Be lenient — synonyms, paraphrases, and partial but correct "
             "descriptions count as correct. Return a JSON object with:\n"

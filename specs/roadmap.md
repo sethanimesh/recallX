@@ -119,7 +119,21 @@ Define and migrate the core schema:
 
 ---
 
-## Phase 7 — Review Polish (Day 8)
+## Phase 7 — Practice Voice Input (Whisper STT + Multimodal) (Day 8)
+- `app/recall.tsx` adds a mic input path so users can answer by voice in Practice (alongside typed input)
+- Native VAD support: automatically detect speech start + speech end (no manual stop needed)
+- Auto-submit rule: submit only after speech has started at least once and then ends; if user never starts speaking, do not auto-submit
+- New backend transcription endpoint (for example `POST /transcribe`) powered by Whisper; returns transcript text + confidence metadata
+- Grading flow accepts multimodal answer payloads (`text`, `audio`, optional `transcript`) and always grades against final transcript
+- Support both recorded audio and picked media files (including extracting speech from video input before transcription)
+- Recall flow behavior: if answer is correct, auto-advance to next card after ~10 seconds; if incorrect, user must manually continue
+- Clear UX states: listening, speech detected, uploading, transcribing, graded-correct (countdown), graded-incorrect (manual continue), and graceful retry on failure
+
+**Done when:** A user can speak an answer and have it auto-submitted on end-of-speech, correct answers auto-advance after ~10s, incorrect answers wait for manual continue, and Whisper transcription feeds grading.
+
+---
+
+## Phase 8 — Review Polish (Day 9)
 - Progress indicator (X of N) during a review session
 - Session summary: score, words missed
 - Mark a word as "mastered" (hide from future sessions unless reset)
@@ -128,7 +142,7 @@ Define and migrate the core schema:
 
 ---
 
-## Phase 8 — Settings (Day 9–10)
+## Phase 9 — Settings (Day 10–11)
 - Settings screen: configure FastAPI backend URL (default `http://localhost:8000`; stored in AsyncStorage)
 - Choose preferred LLM vendor (Claude / OpenAI / Gemini) — sent as a preference to the backend, which holds the keys
 - Basic app info, reset progress option
@@ -137,7 +151,7 @@ Define and migrate the core schema:
 
 ---
 
-## Phase 9 — Sharing (Day 11–12)
+## Phase 10 — Sharing (Day 12–13)
 - Export a tag/deck as JSON or shareable link (deep link)
 - Import a shared deck (parse JSON, merge into local DB, skip duplicates)
 - Share sheet integration via `expo-sharing`
@@ -146,7 +160,7 @@ Define and migrate the core schema:
 
 ---
 
-## Phase 10 — Cloud Sync Prep (Future)
+## Phase 11 — Cloud Sync Prep (Future)
 - Add `synced_at` column to all tables
 - Set up Supabase project, mirror schema
 - Background sync worker: push local-only rows, pull remote changes

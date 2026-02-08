@@ -3,13 +3,21 @@ import base64
 import json
 import os
 import tempfile
+from pathlib import Path
 
 import mlx_whisper
+from dotenv import load_dotenv
 from fastapi import APIRouter, WebSocket
 
 router = APIRouter()
 
-_MODEL = "mlx-community/whisper-base.en-mlx"
+_MODEL = "mlx-community/whisper-large-v3-turbo"
+_ENV_FILE = Path(__file__).resolve().parents[1] / ".env.local"
+
+# Keep HF auth available for mlx_whisper model downloads even when only HF_API_KEY is set.
+load_dotenv(dotenv_path=str(_ENV_FILE))
+if not os.environ.get("HF_TOKEN") and os.environ.get("HF_API_KEY"):
+    os.environ["HF_TOKEN"] = os.environ["HF_API_KEY"]
 
 
 @router.websocket("/ws/transcribe")

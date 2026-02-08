@@ -208,7 +208,8 @@ export default function RecallScreen() {
             style={[
               styles.submitButton,
               (loading ||
-                voiceInput.state === 'initializing' ||
+                voiceInput.state === 'connecting' ||
+                voiceInput.state === 'transcribing' ||
                 voiceInput.state === 'listening' ||
                 voiceInput.state === 'speech_detected') &&
                 styles.submitButtonDisabled,
@@ -216,7 +217,8 @@ export default function RecallScreen() {
             onPress={() => handleSubmit()}
             disabled={
               loading ||
-              voiceInput.state === 'initializing' ||
+              voiceInput.state === 'connecting' ||
+              voiceInput.state === 'transcribing' ||
               voiceInput.state === 'listening' ||
               voiceInput.state === 'speech_detected'
             }

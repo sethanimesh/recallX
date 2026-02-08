@@ -45,7 +45,11 @@ describe('updateWordSRS', () => {
     await updateWordSRS('word-1', 3, 2.3, new Date('2026-05-01'));
     expect(mockUpdate).toHaveBeenCalledTimes(1);
     expect(mockSet).toHaveBeenCalledWith(
-      expect.objectContaining({ srs_interval: 3, srs_ease_factor: 2.3 }),
+      expect.objectContaining({
+        srs_interval: 3,
+        srs_ease_factor: 2.3,
+        updated_at: expect.any(Date),
+      }),
     );
   });
 

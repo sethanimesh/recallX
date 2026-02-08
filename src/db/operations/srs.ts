@@ -1,16 +1,9 @@
 import { db } from '@/src/db/client';
 import { words, wordTags } from '@/src/db/schema';
 import { isNull, lte, or, eq, and, asc } from 'drizzle-orm';
+import type { WordRow } from '@/src/db/operations/tags';
 
-export interface WordSRSRow {
-  id: string;
-  word: string;
-  definition: string;
-  example_sentence: string;
-  source_id: string | null;
-  created_at: Date;
-  updated_at: Date;
-  deleted_at: Date | null;
+export interface WordSRSRow extends WordRow {
   srs_interval: number;
   srs_ease_factor: number;
   srs_next_review_at: Date | null;
@@ -58,6 +51,11 @@ export async function updateWordSRS(
 ): Promise<void> {
   await db
     .update(words)
-    .set({ srs_interval: interval, srs_ease_factor: easeFactor, srs_next_review_at: nextReviewAt })
+    .set({
+      srs_interval: interval,
+      srs_ease_factor: easeFactor,
+      srs_next_review_at: nextReviewAt,
+      updated_at: new Date(),
+    })
     .where(eq(words.id, wordId));
 }

@@ -33,10 +33,7 @@ export function VoiceInputButton({ state, onPress }: Props) {
     transform: [{ scale: ringScale.value }],
   }));
 
-  const isListening = state === 'listening' || state === 'speech_detected';
-  const isError = state === 'error';
-
-  if (state === 'initializing') {
+  if (state === 'connecting' || state === 'transcribing') {
     return (
       <View style={styles.wrapper}>
         <ActivityIndicator size="small" color="#3B82F6" />
@@ -44,11 +41,14 @@ export function VoiceInputButton({ state, onPress }: Props) {
     );
   }
 
+  const isListening = state === 'listening' || state === 'speech_detected';
+  const isError = state === 'error';
+
   return (
     <TouchableOpacity
       style={styles.wrapper}
       onPress={onPress}
-      disabled={state !== 'idle'}
+      disabled={state === 'done'}
       activeOpacity={0.8}
       testID="voice-input-button"
     >

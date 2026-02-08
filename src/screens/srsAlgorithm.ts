@@ -11,7 +11,6 @@ export interface CardState {
 export interface Session {
   mainDeck: CardState[];
   buffer: CardState[];
-  mainIndex: number;
   cardsSinceBuffer: number;
 }
 
@@ -39,16 +38,15 @@ export function createSession(words: WordSRSRow[]): Session {
       successCount: 0,
     })),
     buffer: [],
-    mainIndex: 0,
     cardsSinceBuffer: 0,
   };
 }
 
-export function getNextCard(session: Session): CardState | null {
+export function getNextCard(session: Session, randomFn: () => number = Math.random): CardState | null {
   if (session.mainDeck.length === 0 && session.buffer.length === 0) return null;
 
   // Serve a buffer card every 3–5 main-deck cards
-  const threshold = 3 + Math.floor(Math.random() * 3);
+  const threshold = 3 + Math.floor(randomFn() * 3);
   if (session.buffer.length > 0 && session.cardsSinceBuffer >= threshold) {
     return session.buffer[0];
   }
@@ -89,7 +87,7 @@ export function handleResponse(
           ),
           cardsSinceBuffer: 0,
         },
-        srsUpdate: { interval: card.interval, easeFactor: card.easeFactor, nextReviewAt: now },
+        srsUpdate: { interval: card.interval, easeFactor: card.easeFactor, nextReviewAt: new Date(now.getTime() + 60_000) },
       };
     } else {
       // Incorrect buffer card — reset successCount

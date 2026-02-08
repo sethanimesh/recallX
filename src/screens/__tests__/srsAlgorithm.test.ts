@@ -75,7 +75,7 @@ describe('getNextCard', () => {
     const session = createSession([makeWord('a'), makeWord('b')]);
     const bufferCard = { word: makeWord('x'), interval: 0, easeFactor: 2.5, inBuffer: true, successCount: 0 };
     const sessionWithBuffer = { ...session, buffer: [bufferCard], cardsSinceBuffer: 5 };
-    const card = getNextCard(sessionWithBuffer);
+    const card = getNextCard(sessionWithBuffer, () => 0); // threshold = 3, 5 >= 3
     expect(card!.inBuffer).toBe(true);
   });
 
@@ -83,8 +83,7 @@ describe('getNextCard', () => {
     const session = createSession([makeWord('a')]);
     const bufferCard = { word: makeWord('x'), interval: 0, easeFactor: 2.5, inBuffer: true, successCount: 0 };
     const sessionWithBuffer = { ...session, buffer: [bufferCard], cardsSinceBuffer: 0 };
-    // cardsSinceBuffer=0, threshold min is 3, so mainDeck card should be served first
-    const card = getNextCard(sessionWithBuffer);
+    const card = getNextCard(sessionWithBuffer, () => 0); // threshold = 3, 0 < 3 → main deck
     expect(card!.inBuffer).toBe(false);
   });
 

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
 
 export const sources = sqliteTable('sources', {
   id: text('id').primaryKey(),
@@ -16,6 +16,9 @@ export const words = sqliteTable('words', {
   created_at: integer('created_at', { mode: 'timestamp' }).notNull(),
   updated_at: integer('updated_at', { mode: 'timestamp' }).notNull(),
   deleted_at: integer('deleted_at', { mode: 'timestamp' }),
+  srs_interval: integer('srs_interval').notNull().default(0),
+  srs_ease_factor: real('srs_ease_factor').notNull().default(2.5),
+  srs_next_review_at: integer('srs_next_review_at', { mode: 'timestamp' }),
 });
 
 export const tags = sqliteTable('tags', {

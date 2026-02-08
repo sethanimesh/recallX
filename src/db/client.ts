@@ -41,5 +41,9 @@ export async function runMigrations(): Promise<void> {
       PRIMARY KEY (word_id, tag_id)
     );
   `);
+  // SRS columns — ALTER TABLE errors if column already exists; suppress with try/catch
+  try { await expo.execAsync('ALTER TABLE words ADD COLUMN srs_interval INTEGER NOT NULL DEFAULT 0;'); } catch {}
+  try { await expo.execAsync('ALTER TABLE words ADD COLUMN srs_ease_factor REAL NOT NULL DEFAULT 2.5;'); } catch {}
+  try { await expo.execAsync('ALTER TABLE words ADD COLUMN srs_next_review_at INTEGER;'); } catch {}
   console.log('[DB] Ready');
 }

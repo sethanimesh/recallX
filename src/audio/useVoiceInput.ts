@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 
@@ -168,6 +168,10 @@ export function useVoiceInput() {
       };
     })();
   }, [clearDebounce, cleanup]);
+
+  useEffect(() => {
+    return () => { cleanup(); };
+  }, [cleanup]);
 
   return { state, transcript, start, stop, reset };
 }

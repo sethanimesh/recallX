@@ -11,7 +11,7 @@ export type VoiceState =
   | 'done'
   | 'error';
 
-const WS_URL = 'ws://localhost:8000/ws/transcribe';
+const WS_URL = 'ws://192.168.68.104:8000/ws/transcribe';
 const SILENCE_THRESHOLD_DBFS = -40;
 const SILENCE_DEBOUNCE_MS = 1500;
 
@@ -24,6 +24,7 @@ export function useVoiceInput() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const speechStartedRef = useRef(false);
   const isStartingRef = useRef(false);
+  const responseReceivedRef = useRef(false);
 
   const clearDebounce = useCallback(() => {
     if (debounceRef.current) {
@@ -36,6 +37,7 @@ export function useVoiceInput() {
     clearDebounce();
     isStartingRef.current = false;
     speechStartedRef.current = false;
+    responseReceivedRef.current = false;
     if (wsRef.current) {
       wsRef.current.onopen = null;
       wsRef.current.onmessage = null;
@@ -86,13 +88,14 @@ export function useVoiceInput() {
       };
 
       ws.onclose = () => {
-        if (recordingRef.current) {
+        if (!responseReceivedRef.current) {
           cleanup();
           setState('error');
         }
       };
 
       ws.onmessage = (e: MessageEvent) => {
+        responseReceivedRef.current = true;
         const payload = JSON.parse(e.data as string) as
           | { transcript: string }
           | { error: string };

@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import json
 import os
@@ -36,7 +37,10 @@ async def transcribe_ws(websocket: WebSocket) -> None:
         with open(tmp_path, "wb") as f:
             f.write(audio_bytes)
 
-        result = mlx_whisper.transcribe(tmp_path, path_or_hf_repo=_MODEL)
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None, lambda: mlx_whisper.transcribe(tmp_path, path_or_hf_repo=_MODEL)
+        )
         transcript = result.get("text", "").strip()
         await websocket.send_text(json.dumps({"transcript": transcript}))
     except Exception:

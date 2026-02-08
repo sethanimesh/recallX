@@ -6,14 +6,14 @@ jest.mock('expo-av', () => ({
   },
 }));
 
-jest.mock('expo-file-system', () => ({
+jest.mock('expo-file-system/legacy', () => ({
   readAsStringAsync: jest.fn(),
   EncodingType: { Base64: 'base64' },
 }));
 
 import { renderHook, act } from '@testing-library/react-native';
 import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useVoiceInput } from '../useVoiceInput';
 
 const mockRequestPermissions = Audio.requestPermissionsAsync as jest.Mock;

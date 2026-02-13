@@ -81,6 +81,7 @@ describe('RecallSetupScreen', () => {
 
     const startBtn = tree.root.findByProps({ testID: 'start-button' });
     expect(startBtn.props.disabled).toBe(true);
+    expect(startBtn.props.accessibilityState).toMatchObject({ disabled: true });
   });
 
   it('Start button is enabled when Adaptive has due words', async () => {
@@ -92,6 +93,7 @@ describe('RecallSetupScreen', () => {
 
     const startBtn = tree.root.findByProps({ testID: 'start-button' });
     expect(startBtn.props.disabled).toBe(false);
+    expect(startBtn.props.accessibilityState).toMatchObject({ disabled: false });
   });
 
   it('switches to Classic mode and shows "No words to review" when Classic deck is empty', async () => {

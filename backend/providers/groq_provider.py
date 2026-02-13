@@ -67,7 +67,7 @@ class GroqProvider:
             model=model, messages=messages, temperature=0.1,
             response_format=_RESPONSE_FORMAT,
         )
-        print(response)
+
         return ExtractionResult.model_validate_json(
             response.choices[0].message.content or "{}"
         ).words

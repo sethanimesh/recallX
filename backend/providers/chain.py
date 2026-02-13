@@ -15,6 +15,20 @@ class ExtractionFailedError(Exception):
 _PROVIDER_MAP: dict[str, type] = {}  # populated at bottom of file
 
 
+def _provider_model_for_request(provider: LLMProvider, input_type: str) -> str:
+    if input_type == "image":
+        return (
+            getattr(provider, "_vision_model", None)
+            or getattr(provider, "_model", None)
+            or "unknown"
+        )
+    return (
+        getattr(provider, "_text_model", None)
+        or getattr(provider, "_model", None)
+        or "unknown"
+    )
+
+
 class ProviderChain:
     def __init__(self) -> None:
         order = get_provider_order()
@@ -38,7 +52,13 @@ class ProviderChain:
             try:
                 logger.info("Trying provider: %s", provider.name)
                 result = await provider.extract_words(req)
-                logger.info("Provider %s succeeded (%d words)", provider.name, len(result))
+                model = _provider_model_for_request(provider, req.input_type)
+                logger.info(
+                    "LLM inference succeeded provider=%s model=%s words=%d",
+                    provider.name,
+                    model,
+                    len(result),
+                )
                 return result
             except (RateLimitError, ValueError) as e:
                 msg = f"{provider.name}: {type(e).__name__}: {e}"
@@ -125,6 +145,11 @@ class ProviderChain:
                     response_format=_GRADE_RESPONSE_FORMAT,
                 )
                 raw = response.choices[0].message.content or "{}"
+                logger.info(
+                    "LLM inference succeeded provider=%s model=%s task=grade",
+                    provider.name,
+                    text_model,
+                )
                 return GradeResult.model_validate_json(raw)
             except (RateLimitError, ValueError) as e:
                 msg = f"{provider.name}: {type(e).__name__}: {e}"

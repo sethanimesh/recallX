@@ -17,6 +17,36 @@ jest.mock('@/src/api/gradeClient', () => ({
   gradeAnswer: (...args: unknown[]) => mockGradeAnswer(...args),
 }));
 
+// Mock SRS DB operations
+const mockFetchDueWords = jest.fn();
+jest.mock('@/src/db/operations/srs', () => ({
+  fetchDueWords: (...args: unknown[]) => mockFetchDueWords(...args),
+  updateWordSRS: jest.fn().mockResolvedValue(undefined),
+}));
+
+// Mock SRS algorithm — minimal stubs; classic-mode tests never call these
+jest.mock('@/src/screens/srsAlgorithm', () => ({
+  createSession: jest.fn((words: unknown[]) => ({
+    mainDeck: words.map((w: unknown) => ({
+      word: w, interval: 0, easeFactor: 2.5, inBuffer: false, successCount: 0,
+    })),
+    buffer: [],
+    cardsSinceBuffer: 0,
+  })),
+  getNextCard: jest.fn((session: { mainDeck: unknown[] }) =>
+    session.mainDeck.length > 0 ? session.mainDeck[0] : null),
+  handleResponse: jest.fn((session: { mainDeck: unknown[]; buffer: unknown[] }, card: unknown, correct: boolean) => ({
+    session: {
+      ...session,
+      mainDeck: correct ? session.mainDeck.filter((c: unknown) => c !== card) : session.mainDeck,
+      buffer: correct ? session.buffer : [card, ...session.buffer],
+    },
+    srsUpdate: { interval: 1, easeFactor: 2.5, nextReviewAt: new Date() },
+  })),
+  isSessionComplete: jest.fn((s: { mainDeck: unknown[]; buffer: unknown[] }) =>
+    s.mainDeck.length === 0 && s.buffer.length === 0),
+}));
+
 // Mock voice input dependencies to keep tests isolated from native modules.
 const mockVoiceInput = {
   state: 'idle',
@@ -39,7 +69,7 @@ jest.mock('@/src/components/VoiceInputButton', () => {
 // Mock router
 const mockPush = jest.fn();
 const mockBack = jest.fn();
-let mockParams: Record<string, string> = { tagId: 'tag1' };
+let mockParams: Record<string, string> = { tagId: 'tag1', mode: 'classic' };
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: mockBack }),
   useLocalSearchParams: () => mockParams,
@@ -91,7 +121,8 @@ describe('RecallScreen', () => {
     // Default: fetchWordsByTag returns deck with two words
     mockFetchWordsByTag.mockResolvedValue([WORD_A, WORD_B]);
     mockFetchAllWords.mockResolvedValue([WORD_A, WORD_B]);
-    mockParams = { tagId: 'tag1' };
+    mockFetchDueWords.mockResolvedValue([]);
+    mockParams = { tagId: 'tag1', mode: 'classic' };
   });
 
   afterEach(() => {
@@ -245,5 +276,30 @@ describe('RecallScreen', () => {
 
     const texts = collectText(tree.toJSON());
     expect(texts).not.toContain('See Results');
+  });
+
+  it('submits even when answer is empty and records a failed attempt', async () => {
+    mockFetchWordsByTag.mockResolvedValue([WORD_A]);
+    mockGradeAnswer.mockResolvedValue({ correct: false, feedback: 'No answer provided.' });
+
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<RecallScreen />);
+    });
+    await act(async () => { await Promise.resolve(); });
+
+    await act(async () => {
+      const submitBtn = tree.root.findByProps({ testID: 'submit-button' });
+      submitBtn.props.onPress();
+    });
+    await act(async () => { await Promise.resolve(); });
+
+    expect(mockGradeAnswer).toHaveBeenCalledWith(
+      WORD_A.word,
+      '',
+      WORD_A.definition,
+    );
+    const texts = collectText(tree.toJSON());
+    expect(texts).toContain('Incorrect ✗');
   });
 });

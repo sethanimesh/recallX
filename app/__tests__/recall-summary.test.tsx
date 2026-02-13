@@ -13,7 +13,7 @@ jest.mock('expo-router', () => ({
 
 const mockFetchAllWords = jest.fn();
 jest.mock('@/src/db/operations/tags', () => ({
-  fetchAllWords: jest.fn(() => mockFetchAllWords()),
+  fetchAllWords: (...args: unknown[]) => mockFetchAllWords(...args),
 }));
 
 import RecallSummaryScreen from '../recall-summary';
@@ -91,9 +91,7 @@ describe('RecallSummaryScreen', () => {
 
     let tree: any;
     await act(async () => { tree = renderer.create(<RecallSummaryScreen />); });
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 50));
-    });
+    await act(async () => { await Promise.resolve(); });
 
     const headings = tree.root.findAll((n: any) => n.props?.testID === 'missed-heading' && n.type === 'Text');
     expect(headings.length).toBeGreaterThan(0);
@@ -123,9 +121,7 @@ describe('RecallSummaryScreen', () => {
 
     let tree: any;
     await act(async () => { tree = renderer.create(<RecallSummaryScreen />); });
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 50));
-    });
+    await act(async () => { await Promise.resolve(); });
 
     const rows = tree.root.findAll((n: any) => n.props?.testID?.startsWith('missed-row-') && n.type === 'View');
     expect(rows.length).toBeGreaterThanOrEqual(1);

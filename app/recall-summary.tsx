@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -45,12 +45,12 @@ export default function RecallSummaryScreen() {
     router.replace('/(tabs)/practice' as any);
   }
 
-  const renderMissedItem = ({ item }: ListRenderItemInfo<WordRow>) => (
+  const renderMissedItem = useCallback(({ item }: ListRenderItemInfo<WordRow>) => (
     <View style={styles.missedRow} testID={`missed-row-${item.id}`}>
       <Text style={styles.missedWord}>{item.word}</Text>
       <Text style={styles.missedDefinition}>{item.definition}</Text>
     </View>
-  );
+  ), []);
 
   return (
     <View style={styles.container}>

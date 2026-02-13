@@ -139,7 +139,7 @@ export default function RecallScreen() {
     if (mode === 'adaptive') {
       if (pendingSRSUpdate.current) {
         const { wordId, update } = pendingSRSUpdate.current;
-        updateWordSRS(wordId, update.interval, update.easeFactor, update.nextReviewAt).catch(() => {});
+        updateWordSRS(wordId, update.interval, update.easeFactor, update.nextReviewAt, update.wrongCount, update.consecutiveCorrect).catch(() => {});
         pendingSRSUpdate.current = null;
       }
       if (adaptiveNextCard == null) {

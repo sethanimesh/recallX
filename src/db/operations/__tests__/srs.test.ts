@@ -41,19 +41,21 @@ describe('fetchDueWords', () => {
 describe('updateWordSRS', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('calls db.update with correct SRS values', async () => {
-    await updateWordSRS('word-1', 3, 2.3, new Date('2026-05-01'));
+  it('calls db.update with correct SRS values including wrongCount and consecutiveCorrect', async () => {
+    await updateWordSRS('word-1', 3, 2.3, new Date('2026-05-01'), 2, 4);
     expect(mockUpdate).toHaveBeenCalledTimes(1);
     expect(mockSet).toHaveBeenCalledWith(
       expect.objectContaining({
         srs_interval: 3,
         srs_ease_factor: 2.3,
+        srs_wrong_count: 2,
+        srs_consecutive_correct: 4,
         updated_at: expect.any(Date),
       }),
     );
   });
 
   it('resolves without throwing', async () => {
-    await expect(updateWordSRS('w1', 0, 2.5, new Date())).resolves.toBeUndefined();
+    await expect(updateWordSRS('w1', 0, 2.5, new Date(), 0, 0)).resolves.toBeUndefined();
   });
 });

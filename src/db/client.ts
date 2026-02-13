@@ -45,5 +45,7 @@ export async function runMigrations(): Promise<void> {
   try { await expo.execAsync('ALTER TABLE words ADD COLUMN srs_interval INTEGER NOT NULL DEFAULT 0;'); } catch {}
   try { await expo.execAsync('ALTER TABLE words ADD COLUMN srs_ease_factor REAL NOT NULL DEFAULT 2.5;'); } catch {}
   try { await expo.execAsync('ALTER TABLE words ADD COLUMN srs_next_review_at INTEGER;'); } catch {}
+  try { await expo.execAsync('ALTER TABLE words ADD COLUMN srs_wrong_count INTEGER NOT NULL DEFAULT 0;'); } catch {}
+  try { await expo.execAsync('ALTER TABLE words ADD COLUMN srs_consecutive_correct INTEGER NOT NULL DEFAULT 0;'); } catch {}
   console.log('[DB] Ready');
 }

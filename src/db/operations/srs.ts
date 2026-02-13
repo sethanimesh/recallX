@@ -7,6 +7,8 @@ export interface WordSRSRow extends WordRow {
   srs_interval: number;
   srs_ease_factor: number;
   srs_next_review_at: Date | null;
+  srs_wrong_count: number;
+  srs_consecutive_correct: number;
 }
 
 const SRS_COLUMNS = {
@@ -21,6 +23,8 @@ const SRS_COLUMNS = {
   srs_interval: words.srs_interval,
   srs_ease_factor: words.srs_ease_factor,
   srs_next_review_at: words.srs_next_review_at,
+  srs_wrong_count: words.srs_wrong_count,
+  srs_consecutive_correct: words.srs_consecutive_correct,
 };
 
 export async function fetchDueWords(tagId?: string): Promise<WordSRSRow[]> {
@@ -48,6 +52,8 @@ export async function updateWordSRS(
   interval: number,
   easeFactor: number,
   nextReviewAt: Date,
+  wrongCount: number,
+  consecutiveCorrect: number,
 ): Promise<void> {
   await db
     .update(words)
@@ -55,6 +61,8 @@ export async function updateWordSRS(
       srs_interval: interval,
       srs_ease_factor: easeFactor,
       srs_next_review_at: nextReviewAt,
+      srs_wrong_count: wrongCount,
+      srs_consecutive_correct: consecutiveCorrect,
       updated_at: new Date(),
     })
     .where(eq(words.id, wordId));

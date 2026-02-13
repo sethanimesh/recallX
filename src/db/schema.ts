@@ -19,6 +19,8 @@ export const words = sqliteTable('words', {
   srs_interval: integer('srs_interval').notNull().default(0),
   srs_ease_factor: real('srs_ease_factor').notNull().default(2.5),
   srs_next_review_at: integer('srs_next_review_at', { mode: 'timestamp' }),
+  srs_wrong_count: integer('srs_wrong_count').notNull().default(0),
+  srs_consecutive_correct: integer('srs_consecutive_correct').notNull().default(0),
 });
 
 export const tags = sqliteTable('tags', {

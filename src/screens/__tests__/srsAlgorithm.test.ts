@@ -6,7 +6,13 @@ import {
 } from '../srsAlgorithm';
 import type { WordSRSRow } from '@/src/db/operations/srs';
 
-function makeWord(id: string, interval = 0, easeFactor = 2.5): WordSRSRow {
+function makeWord(
+  id: string,
+  interval = 0,
+  easeFactor = 2.5,
+  wrongCount = 0,
+  consecutiveCorrect = 0,
+): WordSRSRow {
   return {
     id,
     word: `word-${id}`,
@@ -19,7 +25,14 @@ function makeWord(id: string, interval = 0, easeFactor = 2.5): WordSRSRow {
     srs_interval: interval,
     srs_ease_factor: easeFactor,
     srs_next_review_at: null,
+    srs_wrong_count: wrongCount,
+    srs_consecutive_correct: consecutiveCorrect,
   };
+}
+
+function makeBufferCard(id: string, wrongCount = 1, consecutiveCorrect = 0, successCount = 0) {
+  const base = createSession([makeWord(id, 0, 2.5, wrongCount, consecutiveCorrect)]);
+  return { ...base.mainDeck[0], inBuffer: true, successCount };
 }
 
 describe('createSession', () => {
@@ -30,9 +43,11 @@ describe('createSession', () => {
   });
 
   it('initialises CardState from word SRS values', () => {
-    const session = createSession([makeWord('a', 5, 2.3)]);
+    const session = createSession([makeWord('a', 5, 2.3, 2, 3)]);
     expect(session.mainDeck[0].interval).toBe(5);
     expect(session.mainDeck[0].easeFactor).toBe(2.3);
+    expect(session.mainDeck[0].wrongCount).toBe(2);
+    expect(session.mainDeck[0].consecutiveCorrect).toBe(3);
     expect(session.mainDeck[0].inBuffer).toBe(false);
     expect(session.mainDeck[0].successCount).toBe(0);
   });
@@ -54,7 +69,10 @@ describe('isSessionComplete', () => {
 
   it('returns false when buffer has cards and mainDeck is empty', () => {
     const session = createSession([]);
-    const bufferSession = { ...session, buffer: [{ word: makeWord('a'), interval: 0, easeFactor: 2.5, inBuffer: true, successCount: 0 }] };
+    const bufferSession = {
+      ...session,
+      buffer: [{ word: makeWord('a'), interval: 0, easeFactor: 2.5, inBuffer: true, successCount: 0, wrongCount: 1, consecutiveCorrect: 0 }],
+    };
     expect(isSessionComplete(bufferSession)).toBe(false);
   });
 });
@@ -73,7 +91,7 @@ describe('getNextCard', () => {
 
   it('returns buffer[0] when cardsSinceBuffer >= 5 (always over any threshold)', () => {
     const session = createSession([makeWord('a'), makeWord('b')]);
-    const bufferCard = { word: makeWord('x'), interval: 0, easeFactor: 2.5, inBuffer: true, successCount: 0 };
+    const bufferCard = { word: makeWord('x'), interval: 0, easeFactor: 2.5, inBuffer: true, successCount: 0, wrongCount: 1, consecutiveCorrect: 0 };
     const sessionWithBuffer = { ...session, buffer: [bufferCard], cardsSinceBuffer: 5 };
     const card = getNextCard(sessionWithBuffer, () => 0); // threshold = 3, 5 >= 3
     expect(card!.inBuffer).toBe(true);
@@ -81,7 +99,7 @@ describe('getNextCard', () => {
 
   it('returns mainDeck card when only buffer exists but cardsSinceBuffer is 0', () => {
     const session = createSession([makeWord('a')]);
-    const bufferCard = { word: makeWord('x'), interval: 0, easeFactor: 2.5, inBuffer: true, successCount: 0 };
+    const bufferCard = { word: makeWord('x'), interval: 0, easeFactor: 2.5, inBuffer: true, successCount: 0, wrongCount: 1, consecutiveCorrect: 0 };
     const sessionWithBuffer = { ...session, buffer: [bufferCard], cardsSinceBuffer: 0 };
     const card = getNextCard(sessionWithBuffer, () => 0); // threshold = 3, 0 < 3 → main deck
     expect(card!.inBuffer).toBe(false);
@@ -89,14 +107,14 @@ describe('getNextCard', () => {
 
   it('returns buffer card when mainDeck is empty', () => {
     const session = createSession([]);
-    const bufferCard = { word: makeWord('x'), interval: 0, easeFactor: 2.5, inBuffer: true, successCount: 0 };
+    const bufferCard = { word: makeWord('x'), interval: 0, easeFactor: 2.5, inBuffer: true, successCount: 0, wrongCount: 1, consecutiveCorrect: 0 };
     const bufferSession = { ...session, buffer: [bufferCard] };
     const card = getNextCard(bufferSession);
     expect(card!.inBuffer).toBe(true);
   });
 });
 
-describe('handleResponse — correct, main deck card', () => {
+describe('handleResponse — correct, main deck card (never wrong)', () => {
   it('removes card from mainDeck', () => {
     const session = createSession([makeWord('a'), makeWord('b')]);
     const card = session.mainDeck[0];
@@ -104,23 +122,23 @@ describe('handleResponse — correct, main deck card', () => {
     expect(next.mainDeck.find(c => c.word.id === card.word.id)).toBeUndefined();
   });
 
-  it('applies SM-2: new interval = max(1, round(interval * easeFactor))', () => {
-    const session = createSession([makeWord('a', 4, 2.5)]);
+  it('applies SM-2 for never-wrong cards: max(1, round(interval * easeFactor))', () => {
+    const session = createSession([makeWord('a', 4, 2.5, 0, 0)]);
     const { srsUpdate } = handleResponse(session, session.mainDeck[0], true);
     expect(srsUpdate.interval).toBe(10); // max(1, round(4 * 2.5))
   });
 
-  it('sets interval to 1 for new cards (interval=0)', () => {
-    const session = createSession([makeWord('a', 0, 2.5)]);
+  it('sets interval to 1 for brand-new cards (interval=0, wrongCount=0)', () => {
+    const session = createSession([makeWord('a', 0, 2.5, 0, 0)]);
     const { srsUpdate } = handleResponse(session, session.mainDeck[0], true);
-    expect(srsUpdate.interval).toBe(1); // max(1, 0)
+    expect(srsUpdate.interval).toBe(1);
   });
 
-  it('sets nextReviewAt to ~interval days from now', () => {
-    const session = createSession([makeWord('a', 2, 2.5)]);
+  it('sets nextReviewAt to ~interval days from now for never-wrong cards', () => {
+    const session = createSession([makeWord('a', 2, 2.5, 0, 0)]);
     const before = Date.now();
     const { srsUpdate } = handleResponse(session, session.mainDeck[0], true);
-    const expectedMs = 5 * 24 * 60 * 60 * 1000; // interval=max(1, round(2*2.5))=5 days
+    const expectedMs = 5 * 24 * 60 * 60 * 1000; // max(1, round(2*2.5))=5 days
     expect(srsUpdate.nextReviewAt.getTime()).toBeGreaterThanOrEqual(before + expectedMs - 1000);
     expect(srsUpdate.nextReviewAt.getTime()).toBeLessThanOrEqual(Date.now() + expectedMs + 1000);
   });
@@ -129,6 +147,45 @@ describe('handleResponse — correct, main deck card', () => {
     const session = createSession([makeWord('a'), makeWord('b')]);
     const { session: next } = handleResponse(session, session.mainDeck[0], true);
     expect(next.cardsSinceBuffer).toBe(1);
+  });
+
+  it('increments consecutiveCorrect', () => {
+    const session = createSession([makeWord('a', 0, 2.5, 0, 2)]);
+    const { srsUpdate } = handleResponse(session, session.mainDeck[0], true);
+    expect(srsUpdate.consecutiveCorrect).toBe(3);
+  });
+});
+
+describe('handleResponse — correct, main deck card (previously wrong)', () => {
+  it('returns interval=1 when wrongCount>0 and consecutiveCorrect<5', () => {
+    const session = createSession([makeWord('a', 3, 2.5, 2, 2)]);
+    const { srsUpdate } = handleResponse(session, session.mainDeck[0], true);
+    expect(srsUpdate.interval).toBe(1);
+  });
+
+  it('returns interval=1 when wrongCount>=6 even after 5+ consecutive correct', () => {
+    const session = createSession([makeWord('a', 4, 2.5, 6, 5)]);
+    const { srsUpdate } = handleResponse(session, session.mainDeck[0], true);
+    expect(srsUpdate.interval).toBe(1);
+  });
+
+  it('caps interval at 2 days when wrongCount 3-5 with 5+ consecutive correct', () => {
+    const session = createSession([makeWord('a', 4, 2.5, 4, 5)]);
+    const { srsUpdate } = handleResponse(session, session.mainDeck[0], true);
+    // SM-2 would give max(1, round(4*2.5))=10, but capped at 2
+    expect(srsUpdate.interval).toBe(2);
+  });
+
+  it('resumes SM-2 when wrongCount 1-2 with 5+ consecutive correct', () => {
+    const session = createSession([makeWord('a', 4, 2.5, 1, 5)]);
+    const { srsUpdate } = handleResponse(session, session.mainDeck[0], true);
+    expect(srsUpdate.interval).toBe(10); // SM-2 uncapped
+  });
+
+  it('does not change wrongCount on correct answer', () => {
+    const session = createSession([makeWord('a', 0, 2.5, 3, 0)]);
+    const { srsUpdate } = handleResponse(session, session.mainDeck[0], true);
+    expect(srsUpdate.wrongCount).toBe(3);
   });
 });
 
@@ -168,6 +225,18 @@ describe('handleResponse — incorrect, main deck card', () => {
     expect(srsUpdate.nextReviewAt.getTime()).toBeLessThanOrEqual(Date.now() + 100);
   });
 
+  it('increments wrongCount', () => {
+    const session = createSession([makeWord('a', 0, 2.5, 2, 3)]);
+    const { srsUpdate } = handleResponse(session, session.mainDeck[0], false);
+    expect(srsUpdate.wrongCount).toBe(3);
+  });
+
+  it('resets consecutiveCorrect to 0', () => {
+    const session = createSession([makeWord('a', 0, 2.5, 1, 4)]);
+    const { srsUpdate } = handleResponse(session, session.mainDeck[0], false);
+    expect(srsUpdate.consecutiveCorrect).toBe(0);
+  });
+
   it('resets cardsSinceBuffer to 0', () => {
     const session = { ...createSession([makeWord('a'), makeWord('b')]), cardsSinceBuffer: 4 };
     const { session: next } = handleResponse(session, session.mainDeck[0], false);
@@ -176,41 +245,62 @@ describe('handleResponse — incorrect, main deck card', () => {
 });
 
 describe('handleResponse — buffer card lifecycle', () => {
-  function bufferSession() {
-    const base = createSession([makeWord('a')]);
-    const bufferCard = { ...base.mainDeck[0], inBuffer: true, successCount: 0 };
-    return { session: { ...base, mainDeck: [], buffer: [bufferCard] }, card: bufferCard };
-  }
-
   it('increments successCount on first correct but keeps card in buffer', () => {
-    const { session, card } = bufferSession();
+    const card = makeBufferCard('a', 1, 0, 0);
+    const sess = createSession([]);
+    const session = { ...sess, buffer: [card] };
     const { session: next } = handleResponse(session, card, true);
     expect(next.buffer).toHaveLength(1);
     expect(next.buffer[0].successCount).toBe(1);
   });
 
-  it('graduates card after 2 consecutive correct answers', () => {
-    const base = createSession([makeWord('a')]);
-    const bufferCard = { ...base.mainDeck[0], inBuffer: true, successCount: 1 };
-    const sess = { ...base, mainDeck: [], buffer: [bufferCard] };
-    const { session: next, srsUpdate } = handleResponse(sess, bufferCard, true);
+  it('graduates card after 2 consecutive correct answers with interval=1', () => {
+    const card = makeBufferCard('a', 1, 0, 1);
+    const sess = createSession([]);
+    const session = { ...sess, mainDeck: [], buffer: [card] };
+    const { session: next, srsUpdate } = handleResponse(session, card, true);
     expect(next.buffer).toHaveLength(0);
     expect(srsUpdate.interval).toBe(1);
   });
 
+  it('increments consecutiveCorrect on graduation', () => {
+    const card = makeBufferCard('a', 1, 2, 1);
+    const sess = createSession([]);
+    const session = { ...sess, mainDeck: [], buffer: [card] };
+    const { srsUpdate } = handleResponse(session, card, true);
+    expect(srsUpdate.consecutiveCorrect).toBe(3);
+  });
+
   it('resets successCount and stays in buffer on incorrect', () => {
-    const base = createSession([makeWord('a')]);
-    const bufferCard = { ...base.mainDeck[0], inBuffer: true, successCount: 1 };
-    const sess = { ...base, mainDeck: [], buffer: [bufferCard] };
-    const { session: next } = handleResponse(sess, bufferCard, false);
+    const card = makeBufferCard('a', 1, 0, 1);
+    const sess = createSession([]);
+    const session = { ...sess, mainDeck: [], buffer: [card] };
+    const { session: next } = handleResponse(session, card, false);
     expect(next.buffer[0].successCount).toBe(0);
     expect(next.buffer[0].inBuffer).toBe(true);
   });
 
+  it('increments wrongCount on incorrect buffer card', () => {
+    const card = makeBufferCard('a', 2, 0, 0);
+    const sess = createSession([]);
+    const session = { ...sess, mainDeck: [], buffer: [card] };
+    const { srsUpdate } = handleResponse(session, card, false);
+    expect(srsUpdate.wrongCount).toBe(3);
+  });
+
+  it('resets consecutiveCorrect to 0 on incorrect buffer card', () => {
+    const card = makeBufferCard('a', 1, 3, 0);
+    const sess = createSession([]);
+    const session = { ...sess, mainDeck: [], buffer: [card] };
+    const { srsUpdate } = handleResponse(session, card, false);
+    expect(srsUpdate.consecutiveCorrect).toBe(0);
+  });
+
   it('resets cardsSinceBuffer to 0 after any buffer card interaction', () => {
-    const { session, card } = bufferSession();
-    const sessionWith = { ...session, cardsSinceBuffer: 4 };
-    const { session: next } = handleResponse(sessionWith, card, true);
+    const card = makeBufferCard('a', 1, 0, 0);
+    const sess = createSession([]);
+    const session = { ...sess, mainDeck: [], buffer: [card], cardsSinceBuffer: 4 };
+    const { session: next } = handleResponse(session, card, true);
     expect(next.cardsSinceBuffer).toBe(0);
   });
 });

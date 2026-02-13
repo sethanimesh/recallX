@@ -119,7 +119,7 @@ Define and migrate the core schema:
 
 ---
 
-## Phase 7 — Practice Voice Input (Whisper STT + Multimodal) (Day 8)
+## Phase 7 — Practice Voice Input (Whisper STT + Multimodal) (Day 8) ✅ (2026-04-25)
 - `app/recall.tsx` adds a mic input path so users can answer by voice in Practice (alongside typed input)
 - Native VAD support: automatically detect speech start + speech end (no manual stop needed)
 - Auto-submit rule: submit only after speech has started at least once and then ends; if user never starts speaking, do not auto-submit
@@ -133,10 +133,99 @@ Define and migrate the core schema:
 
 ---
 
-## Phase 8 — Review Polish (Day 9)
+## Phase 8 — Review Polish ✅ (2026-04-27)
 - Progress indicator (X of N) during a review session
 - Session summary: score, words missed
-- Mark a word as "mastered" (hide from future sessions unless reset)
+- Devise an algorithm that works on spaced technique where certain words that are being marked as correct, disappear for sometime and then the words that are being left blank or marked incorrectly multiple times come up again and again even in the middle.
+- Different modes must be there for this with session management.
+
+Recommendation is the following, if found something unique or it's open to suggestions.
+
+Adaptive Buffer Algorithm.
+
+This approach combines traditional Spaced Repetition (SRS) for "Correct" items with a High-Frequency Buffer for "Incorrect" or "Blank" items. This ensures that the words you struggle with don't just disappear until tomorrow, but instead "haunt" your current session until they are learned.
+
+1. The Core Data Structure
+Each word (card) should track the following variables:
+
+I (Interval): The time until the next review.
+
+EF (Ease Factor): A multiplier (starting at ~2.5) that determines how fast the interval grows.
+
+S (State): Learning, Review, or Re-learning.
+
+B (Buffer Score): A session-specific counter for incorrect attempts.
+
+2. The Logic: "The Dual-Queue System"
+Instead of one single list, the algorithm manages two queues during a session:
+
+The Main Deck: Words scheduled for today.
+
+The Priority Buffer: A "Short-Term Memory" loop for words failed in the current session.
+
+Scenario A: The Word is Correct
+
+If the user marks the word as correct:
+
+If it was in the Main Deck: Apply the SRS formula: I 
+new
+​	
+ =I 
+old
+​	
+ ×EF. The card is removed from the current session.
+
+If it was in the Priority Buffer: It must be answered correctly twice (or X times) before it is moved back to the Main Deck with a reset interval (usually 1 day).
+
+Scenario B: The Word is Incorrect/Blank
+
+If the user fails the word:
+
+The "Vanishing" Reset: The word's I is reset to 0.
+
+Immediate Re-entry: The word is injected into the Priority Buffer.
+
+Interleaving: The algorithm is programmed to present a card from the Priority Buffer every 3–5 cards drawn from the Main Deck. This satisfies your requirement of words reappearing "in the middle" of the session.
+
+3. The Mathematical Flow
+We can use a modified version of the SM-2 Algorithm (the basis for Anki) for the long-term spacing, paired with a "Leitner-style" buffer for the session itself.
+
+The Spacing Formula
+
+For a correct answer:
+
+I(n)=I(n−1)×EF
+(Where n is the number of successful repetitions)
+
+The "Drill" Logic (Pseudo-code)
+
+Python
+def handle_response(card, response):
+    if response == "CORRECT":
+        if card.in_buffer:
+            card.success_count += 1
+            if card.success_count >= 2: # Must pass twice to leave buffer
+                card.in_buffer = False
+                card.interval = 1 # Set to next day
+        else:
+            card.interval *= card.ease_factor
+            card.archive_from_session() # Disappears for some time
+            
+    elif response == "INCORRECT" or response == "BLANK":
+        card.interval = 0
+        card.ease_factor = max(1.3, card.ease_factor - 0.2)
+        card.in_buffer = True
+        card.success_count = 0
+        # Re-insert into the queue 3 positions ahead
+        session_queue.insert(current_index + 3, card) 
+4. Key Features of this Algorithm
+The "Haunting" Effect: By inserting the failed card 3–5 slots ahead, the user is forced to recall the word while it is still in short-term memory, then again at the end of the session.
+
+Dynamic Ease: If a word is marked incorrect multiple times, the EF (Ease Factor) drops. This means even when the word eventually "disappears," it will come back sooner than "Easy" words.
+
+Session Termination: A session only ends when the Priority Buffer is empty, ensuring the user doesn't leave until every "failed" word has been answered correctly at least twice.
+
+
 
 **Done when:** Review sessions feel complete and track progress.
 

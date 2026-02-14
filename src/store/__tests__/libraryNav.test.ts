@@ -64,4 +64,10 @@ describe('libraryNav store', () => {
     expect(state.ids).toEqual(['x', 'y', 'z']);
     expect(state.index).toBe(2);
   });
+
+  it('getNav returns a copy — mutating ids does not affect store', () => {
+    setNav(['a', 'b'], 0);
+    getNav().ids.push('c');
+    expect(getNav().ids).toEqual(['a', 'b']);
+  });
 });

@@ -27,9 +27,11 @@ jest.mock('expo-router', () => ({
 
 const mockGetNav = jest.fn();
 const mockNavigate = jest.fn();
+const mockClearNav = jest.fn();
 jest.mock('@/src/store/libraryNav', () => ({
   getNav: () => mockGetNav(),
   navigate: (...args: unknown[]) => mockNavigate(...args),
+  clearNav: () => mockClearNav(),
 }));
 
 const mockFetchWordWithSource = jest.fn();
@@ -163,5 +165,13 @@ describe('WordDetailScreen navigation bar', () => {
     await actRTL(async () => { fireEvent.press(prevBtn); });
     expect(mockNavigate).toHaveBeenCalledWith(-1);
     expect(mockReplace).toHaveBeenCalledWith('/words/w0');
+  });
+
+  it('calls clearNav when mounted with id not matching store index (stale deep-link scenario)', async () => {
+    // Store has stale active state pointing to a different word
+    mockGetNav.mockReturnValue({ active: true, ids: ['other-word', 'another-word'], index: 0 });
+    render(<WordDetailScreen />);
+    await waitFor(() => expect(mockFetchWordWithSource).toHaveBeenCalled());
+    expect(mockClearNav).toHaveBeenCalled();
   });
 });

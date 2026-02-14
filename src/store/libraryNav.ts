@@ -12,7 +12,7 @@ export function setNav(ids: string[], index: number): void {
   if (__DEV__ && (index < 0 || index >= ids.length)) {
     console.warn(`[libraryNav] index ${index} out of bounds for ids.length ${ids.length}`);
   }
-  _state = { ids, index, active: true };
+  _state = { ids: [...ids], index, active: true };
 }
 
 export function getNav(): LibraryNavState {

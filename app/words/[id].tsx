@@ -22,7 +22,7 @@ import {
 } from '@/src/db/operations/wordDetail';
 import { getTagsForWord, removeTagFromWord, type Tag } from '@/src/db/operations/tags';
 import TagPickerSheet from '@/src/components/TagPickerSheet';
-import { getNav, navigate } from '@/src/store/libraryNav';
+import { getNav, navigate, clearNav } from '@/src/store/libraryNav';
 
 // ── Source helpers ────────────────────────────────────────────────────────────
 
@@ -196,6 +196,14 @@ export default function WordDetailScreen() {
     },
     [id],
   );
+
+  useEffect(() => {
+    const { active, ids, index } = getNav();
+    if (active && ids[index] !== id) {
+      clearNav();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // mount-only: detect stale nav state from a previous Library session
 
   // ── Nav state & swipe ───────────────────────────────────────────────────────
 

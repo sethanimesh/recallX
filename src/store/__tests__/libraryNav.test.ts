@@ -70,4 +70,11 @@ describe('libraryNav store', () => {
     getNav().ids.push('c');
     expect(getNav().ids).toEqual(['a', 'b']);
   });
+
+  it('setNav stores a copy — mutating original array does not affect store', () => {
+    const ids = ['a', 'b'];
+    setNav(ids, 0);
+    ids.push('c');
+    expect(getNav().ids).toEqual(['a', 'b']);
+  });
 });

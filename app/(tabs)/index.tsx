@@ -6,7 +6,6 @@ import {
   TextInput,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   ListRenderItemInfo,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -153,13 +152,7 @@ export default function LibraryScreen() {
 
       {/* Tag filter strip */}
       {filterTags.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.tagStrip}
-          contentContainerStyle={styles.tagStripContent}
-          keyboardShouldPersistTaps="handled"
-        >
+        <View testID="library-tag-wrap" style={styles.tagWrap}>
           <TouchableOpacity
             testID="library-tag-chip-all"
             style={[styles.tagChip, activeTagId === null && styles.tagChipActive]}
@@ -181,7 +174,7 @@ export default function LibraryScreen() {
               </Text>
             </TouchableOpacity>
           ))}
-        </ScrollView>
+        </View>
       )}
 
       <FlatList
@@ -215,8 +208,10 @@ const styles = StyleSheet.create({
     margin: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#f2f2f7',
-    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#E5E7EB',
     minHeight: 40,
   },
   searchIcon: {
@@ -228,29 +223,27 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: '#000',
   },
-  tagStrip: {
-    flexGrow: 0,
-    marginBottom: 4,
-  },
-  tagStripContent: {
+  tagWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: 12,
-    gap: 8,
     paddingBottom: 8,
+    gap: 8,
   },
   tagChip: {
     minHeight: 36,
     paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    borderRadius: 18,
+    backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
   },
   tagChipActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#111827',
+    borderColor: '#111827',
   },
   tagChipText: {
     fontSize: 14,
@@ -263,21 +256,22 @@ const styles = StyleSheet.create({
   },
   row: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   word: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 2,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 3,
   },
   definition: {
     fontSize: 14,
-    color: '#666',
+    color: '#6B7280',
+    lineHeight: 20,
   },
   separator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#EEF2F7',
     marginLeft: 16,
   },
   emptyContainer: {
@@ -297,8 +291,8 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 24,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#111827',
     borderRadius: 32,
-    padding: 16,
+    padding: 14,
   },
 });

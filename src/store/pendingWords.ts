@@ -1,4 +1,5 @@
 import type { ExtractedWord } from '@/src/api/types';
+import type { Tag } from '@/src/db/operations/tags';
 
 declare const __DEV__: boolean;
 
@@ -6,6 +7,7 @@ export interface PendingExtraction {
   words: ExtractedWord[];
   sourceUri: string;
   sourceType: 'image' | 'pdf';
+  defaultTags?: Tag[];
 }
 
 let _pending: PendingExtraction | null = null;

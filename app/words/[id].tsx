@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,6 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  PanResponder,
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -121,6 +120,8 @@ function EditableField({ label, value, onSave, multiline = false, italic = false
 export default function WordDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
+  const currentIdRef = useRef<string | undefined>(id);
+  const currentWordRef = useRef<string | undefined>(undefined);
 
   const [loading, setLoading] = useState(true);
   const [wordData, setWordData] = useState<WordWithSource | null>(null);
@@ -154,20 +155,27 @@ export default function WordDetailScreen() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    currentIdRef.current = id;
+    currentWordRef.current = wordData?.word;
+  }, [id, wordData?.word]);
+
   // ── Delete handler ──────────────────────────────────────────────────────────
 
   const handleDelete = useCallback(() => {
+    const currentId = currentIdRef.current;
     Alert.alert(
       'Delete Word',
-      `Are you sure you want to delete "${wordData?.word ?? 'this word'}"?`,
+      `Are you sure you want to delete "${currentWordRef.current ?? 'this word'}"?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            if (!currentId) return;
             try {
-              await softDeleteWord(id!);
+              await softDeleteWord(currentId);
               router.back();
             } catch (err) {
               const message = err instanceof Error ? err.message : String(err);
@@ -177,7 +185,21 @@ export default function WordDetailScreen() {
         },
       ],
     );
-  }, [id, wordData?.word]);
+  }, []);
+
+  const renderHeaderRight = useCallback(
+    () => (
+      <TouchableOpacity
+        onPress={handleDelete}
+        accessibilityLabel="Delete word"
+        hitSlop={8}
+        style={styles.headerDeleteButton}
+      >
+        <Ionicons name="trash-outline" size={22} color="#FF3B30" />
+      </TouchableOpacity>
+    ),
+    [handleDelete],
+  );
 
   // ── Field save handlers ─────────────────────────────────────────────────────
 
@@ -205,30 +227,10 @@ export default function WordDetailScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // mount-only: detect stale nav state from a previous Library session
 
-  // ── Nav state & swipe ───────────────────────────────────────────────────────
+  // ── Nav state ───────────────────────────────────────────────────────────────
 
-  // getNav() is a non-reactive read; navState is stale after navigate() mutates the store.
-  // This is safe because router.replace() immediately remounts the screen, syncing state.
+  // getNav() is a non-reactive read; setParams triggers a render after navigate() mutates the store.
   const navState = getNav();
-
-  const panResponder = useMemo(
-    () =>
-      navState.active
-        ? PanResponder.create({
-            onMoveShouldSetPanResponder: (_, gs) =>
-              Math.abs(gs.dx) > Math.abs(gs.dy) && Math.abs(gs.dx) > 10,
-            onPanResponderRelease: (_, gs) => {
-              if (Math.abs(gs.dx) < 60) return;
-              const delta = gs.dx < 0 ? 1 : -1;
-              const nextId = navigate(delta as 1 | -1);
-              if (nextId) router.replace(`/words/${nextId}`);
-            },
-          })
-        : null,
-    // navigate and router are stable module-level references; navState.active is the only reactive dep
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [navState.active],
-  );
 
   // ── Loading ─────────────────────────────────────────────────────────────────
 
@@ -262,24 +264,12 @@ export default function WordDetailScreen() {
   const canNext = navActive && navIndex < ids.length - 1;
 
   return (
-    <View
-      style={styles.screenContainer}
-      {...(panResponder?.panHandlers ?? {})}
-    >
+    <View style={styles.screenContainer}>
       <Stack.Screen
         options={{
           title: '',
           headerBackTitle: 'Library',
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={handleDelete}
-              accessibilityLabel="Delete word"
-              hitSlop={8}
-              style={styles.headerDeleteButton}
-            >
-              <Ionicons name="trash-outline" size={22} color="#FF3B30" />
-            </TouchableOpacity>
-          ),
+          headerRight: renderHeaderRight,
         }}
       />
       <ScrollView
@@ -364,7 +354,7 @@ export default function WordDetailScreen() {
             disabled={!canPrev}
             onPress={() => {
               const nextId = navigate(-1);
-              if (nextId) router.replace(`/words/${nextId}`);
+              if (nextId) router.setParams({ id: nextId });
             }}
             hitSlop={12}
             style={[styles.navChevron, !canPrev && styles.navChevronDisabled]}
@@ -379,7 +369,7 @@ export default function WordDetailScreen() {
             disabled={!canNext}
             onPress={() => {
               const nextId = navigate(1);
-              if (nextId) router.replace(`/words/${nextId}`);
+              if (nextId) router.setParams({ id: nextId });
             }}
             hitSlop={12}
             style={[styles.navChevron, !canNext && styles.navChevronDisabled]}
@@ -545,9 +535,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 32,
-    paddingTop: 12,
+    paddingTop: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: '#F3F4F6',
     backgroundColor: '#fff',
   },
   navChevron: {

@@ -67,4 +67,13 @@ describe('pendingWords store', () => {
     const result = takePendingExtraction();
     expect(result?.sourceType).toBe('pdf');
   });
+
+  it('preserves default tags for extracted words', () => {
+    setPendingExtraction({
+      ...sampleExtraction,
+      defaultTags: [{ id: 'tag-gre', name: 'GRE' }],
+    });
+
+    expect(takePendingExtraction()?.defaultTags).toEqual([{ id: 'tag-gre', name: 'GRE' }]);
+  });
 });

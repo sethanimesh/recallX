@@ -58,7 +58,7 @@ export default function RootLayout() {
         <Stack.Screen name="ingest" options={{ presentation: 'modal', headerShown: false }} />
         <Stack.Screen name="add-word" options={{ presentation: 'modal', headerShown: false }} />
         <Stack.Screen name="review" options={{ headerShown: false }} />
-        <Stack.Screen name="words/[id]" options={{ title: '', headerBackTitle: 'Library' }} />
+        <Stack.Screen name="words/[id]" options={{ title: '', headerBackTitle: 'Library', animation: 'none' }} />
         <Stack.Screen name="recall-setup" options={{ title: 'Start Review', headerShown: true }} />
         <Stack.Screen name="recall" options={{ title: 'Recall', headerShown: true }} />
         <Stack.Screen name="recall-summary" options={{ title: 'Session Complete', headerShown: false }} />

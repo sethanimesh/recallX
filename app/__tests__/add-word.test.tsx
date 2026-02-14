@@ -17,8 +17,13 @@ jest.mock('react-native-safe-area-context', () => {
 
 const mockReplace = jest.fn();
 const mockBack = jest.fn();
+const mockUseLocalSearchParams = jest.fn(() => ({}));
 jest.mock('expo-router', () => ({
-  router: { replace: mockReplace, back: mockBack },
+  router: {
+    replace: (...args: unknown[]) => mockReplace(...args),
+    back: (...args: unknown[]) => mockBack(...args),
+  },
+  useLocalSearchParams: () => mockUseLocalSearchParams(),
 }));
 
 const mockInsertManualWord = jest.fn();
@@ -68,6 +73,7 @@ function findByTestId(tree: renderer.ReactTestRendererJSON | null, testID: strin
 describe('AddWordScreen autofill', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseLocalSearchParams.mockReturnValue({});
     jest.useFakeTimers();
   });
 
@@ -134,5 +140,38 @@ describe('AddWordScreen autofill', () => {
     });
 
     expect(alertSpy).toHaveBeenCalledWith('Error', 'Network error');
+  });
+
+  it('preselects an incoming tag and applies it when saving', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ tagId: 'tag-gre', tagName: 'GRE' });
+    mockInsertManualWord.mockResolvedValueOnce('word-1');
+    mockAddTagToWord.mockResolvedValueOnce(undefined);
+
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<AddWordScreen />);
+    });
+
+    expect(JSON.stringify(tree!.toJSON())).toContain('GRE');
+
+    const wordInput = findByTestId(tree!.toJSON() as renderer.ReactTestRendererJSON, 'word-input');
+    const definitionInput = findByTestId(tree!.toJSON() as renderer.ReactTestRendererJSON, 'definition-input');
+    await act(async () => {
+      wordInput!.props.onChangeText('pellucid');
+      definitionInput!.props.onChangeText('Translucently clear.');
+    });
+
+    const saveButton = findByTestId(tree!.toJSON() as renderer.ReactTestRendererJSON, 'save-word-button');
+    await act(async () => {
+      saveButton!.props.onClick();
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockInsertManualWord).toHaveBeenCalledWith('pellucid', 'Translucently clear.', '');
+    expect(mockAddTagToWord).toHaveBeenCalledWith('word-1', 'tag-gre');
+    expect(mockReplace).toHaveBeenCalledWith('/words/word-1');
   });
 });

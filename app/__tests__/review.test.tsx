@@ -144,4 +144,38 @@ describe('ReviewScreen tagging flow', () => {
     expect(mockAddTagToWord).toHaveBeenNthCalledWith(1, 'word-1', 'tag-gre');
     expect(mockAddTagToWord).toHaveBeenNthCalledWith(2, 'word-2', 'tag-sat');
   });
+
+  it('preselects default extraction tags on every review card', async () => {
+    mockTakePendingExtraction.mockReturnValue({
+      words: [
+        { word: 'insidious', definition: 'Secretly harmful.', example_sentence: 'An insidious threat.' },
+        { word: 'pellucid', definition: 'Clear.', example_sentence: 'A pellucid argument.' },
+      ],
+      sourceUri: 'file://scan.png',
+      sourceType: 'image',
+      defaultTags: [{ id: 'tag-gre', name: 'GRE' }],
+    });
+
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<ReviewScreen />);
+    });
+
+    expect(collectText(tree.toJSON())).toContain('GRE');
+
+    await act(async () => {
+      tree.root.findByProps({ accessibilityLabel: 'Accept word' }).props.onPress();
+    });
+    expect(collectText(tree.toJSON())).toContain('GRE');
+
+    await act(async () => {
+      tree.root.findByProps({ accessibilityLabel: 'Accept word' }).props.onPress();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mockAddTagToWord).toHaveBeenNthCalledWith(1, 'word-1', 'tag-gre');
+    expect(mockAddTagToWord).toHaveBeenNthCalledWith(2, 'word-2', 'tag-gre');
+  });
 });

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -10,6 +10,7 @@ import { activeExtractionClient } from '@/src/api/index';
 import type { ImageInput, TextInput } from '@/src/api/types';
 import ExtractionProgress from '@/src/components/ExtractionProgress';
 import { setPendingExtraction } from '@/src/store/pendingWords';
+import type { Tag } from '@/src/db/operations/tags';
 
 const DONE_DISPLAY_MS = 600;
 
@@ -19,6 +20,10 @@ type ModalState =
   | { phase: 'analyzing' }
   | { phase: 'done' }
   | { phase: 'error'; message: string };
+
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
 
 async function toJpeg(uri: string): Promise<{ base64: string; mimeType: string }> {
   const result = await ImageManipulator.manipulateAsync(
@@ -30,6 +35,10 @@ async function toJpeg(uri: string): Promise<{ base64: string; mimeType: string }
 }
 
 export default function IngestScreen() {
+  const params = useLocalSearchParams<{ tagId?: string | string[]; tagName?: string | string[] }>();
+  const tagId = firstParam(params.tagId)?.trim();
+  const tagName = firstParam(params.tagName)?.trim();
+  const defaultTags: Tag[] = tagId && tagName ? [{ id: tagId, name: tagName }] : [];
   const [modalState, setModalState] = useState<ModalState>({ phase: 'idle' });
   const lastActivePhaseRef = useRef<'uploading' | 'analyzing' | 'done'>('uploading');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -51,7 +60,7 @@ export default function IngestScreen() {
       const extracted = await activeExtractionClient.extractWords(input);
       const sourceType = input.type === 'image' ? 'image' : 'pdf';
       const sourceUri = input.type === 'image' ? input.uri : input.content;
-      setPendingExtraction({ words: extracted, sourceUri, sourceType });
+      setPendingExtraction({ words: extracted, sourceUri, sourceType, defaultTags });
       if (isMountedRef.current) setModalState({ phase: 'done' });
       lastActivePhaseRef.current = 'done';
       timerRef.current = setTimeout(() => router.replace('/review'), DONE_DISPLAY_MS);
@@ -134,7 +143,13 @@ export default function IngestScreen() {
 
           <TouchableOpacity
             style={styles.sourceButton}
-            onPress={() => router.push('/add-word')}
+            onPress={() => {
+              if (tagId && tagName) {
+                router.push({ pathname: '/add-word', params: { tagId, tagName } });
+                return;
+              }
+              router.push('/add-word');
+            }}
           >
             <Ionicons name="pencil-outline" size={24} color="#007AFF" style={styles.icon} />
             <Text style={styles.buttonLabel}>Add Manually</Text>

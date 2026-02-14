@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, type ViewStyle } from 'react-native';
 import { act } from 'react-test-renderer';
 import renderer from 'react-test-renderer';
 import { render, fireEvent, waitFor, act as actRTL } from '@testing-library/react-native';
@@ -13,15 +13,20 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 const mockBack = jest.fn();
-const mockReplace = jest.fn();
+const mockSetParams = jest.fn();
 const mockUseLocalSearchParams = jest.fn(() => ({ id: 'word-1' }));
-const mockScreen = jest.fn(() => null);
+type MockScreenProps = {
+  options?: {
+    headerRight?: () => React.ReactElement;
+  };
+};
+const mockScreen = jest.fn((_props: MockScreenProps) => null);
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockUseLocalSearchParams(),
-  router: { back: (...args: unknown[]) => mockBack(...args), replace: (...args: unknown[]) => mockReplace(...args) },
+  router: { back: (...args: unknown[]) => mockBack(...args), setParams: (...args: unknown[]) => mockSetParams(...args) },
   Stack: {
-    Screen: (props: unknown) => mockScreen(props),
+    Screen: (props: unknown) => mockScreen(props as MockScreenProps),
   },
 }));
 
@@ -88,9 +93,12 @@ describe('WordDetailScreen header delete action', () => {
     );
     expect(detailScreenCall).toBeTruthy();
 
-    const headerRight = detailScreenCall![0].options.headerRight;
-    const headerAction = headerRight();
-    const buttonStyle = StyleSheet.flatten(headerAction.props.style);
+    const headerRight = (detailScreenCall![0] as MockScreenProps).options!.headerRight!;
+    const headerAction = headerRight() as React.ReactElement<{
+      accessibilityLabel?: string;
+      style?: unknown;
+    }>;
+    const buttonStyle = StyleSheet.flatten(headerAction.props.style) as ViewStyle;
 
     expect(headerAction.props.accessibilityLabel).toBe('Delete word');
     expect(buttonStyle.width).toBe(32);
@@ -145,7 +153,7 @@ describe('WordDetailScreen navigation bar', () => {
     expect(nextBtn.props.accessibilityState?.disabled).toBe(true);
   });
 
-  it('tapping next calls navigate(1) and router.replace', async () => {
+  it('tapping next calls navigate(1) and updates the current route params', async () => {
     mockGetNav.mockReturnValue({ active: true, ids: ['word-1', 'w2'], index: 0 });
     mockNavigate.mockReturnValue('w2');
     const { getByTestId } = render(<WordDetailScreen />);
@@ -153,10 +161,10 @@ describe('WordDetailScreen navigation bar', () => {
     const nextBtn = getByTestId('word-detail-nav-next');
     await actRTL(async () => { fireEvent.press(nextBtn); });
     expect(mockNavigate).toHaveBeenCalledWith(1);
-    expect(mockReplace).toHaveBeenCalledWith('/words/w2');
+    expect(mockSetParams).toHaveBeenCalledWith({ id: 'w2' });
   });
 
-  it('tapping prev calls navigate(-1) and router.replace', async () => {
+  it('tapping prev calls navigate(-1) and updates the current route params', async () => {
     mockGetNav.mockReturnValue({ active: true, ids: ['w0', 'word-1'], index: 1 });
     mockNavigate.mockReturnValue('w0');
     const { getByTestId } = render(<WordDetailScreen />);
@@ -164,7 +172,7 @@ describe('WordDetailScreen navigation bar', () => {
     const prevBtn = getByTestId('word-detail-nav-prev');
     await actRTL(async () => { fireEvent.press(prevBtn); });
     expect(mockNavigate).toHaveBeenCalledWith(-1);
-    expect(mockReplace).toHaveBeenCalledWith('/words/w0');
+    expect(mockSetParams).toHaveBeenCalledWith({ id: 'w0' });
   });
 
   it('calls clearNav when mounted with id not matching store index (stale deep-link scenario)', async () => {

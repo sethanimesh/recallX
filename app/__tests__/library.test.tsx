@@ -76,7 +76,7 @@ describe('LibraryScreen accessibility-safe header layout', () => {
     tree = null;
   });
 
-  it('uses resilient min-heights and centered chip content to avoid text clipping', async () => {
+  it('uses resilient sizing and wrapped tag filters to avoid horizontal scrolling', async () => {
     await act(async () => {
       tree = renderer.create(<LibraryScreen />);
       await flushPromises();
@@ -88,6 +88,9 @@ describe('LibraryScreen accessibility-safe header layout', () => {
     const searchInputStyle = StyleSheet.flatten(
       tree!.root.findByProps({ testID: 'library-search-input' }).props.style,
     );
+    const tagWrapStyle = StyleSheet.flatten(
+      tree!.root.findByProps({ testID: 'library-tag-wrap' }).props.style,
+    );
     const allChipStyle = StyleSheet.flatten(
       tree!.root.findByProps({ testID: 'library-tag-chip-all' }).props.style,
     );
@@ -98,6 +101,8 @@ describe('LibraryScreen accessibility-safe header layout', () => {
     expect(searchRowStyle.minHeight).toBe(40);
     expect(searchRowStyle.paddingVertical).toBe(6);
     expect(searchInputStyle.lineHeight).toBe(20);
+    expect(tagWrapStyle.flexDirection).toBe('row');
+    expect(tagWrapStyle.flexWrap).toBe('wrap');
     expect(allChipStyle.minHeight).toBe(36);
     expect(allChipStyle.alignItems).toBe('center');
     expect(allChipStyle.justifyContent).toBe('center');

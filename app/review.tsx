@@ -39,6 +39,9 @@ export default function ReviewScreen() {
     setSourceUri(pending.sourceUri);
     setSourceType(pending.sourceType);
     setDecisions(new Array(pending.words.length).fill(false));
+    if (pending.defaultTags && pending.defaultTags.length > 0) {
+      setTagsByIndex(new Map(pending.words.map((_, index) => [index, pending.defaultTags!])));
+    }
     setInitialized(true);
   }, []);
 

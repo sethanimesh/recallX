@@ -11,7 +11,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { insertManualWord } from '@/src/db/operations/insertManualWord';
@@ -19,11 +19,19 @@ import { addTagToWord, type Tag } from '@/src/db/operations/tags';
 import TagPickerSheet from '@/src/components/TagPickerSheet';
 import { lookupWord } from '@/src/api/http';
 
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default function AddWordScreen() {
+  const params = useLocalSearchParams<{ tagId?: string | string[]; tagName?: string | string[] }>();
+  const tagId = firstParam(params.tagId)?.trim();
+  const tagName = firstParam(params.tagName)?.trim();
+  const initialTags: Tag[] = tagId && tagName ? [{ id: tagId, name: tagName }] : [];
   const [word, setWord] = useState('');
   const [definition, setDefinition] = useState('');
   const [exampleSentence, setExampleSentence] = useState('');
-  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>(initialTags);
   const [tagPickerVisible, setTagPickerVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [autofilling, setAutofilling] = useState(false);
@@ -155,6 +163,7 @@ export default function AddWordScreen() {
           </View>
 
           <TouchableOpacity
+            testID="save-word-button"
             style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
             onPress={handleSave}
             disabled={!canSave || saving || autofilling}

@@ -6,9 +6,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from providers.base import ExtractionRequest
 from providers.gemini_provider import GeminiProvider
 from providers.huggingface_provider import HuggingFaceProvider
-from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT
+from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, WORD_LOOKUP_SYSTEM_PROMPT
 
 SAMPLE_JSON = '[{"word":"test","definition":"A trial or examination.","example_sentence":"This is a test sentence."}]'
+SINGLE_WORD_JSON = '[{"word":"pellucid","definition":"Translucently clear.","example_sentence":"The pellucid water revealed the river bed."}]'
 
 
 # ---------------------------------------------------------------------------
@@ -173,3 +174,56 @@ async def test_huggingface_missing_api_key_raises():
             )
 
         mock_instance.chat_completion.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# GeminiProvider — word lookup
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_gemini_word_lookup_uses_lookup_prompt():
+    with patch("providers.gemini_provider.genai.Client") as MockClient:
+        mock_client = MagicMock()
+        mock_client.aio.models.generate_content = AsyncMock(
+            return_value=make_gemini_response(SINGLE_WORD_JSON)
+        )
+        MockClient.return_value = mock_client
+
+        provider = GeminiProvider()
+        provider._api_key = "fake-key"
+        provider._client = mock_client
+
+        result = await provider.extract_words(
+            ExtractionRequest(input_type="word", content="pellucid")
+        )
+
+        assert len(result) == 1
+        assert result[0].word == "pellucid"
+        call_args = mock_client.aio.models.generate_content.call_args
+        contents = call_args.kwargs.get("contents") or (call_args.args[1] if len(call_args.args) > 1 else [])
+        content_str = str(contents)
+        assert WORD_LOOKUP_SYSTEM_PROMPT in content_str
+
+
+# ---------------------------------------------------------------------------
+# HuggingFaceProvider — word lookup
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_huggingface_word_lookup_uses_lookup_prompt():
+    with patch("providers.huggingface_provider.InferenceClient") as MockInference:
+        provider = HuggingFaceProvider()
+        provider._api_key = "fake-key"
+        provider._client = MockInference.return_value
+
+        provider._client.chat_completion.return_value = make_hf_response(SINGLE_WORD_JSON)
+
+        result = await provider.extract_words(
+            ExtractionRequest(input_type="word", content="pellucid")
+        )
+
+        assert len(result) == 1
+        assert result[0].word == "pellucid"
+        call_kwargs = provider._client.chat_completion.call_args.kwargs
+        messages = call_kwargs["messages"]
+        assert any(WORD_LOOKUP_SYSTEM_PROMPT in str(m.get("content", "")) for m in messages)

@@ -4,7 +4,7 @@ from google import genai
 from google.genai import types as genai_types
 from providers.base import LLMProvider, ExtractionRequest, ExtractedWord
 from providers._parse import parse_llm_response
-from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, TEXT_SYSTEM_PROMPT
+from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, TEXT_SYSTEM_PROMPT, WORD_LOOKUP_SYSTEM_PROMPT
 from config import get_provider_config
 
 logger = logging.getLogger(__name__)
@@ -37,9 +37,10 @@ class GeminiProvider:
                 ])
             ]
         else:
+            system_prompt = WORD_LOOKUP_SYSTEM_PROMPT if req.input_type == "word" else TEXT_SYSTEM_PROMPT
             contents = [
                 genai_types.Content(role="user", parts=[
-                    genai_types.Part.from_text(text=f"{TEXT_SYSTEM_PROMPT}\n\n{req.content}"),
+                    genai_types.Part.from_text(text=f"{system_prompt}\n\n{req.content}"),
                 ])
             ]
         response = await self._client.aio.models.generate_content(

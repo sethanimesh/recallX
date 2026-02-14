@@ -3,7 +3,7 @@ import logging
 from huggingface_hub import InferenceClient
 from providers.base import LLMProvider, ExtractionRequest, ExtractedWord
 from providers._parse import parse_llm_response
-from providers._prompts import TEXT_SYSTEM_PROMPT
+from providers._prompts import TEXT_SYSTEM_PROMPT, WORD_LOOKUP_SYSTEM_PROMPT
 from config import get_provider_config
 
 logger = logging.getLogger(__name__)
@@ -25,14 +25,14 @@ class HuggingFaceProvider:
             raise ValueError("HF_API_KEY not set")
         if req.input_type == "image":
             raise NotImplementedError("HuggingFaceProvider does not support vision inputs")
-        # InferenceClient is sync — run in thread executor
+        system_prompt = WORD_LOOKUP_SYSTEM_PROMPT if req.input_type == "word" else TEXT_SYSTEM_PROMPT
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(
             None,
             lambda: self._client.chat_completion(
                 model=self._model,
                 messages=[
-                    {"role": "system", "content": TEXT_SYSTEM_PROMPT},
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": req.content},
                 ],
                 max_tokens=1024,

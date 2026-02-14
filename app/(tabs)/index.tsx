@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { db } from '@/src/db/client';
 import { words as wordsTable } from '@/src/db/schema';
 import { filterWords } from '@/src/screens/libraryLogic';
 import { getAllTags, fetchWordsByTag, type Tag } from '@/src/db/operations/tags';
+import { setNav } from '@/src/store/libraryNav';
 
 type WordRow = {
   id: string;
@@ -75,13 +76,31 @@ export default function LibraryScreen() {
 
   const filtered = filterWords(allWords, query);
 
+  const filteredIdsRef = useRef<string[]>([]);
+  filteredIdsRef.current = filtered.map((w) => w.id);
+
   const ItemSeparator = useCallback(() => <View style={styles.separator} />, []);
 
+  const handleAddPress = useCallback(() => {
+    if (activeTagId && activeTagName) {
+      router.push({
+        pathname: '/ingest',
+        params: { tagId: activeTagId, tagName: activeTagName },
+      });
+      return;
+    }
+    router.push('/ingest');
+  }, [activeTagId, activeTagName]);
+
   const renderItem = useCallback(
-    ({ item }: ListRenderItemInfo<WordRow>) => (
+    ({ item, index }: ListRenderItemInfo<WordRow>) => (
       <TouchableOpacity
+        testID={`word-row-${item.id}`}
         style={styles.row}
-        onPress={() => router.push(`/words/${item.id}`)}
+        onPress={() => {
+          setNav(filteredIdsRef.current, index);
+          router.push(`/words/${item.id}`);
+        }}
         activeOpacity={0.7}
       >
         <Text style={styles.word}>{item.word}</Text>
@@ -153,6 +172,7 @@ export default function LibraryScreen() {
           {filterTags.map((tag) => (
             <TouchableOpacity
               key={tag.id}
+              testID={`library-tag-chip-${tag.id}`}
               style={[styles.tagChip, activeTagId === tag.id && styles.tagChipActive]}
               onPress={() => handleTagPress(tag.id)}
             >
@@ -174,8 +194,9 @@ export default function LibraryScreen() {
         keyboardShouldPersistTaps="handled"
       />
       <TouchableOpacity
+        testID="library-add-button"
         style={[styles.fab, { bottom: 24 + insets.bottom }]}
-        onPress={() => router.push('/ingest')}
+        onPress={handleAddPress}
       >
         <Ionicons name="add" size={28} color="white" />
       </TouchableOpacity>

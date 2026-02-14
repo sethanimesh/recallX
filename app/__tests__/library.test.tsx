@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { act } from 'react-test-renderer';
 import renderer from 'react-test-renderer';
 
@@ -17,7 +17,7 @@ const mockUseFocusEffect = jest.fn((callback: () => void | (() => void)) => {
 });
 
 jest.mock('expo-router', () => ({
-  router: { push: mockPush },
+  router: { push: (...args: unknown[]) => mockPush(...args) },
   useFocusEffect: (callback: () => void | (() => void)) => mockUseFocusEffect(callback),
 }));
 
@@ -32,20 +32,32 @@ jest.mock('@/src/db/operations/tags', () => ({
 const mockWhere = jest.fn().mockReturnThis();
 const mockOrderBy = jest.fn();
 const mockFrom = jest.fn(() => ({ where: mockWhere, orderBy: mockOrderBy }));
-const mockSelect = jest.fn(() => ({ from: mockFrom }));
+const mockSelect = jest.fn((_args?: unknown) => ({ from: mockFrom }));
 
 jest.mock('@/src/db/client', () => ({
   db: {
-    select: (...args: unknown[]) => mockSelect(...args),
+    select: (args: unknown) => mockSelect(args),
   },
+}));
+
+const mockSetNav = jest.fn();
+jest.mock('@/src/store/libraryNav', () => ({
+  setNav: (...args: unknown[]) => mockSetNav(...args),
 }));
 
 import LibraryScreen from '../(tabs)/index';
 
+async function flushPromises() {
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
 describe('LibraryScreen accessibility-safe header layout', () => {
+  let tree: renderer.ReactTestRenderer | null = null;
+
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.useFakeTimers();
     mockGetAllTags.mockResolvedValue([
       { id: 't1', name: 'gov' },
       { id: 't2', name: 'new' },
@@ -56,36 +68,31 @@ describe('LibraryScreen accessibility-safe header layout', () => {
     ]);
   });
 
-  afterEach(() => {
-    act(() => {
-      jest.runOnlyPendingTimers();
+  afterEach(async () => {
+    await act(async () => {
+      await flushPromises();
+      tree?.unmount();
     });
-    jest.useRealTimers();
+    tree = null;
   });
 
   it('uses resilient min-heights and centered chip content to avoid text clipping', async () => {
-    let tree!: renderer.ReactTestRenderer;
-
     await act(async () => {
       tree = renderer.create(<LibraryScreen />);
-      await Promise.resolve();
-    });
-
-    act(() => {
-      jest.runOnlyPendingTimers();
+      await flushPromises();
     });
 
     const searchRowStyle = StyleSheet.flatten(
-      tree.root.findByProps({ testID: 'library-search-row' }).props.style,
+      tree!.root.findByProps({ testID: 'library-search-row' }).props.style,
     );
     const searchInputStyle = StyleSheet.flatten(
-      tree.root.findByProps({ testID: 'library-search-input' }).props.style,
+      tree!.root.findByProps({ testID: 'library-search-input' }).props.style,
     );
     const allChipStyle = StyleSheet.flatten(
-      tree.root.findByProps({ testID: 'library-tag-chip-all' }).props.style,
+      tree!.root.findByProps({ testID: 'library-tag-chip-all' }).props.style,
     );
     const allChipTextStyle = StyleSheet.flatten(
-      tree.root.findByProps({ testID: 'library-tag-chip-all' }).findByType('Text').props.style,
+      tree!.root.findByProps({ testID: 'library-tag-chip-all' }).findByType(Text).props.style,
     );
 
     expect(searchRowStyle.minHeight).toBe(40);
@@ -95,5 +102,43 @@ describe('LibraryScreen accessibility-safe header layout', () => {
     expect(allChipStyle.alignItems).toBe('center');
     expect(allChipStyle.justifyContent).toBe('center');
     expect(allChipTextStyle.lineHeight).toBe(18);
+  });
+
+  it('passes the active tag to Add Words when tapping plus from a tag filter', async () => {
+    await act(async () => {
+      tree = renderer.create(<LibraryScreen />);
+      await flushPromises();
+    });
+    mockPush.mockClear();
+
+    act(() => {
+      tree!.root.findByProps({ testID: 'library-tag-chip-t1' }).props.onPress();
+    });
+
+    act(() => {
+      tree!.root.findByProps({ testID: 'library-add-button' }).props.onPress();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/ingest',
+      params: { tagId: 't1', tagName: 'gov' },
+    });
+  });
+
+  it('calls setNav with filtered ids and tapped index when a word row is pressed', async () => {
+    await act(async () => {
+      tree = renderer.create(<LibraryScreen />);
+      await flushPromises();
+    });
+    mockSetNav.mockClear();
+
+    // The DB mock seeds one word: { id: 'w1', word: 'alacrity', ... }
+    // Find the word row by its testID (added in Step 3 below)
+    act(() => {
+      tree!.root.findByProps({ testID: 'word-row-w1' }).props.onPress();
+    });
+
+    expect(mockSetNav).toHaveBeenCalledWith(['w1'], 0);
+    expect(mockPush).toHaveBeenCalledWith('/words/w1');
   });
 });

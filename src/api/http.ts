@@ -46,7 +46,7 @@ export class HttpExtractionClient implements ExtractionClient {
   }
 }
 
-export async function lookupWord(word: string, baseUrl = DEFAULT_BASE_URL): Promise<import('./types').ExtractedWord> {
+export async function lookupWord(word: string, baseUrl = DEFAULT_BASE_URL): Promise<ExtractedWord> {
   let response: Response;
   try {
     response = await fetch(`${baseUrl}/extract`, {
@@ -65,7 +65,7 @@ export async function lookupWord(word: string, baseUrl = DEFAULT_BASE_URL): Prom
     } catch {}
     throw new ExtractionError(`Lookup failed: ${detail}`, response.status);
   }
-  const data = await response.json() as import('./types').ExtractedWord[];
+  const data = await response.json() as ExtractedWord[];
   if (!data || data.length === 0) {
     throw new ExtractionError('No result returned for word lookup', 0);
   }

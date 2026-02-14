@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 import { act } from 'react-test-renderer';
 import renderer from 'react-test-renderer';
+import { render, fireEvent, waitFor, act as actRTL } from '@testing-library/react-native';
 
 jest.mock('@expo/vector-icons', () => ({
   Ionicons: 'Ionicons',
@@ -12,15 +13,23 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 const mockBack = jest.fn();
+const mockReplace = jest.fn();
 const mockUseLocalSearchParams = jest.fn(() => ({ id: 'word-1' }));
 const mockScreen = jest.fn(() => null);
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockUseLocalSearchParams(),
-  router: { back: mockBack },
+  router: { back: (...args: unknown[]) => mockBack(...args), replace: (...args: unknown[]) => mockReplace(...args) },
   Stack: {
     Screen: (props: unknown) => mockScreen(props),
   },
+}));
+
+const mockGetNav = jest.fn();
+const mockNavigate = jest.fn();
+jest.mock('@/src/store/libraryNav', () => ({
+  getNav: () => mockGetNav(),
+  navigate: (...args: unknown[]) => mockNavigate(...args),
 }));
 
 const mockFetchWordWithSource = jest.fn();
@@ -58,6 +67,7 @@ describe('WordDetailScreen header delete action', () => {
     mockGetTagsForWord.mockResolvedValue([]);
     mockUpdateWordField.mockResolvedValue(undefined);
     mockSoftDeleteWord.mockResolvedValue(undefined);
+    mockGetNav.mockReturnValue({ active: false, ids: [], index: 0 });
   });
 
   it('centers the header trash icon inside a square touch target', async () => {
@@ -85,5 +95,73 @@ describe('WordDetailScreen header delete action', () => {
     expect(buttonStyle.height).toBe(32);
     expect(buttonStyle.alignItems).toBe('center');
     expect(buttonStyle.justifyContent).toBe('center');
+  });
+});
+
+describe('WordDetailScreen navigation bar', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockFetchWordWithSource.mockResolvedValue({
+      id: 'word-1',
+      word: 'alacrity',
+      definition: 'A feeling of happy excitement.',
+      example_sentence: 'She accepted the challenge with alacrity.',
+      source: null,
+    });
+    mockGetTagsForWord.mockResolvedValue([]);
+    mockGetNav.mockReturnValue({ active: false, ids: [], index: 0 });
+  });
+
+  it('does not render nav bar when active is false', async () => {
+    mockGetNav.mockReturnValue({ active: false, ids: [], index: 0 });
+    const { queryByTestId } = render(<WordDetailScreen />);
+    await waitFor(() => expect(mockFetchWordWithSource).toHaveBeenCalled());
+    expect(queryByTestId('word-detail-nav-bar')).toBeNull();
+  });
+
+  it('renders nav bar with correct counter when active', async () => {
+    mockGetNav.mockReturnValue({ active: true, ids: ['w0', 'word-1', 'w2'], index: 1 });
+    const { getByTestId, getByText } = render(<WordDetailScreen />);
+    await waitFor(() => expect(mockFetchWordWithSource).toHaveBeenCalled());
+    expect(getByTestId('word-detail-nav-bar')).toBeTruthy();
+    expect(getByText('2 / 3')).toBeTruthy();
+  });
+
+  it('prev button is disabled at index 0', async () => {
+    mockGetNav.mockReturnValue({ active: true, ids: ['word-1', 'w2'], index: 0 });
+    const { getByTestId } = render(<WordDetailScreen />);
+    await waitFor(() => expect(mockFetchWordWithSource).toHaveBeenCalled());
+    const prevBtn = getByTestId('word-detail-nav-prev');
+    expect(prevBtn.props.accessibilityState?.disabled).toBe(true);
+  });
+
+  it('next button is disabled at last index', async () => {
+    mockGetNav.mockReturnValue({ active: true, ids: ['w0', 'word-1'], index: 1 });
+    const { getByTestId } = render(<WordDetailScreen />);
+    await waitFor(() => expect(mockFetchWordWithSource).toHaveBeenCalled());
+    const nextBtn = getByTestId('word-detail-nav-next');
+    expect(nextBtn.props.accessibilityState?.disabled).toBe(true);
+  });
+
+  it('tapping next calls navigate(1) and router.replace', async () => {
+    mockGetNav.mockReturnValue({ active: true, ids: ['word-1', 'w2'], index: 0 });
+    mockNavigate.mockReturnValue('w2');
+    const { getByTestId } = render(<WordDetailScreen />);
+    await waitFor(() => expect(mockFetchWordWithSource).toHaveBeenCalled());
+    const nextBtn = getByTestId('word-detail-nav-next');
+    await actRTL(async () => { fireEvent.press(nextBtn); });
+    expect(mockNavigate).toHaveBeenCalledWith(1);
+    expect(mockReplace).toHaveBeenCalledWith('/words/w2');
+  });
+
+  it('tapping prev calls navigate(-1) and router.replace', async () => {
+    mockGetNav.mockReturnValue({ active: true, ids: ['w0', 'word-1'], index: 1 });
+    mockNavigate.mockReturnValue('w0');
+    const { getByTestId } = render(<WordDetailScreen />);
+    await waitFor(() => expect(mockFetchWordWithSource).toHaveBeenCalled());
+    const prevBtn = getByTestId('word-detail-nav-prev');
+    await actRTL(async () => { fireEvent.press(prevBtn); });
+    expect(mockNavigate).toHaveBeenCalledWith(-1);
+    expect(mockReplace).toHaveBeenCalledWith('/words/w0');
   });
 });

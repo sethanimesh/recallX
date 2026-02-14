@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  PanResponder,
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +22,7 @@ import {
 } from '@/src/db/operations/wordDetail';
 import { getTagsForWord, removeTagFromWord, type Tag } from '@/src/db/operations/tags';
 import TagPickerSheet from '@/src/components/TagPickerSheet';
+import { getNav, navigate } from '@/src/store/libraryNav';
 
 // ── Source helpers ────────────────────────────────────────────────────────────
 
@@ -195,6 +197,28 @@ export default function WordDetailScreen() {
     [id],
   );
 
+  // ── Nav state & swipe ───────────────────────────────────────────────────────
+
+  const navState = getNav();
+
+  const panResponder = useMemo(
+    () =>
+      navState.active
+        ? PanResponder.create({
+            onMoveShouldSetPanResponder: (_, gs) =>
+              Math.abs(gs.dx) > Math.abs(gs.dy) && Math.abs(gs.dx) > 10,
+            onPanResponderRelease: (_, gs) => {
+              if (Math.abs(gs.dx) < 60) return;
+              const delta = gs.dx < 0 ? 1 : -1;
+              const nextId = navigate(delta as 1 | -1);
+              if (nextId) router.replace(`/words/${nextId}`);
+            },
+          })
+        : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [navState.active],
+  );
+
   // ── Loading ─────────────────────────────────────────────────────────────────
 
   if (loading) {
@@ -222,8 +246,15 @@ export default function WordDetailScreen() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
+  const { ids, index: navIndex, active: navActive } = navState;
+  const canPrev = navActive && navIndex > 0;
+  const canNext = navActive && navIndex < ids.length - 1;
+
   return (
-    <>
+    <View
+      style={styles.screenContainer}
+      {...(panResponder?.panHandlers ?? {})}
+    >
       <Stack.Screen
         options={{
           title: '',
@@ -252,9 +283,7 @@ export default function WordDetailScreen() {
         {wordData.source && (
           <TouchableOpacity
             style={styles.sourceRow}
-            onPress={() =>
-              Alert.alert('Source', wordData.source!.uri)
-            }
+            onPress={() => Alert.alert('Source', wordData.source!.uri)}
             activeOpacity={0.7}
           >
             <Ionicons
@@ -314,6 +343,41 @@ export default function WordDetailScreen() {
         </View>
       </ScrollView>
 
+      {navActive && (
+        <View
+          testID="word-detail-nav-bar"
+          style={[styles.navBar, { paddingBottom: insets.bottom + 8 }]}
+        >
+          <TouchableOpacity
+            testID="word-detail-nav-prev"
+            disabled={!canPrev}
+            onPress={() => {
+              const nextId = navigate(-1);
+              if (nextId) router.replace(`/words/${nextId}`);
+            }}
+            hitSlop={12}
+            style={[styles.navChevron, !canPrev && styles.navChevronDisabled]}
+          >
+            <Ionicons name="chevron-back" size={28} color="#007AFF" />
+          </TouchableOpacity>
+
+          <Text style={styles.navCounter}>{navIndex + 1} / {ids.length}</Text>
+
+          <TouchableOpacity
+            testID="word-detail-nav-next"
+            disabled={!canNext}
+            onPress={() => {
+              const nextId = navigate(1);
+              if (nextId) router.replace(`/words/${nextId}`);
+            }}
+            hitSlop={12}
+            style={[styles.navChevron, !canNext && styles.navChevronDisabled]}
+          >
+            <Ionicons name="chevron-forward" size={28} color="#007AFF" />
+          </TouchableOpacity>
+        </View>
+      )}
+
       <TagPickerSheet
         wordId={id!}
         currentTags={tags}
@@ -321,11 +385,15 @@ export default function WordDetailScreen() {
         onClose={() => setTagPickerVisible(false)}
         onTagsChanged={setTags}
       />
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   scrollView: {
     flex: 1,
     backgroundColor: '#fff',
@@ -460,5 +528,29 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  navBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 32,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E5E7EB',
+    backgroundColor: '#fff',
+  },
+  navChevron: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navChevronDisabled: {
+    opacity: 0.3,
+  },
+  navCounter: {
+    fontSize: 15,
+    color: '#6B7280',
+    fontWeight: '500',
   },
 });

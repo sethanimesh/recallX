@@ -420,3 +420,37 @@ async def test_mistral_word_lookup_uses_lookup_prompt():
         call_kwargs = mock_client.chat.completions.create.call_args.kwargs
         messages = call_kwargs["messages"]
         assert any(WORD_LOOKUP_SYSTEM_PROMPT in str(m.get("content", "")) for m in messages)
+
+
+# ---------------------------------------------------------------------------
+# OllamaProvider — word lookup
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_ollama_word_lookup_uses_lookup_prompt():
+    from providers.ollama_provider import OllamaProvider
+    from providers._prompts import WORD_LOOKUP_SYSTEM_PROMPT
+
+    SINGLE_WORD_JSON = '[{"word":"pellucid","definition":"Translucently clear.","example_sentence":"The pellucid water revealed the river bed."}]'
+
+    mock_response = MagicMock()
+    mock_response.raise_for_status = MagicMock()
+    mock_response.json.return_value = {
+        "message": {"content": SINGLE_WORD_JSON}
+    }
+
+    with patch("providers.ollama_provider.httpx.AsyncClient") as MockClient:
+        mock_http = MagicMock()
+        mock_http.post = AsyncMock(return_value=mock_response)
+        MockClient.return_value = mock_http
+
+        provider = OllamaProvider()
+        result = await provider.extract_words(
+            ExtractionRequest(input_type="word", content="pellucid")
+        )
+
+        assert len(result) == 1
+        assert result[0].word == "pellucid"
+        call_kwargs = mock_http.post.call_args.kwargs
+        messages = call_kwargs["json"]["messages"]
+        assert any(WORD_LOOKUP_SYSTEM_PROMPT in str(m.get("content", "")) for m in messages)

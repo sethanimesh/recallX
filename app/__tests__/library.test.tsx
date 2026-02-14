@@ -132,8 +132,6 @@ describe('LibraryScreen accessibility-safe header layout', () => {
     });
     mockSetNav.mockClear();
 
-    // The DB mock seeds one word: { id: 'w1', word: 'alacrity', ... }
-    // Find the word row by its testID (added in Step 3 below)
     act(() => {
       tree!.root.findByProps({ testID: 'word-row-w1' }).props.onPress();
     });

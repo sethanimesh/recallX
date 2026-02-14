@@ -92,16 +92,17 @@ export default function AddWordScreen() {
               autoCorrect={false}
               returnKeyType="next"
             />
-            <TouchableOpacity style={styles.autofillButton} onPress={handleAutofill}>
-              {/* testID placed on inner View so tests can call onPress directly via toJSON traversal */}
-              {/* @ts-ignore */}
-              <View testID="autofill-button" onPress={handleAutofill} style={styles.autofillInner}>
-                {autofilling ? (
-                  <ActivityIndicator size="small" color="#007AFF" />
-                ) : (
-                  <Ionicons name="sparkles" size={20} color={word.trim() ? '#007AFF' : '#C7C7CC'} />
-                )}
-              </View>
+            <TouchableOpacity
+              testID="autofill-button"
+              style={styles.autofillButton}
+              onPress={handleAutofill}
+              disabled={!word.trim() || autofilling}
+            >
+              {autofilling ? (
+                <ActivityIndicator size="small" color="#007AFF" />
+              ) : (
+                <Ionicons name="sparkles" size={20} color={word.trim() ? '#007AFF' : '#C7C7CC'} />
+              )}
             </TouchableOpacity>
           </View>
 
@@ -238,12 +239,6 @@ const styles = StyleSheet.create({
     borderColor: '#D1D5DB',
     borderRadius: 10,
     backgroundColor: '#F9FAFB',
-  },
-  autofillInner: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    flex: 1,
-    width: '100%',
   },
   input: {
     borderWidth: 1,

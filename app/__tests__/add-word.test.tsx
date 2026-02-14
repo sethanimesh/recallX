@@ -94,7 +94,7 @@ describe('AddWordScreen autofill', () => {
 
     const autofillBtn = findByTestId(tree!.toJSON() as renderer.ReactTestRendererJSON, 'autofill-button');
     await act(async () => {
-      autofillBtn!.props.onPress();
+      autofillBtn!.props.onClick();
     });
 
     await act(async () => {
@@ -126,7 +126,7 @@ describe('AddWordScreen autofill', () => {
 
     const autofillBtn = findByTestId(tree!.toJSON() as renderer.ReactTestRendererJSON, 'autofill-button');
     await act(async () => {
-      autofillBtn!.props.onPress();
+      autofillBtn!.props.onClick();
     });
 
     await act(async () => {

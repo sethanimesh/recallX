@@ -19,7 +19,7 @@ class GradeResult(BaseModel):
 
 
 class ExtractionRequest(BaseModel):
-    input_type: Literal["image", "text"]
+    input_type: Literal["image", "text", "word"]
     content: str        # base64 string for images, raw text for text
     mime_type: str | None = None   # required when input_type == "image"
 

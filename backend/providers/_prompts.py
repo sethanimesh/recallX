@@ -5,3 +5,6 @@ IMAGE_SYSTEM_PROMPT = """You are an OCR answer-choice extraction assistant. The 
 
 
 IMAGE_USER_PROMPT = "Extract only the answer choice text from this image. Ignore the question and return the choices in order."
+
+
+WORD_LOOKUP_SYSTEM_PROMPT = """You are a vocabulary assistant. The user has provided a single word (possibly misspelled or in an inflected form). Return the correctly spelled base form of the word, a concise plain-English definition (1-2 sentences), and one memorable example sentence that helps a learner remember it. Return exactly one result."""

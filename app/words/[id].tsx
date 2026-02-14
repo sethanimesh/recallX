@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  PanResponder,
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -232,6 +233,26 @@ export default function WordDetailScreen() {
   // getNav() is a non-reactive read; setParams triggers a render after navigate() mutates the store.
   const navState = getNav();
 
+  const goToAdjacentWord = useCallback((delta: 1 | -1) => {
+    const nextId = navigate(delta);
+    if (nextId) router.setParams({ id: nextId });
+  }, []);
+
+  const panResponder = useMemo(
+    () =>
+      navState.active
+        ? PanResponder.create({
+            onMoveShouldSetPanResponder: (_, gs) =>
+              Math.abs(gs.dx) > Math.abs(gs.dy) && Math.abs(gs.dx) > 10,
+            onPanResponderRelease: (_, gs) => {
+              if (Math.abs(gs.dx) < 60) return;
+              goToAdjacentWord(gs.dx < 0 ? 1 : -1);
+            },
+          })
+        : null,
+    [goToAdjacentWord, navState.active],
+  );
+
   // ── Loading ─────────────────────────────────────────────────────────────────
 
   if (loading) {
@@ -264,7 +285,10 @@ export default function WordDetailScreen() {
   const canNext = navActive && navIndex < ids.length - 1;
 
   return (
-    <View style={styles.screenContainer}>
+    <View
+      style={styles.screenContainer}
+      {...(panResponder?.panHandlers ?? {})}
+    >
       <Stack.Screen
         options={{
           title: '',
@@ -352,10 +376,7 @@ export default function WordDetailScreen() {
           <TouchableOpacity
             testID="word-detail-nav-prev"
             disabled={!canPrev}
-            onPress={() => {
-              const nextId = navigate(-1);
-              if (nextId) router.setParams({ id: nextId });
-            }}
+            onPress={() => goToAdjacentWord(-1)}
             hitSlop={12}
             style={[styles.navChevron, !canPrev && styles.navChevronDisabled]}
           >
@@ -367,10 +388,7 @@ export default function WordDetailScreen() {
           <TouchableOpacity
             testID="word-detail-nav-next"
             disabled={!canNext}
-            onPress={() => {
-              const nextId = navigate(1);
-              if (nextId) router.setParams({ id: nextId });
-            }}
+            onPress={() => goToAdjacentWord(1)}
             hitSlop={12}
             style={[styles.navChevron, !canNext && styles.navChevronDisabled]}
           >

@@ -1,4 +1,4 @@
-import { HttpExtractionClient, ExtractionError } from '../http';
+import { HttpExtractionClient, ExtractionError, lookupWord } from '../http';
 import type { ImageInput, TextInput } from '../types';
 
 const makeWord = () => ({
@@ -78,5 +78,56 @@ describe('HttpExtractionClient', () => {
   it('strips trailing slash from base URL', () => {
     const c = new HttpExtractionClient('http://localhost:8000/');
     expect((c as any).baseUrl).toBe('http://localhost:8000');
+  });
+});
+
+describe('lookupWord', () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
+  it('POSTs to /extract with input_type word', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [{ word: 'pellucid', definition: 'Translucently clear.', example_sentence: 'A pellucid stream.' }],
+    });
+
+    const result = await lookupWord('pellucid', 'http://localhost:8000');
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://localhost:8000/extract',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ input_type: 'word', content: 'pellucid' }),
+      }),
+    );
+    expect(result.word).toBe('pellucid');
+    expect(result.definition).toBe('Translucently clear.');
+    expect(result.example_sentence).toBe('A pellucid stream.');
+  });
+
+  it('throws ExtractionError on non-200 response', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      json: async () => ({ detail: 'All providers failed' }),
+    });
+
+    await expect(lookupWord('test', 'http://localhost:8000')).rejects.toThrow(ExtractionError);
+  });
+
+  it('throws ExtractionError when result array is empty', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [],
+    });
+
+    await expect(lookupWord('test', 'http://localhost:8000')).rejects.toThrow(ExtractionError);
+  });
+
+  it('throws ExtractionError on network failure', async () => {
+    mockFetch.mockRejectedValueOnce(new TypeError('Network request failed'));
+
+    await expect(lookupWord('test', 'http://localhost:8000')).rejects.toThrow(ExtractionError);
   });
 });

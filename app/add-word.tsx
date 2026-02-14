@@ -9,6 +9,7 @@ import {
   Platform,
   Alert,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { insertManualWord } from '@/src/db/operations/insertManualWord';
 import { addTagToWord, type Tag } from '@/src/db/operations/tags';
 import TagPickerSheet from '@/src/components/TagPickerSheet';
+import { lookupWord } from '@/src/api/http';
 
 export default function AddWordScreen() {
   const [word, setWord] = useState('');
@@ -24,8 +26,24 @@ export default function AddWordScreen() {
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [tagPickerVisible, setTagPickerVisible] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [autofilling, setAutofilling] = useState(false);
 
   const canSave = word.trim().length > 0 && definition.trim().length > 0;
+
+  async function handleAutofill() {
+    if (!word.trim() || autofilling) return;
+    setAutofilling(true);
+    try {
+      const result = await lookupWord(word.trim());
+      setWord(result.word);
+      setDefinition(result.definition);
+      setExampleSentence(result.example_sentence);
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Could not look up word. Please try again.');
+    } finally {
+      setAutofilling(false);
+    }
+  }
 
   async function handleSave() {
     if (!canSave || saving) return;
@@ -62,21 +80,36 @@ export default function AddWordScreen() {
           <Text style={styles.label}>
             Word <Text style={styles.required}>*</Text>
           </Text>
-          <TextInput
-            style={styles.input}
-            value={word}
-            onChangeText={setWord}
-            placeholder="pellucid"
-            placeholderTextColor="#C7C7CC"
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="next"
-          />
+          <View style={styles.wordRow}>
+            <TextInput
+              testID="word-input"
+              style={[styles.input, styles.wordInput]}
+              value={word}
+              onChangeText={setWord}
+              placeholder="pellucid"
+              placeholderTextColor="#C7C7CC"
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="next"
+            />
+            <TouchableOpacity style={styles.autofillButton} onPress={handleAutofill}>
+              {/* testID placed on inner View so tests can call onPress directly via toJSON traversal */}
+              {/* @ts-ignore */}
+              <View testID="autofill-button" onPress={handleAutofill} style={styles.autofillInner}>
+                {autofilling ? (
+                  <ActivityIndicator size="small" color="#007AFF" />
+                ) : (
+                  <Ionicons name="sparkles" size={20} color={word.trim() ? '#007AFF' : '#C7C7CC'} />
+                )}
+              </View>
+            </TouchableOpacity>
+          </View>
 
           <Text style={styles.label}>
             Definition <Text style={styles.required}>*</Text>
           </Text>
           <TextInput
+            testID="definition-input"
             style={[styles.input, styles.multilineInput]}
             value={definition}
             onChangeText={setDefinition}
@@ -89,6 +122,7 @@ export default function AddWordScreen() {
 
           <Text style={styles.label}>Example sentence</Text>
           <TextInput
+            testID="example-input"
             style={[styles.input, styles.multilineInput]}
             value={exampleSentence}
             onChangeText={setExampleSentence}
@@ -122,7 +156,7 @@ export default function AddWordScreen() {
           <TouchableOpacity
             style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
             onPress={handleSave}
-            disabled={!canSave || saving}
+            disabled={!canSave || saving || autofilling}
           >
             <Text style={[styles.saveButtonText, !canSave && styles.saveButtonTextDisabled]}>
               {saving ? 'Saving…' : 'Save'}
@@ -184,6 +218,32 @@ const styles = StyleSheet.create({
   },
   required: {
     color: '#EF4444',
+  },
+  wordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 8,
+  },
+  wordInput: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  autofillButton: {
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 10,
+    backgroundColor: '#F9FAFB',
+  },
+  autofillInner: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 1,
+    width: '100%',
   },
   input: {
     borderWidth: 1,

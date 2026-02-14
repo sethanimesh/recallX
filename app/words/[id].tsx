@@ -199,6 +199,8 @@ export default function WordDetailScreen() {
 
   // ── Nav state & swipe ───────────────────────────────────────────────────────
 
+  // getNav() is a non-reactive read; navState is stale after navigate() mutates the store.
+  // This is safe because router.replace() immediately remounts the screen, syncing state.
   const navState = getNav();
 
   const panResponder = useMemo(
@@ -215,6 +217,7 @@ export default function WordDetailScreen() {
             },
           })
         : null,
+    // navigate and router are stable module-level references; navState.active is the only reactive dep
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [navState.active],
   );

@@ -1,7 +1,7 @@
 import logging
 from openai import AsyncOpenAI, RateLimitError  # noqa: F401 — re-exported for callers
 from providers.base import LLMProvider, ExtractionRequest, ExtractedWord, ExtractionResult
-from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, TEXT_SYSTEM_PROMPT
+from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, TEXT_SYSTEM_PROMPT, WORD_LOOKUP_SYSTEM_PROMPT
 from config import get_provider_config
 
 logger = logging.getLogger(__name__)
@@ -56,6 +56,12 @@ class GroqProvider:
                     {"type": "image_url", "image_url": {"url": f"data:{req.mime_type};base64,{req.content}"}},
                     {"type": "text", "text": IMAGE_USER_PROMPT},
                 ]},
+            ]
+        elif req.input_type == "word":
+            model = self._text_model
+            messages = [
+                {"role": "system", "content": WORD_LOOKUP_SYSTEM_PROMPT},
+                {"role": "user", "content": req.content},
             ]
         else:
             model = self._text_model

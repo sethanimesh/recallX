@@ -4,13 +4,18 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from providers.base import ExtractionRequest
 from providers._parse import parse_llm_response
-from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT
+from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, WORD_LOOKUP_SYSTEM_PROMPT
 from providers.groq_provider import GroqProvider
 from providers.openrouter_provider import OpenRouterProvider
 from providers.ollama_provider import OllamaProvider
 from providers.mistral_provider import MistralProvider
 
 SAMPLE_JSON = '[{"word":"test","definition":"A trial or examination.","example_sentence":"This is a test sentence."}]'
+SINGLE_WORD_JSON = '[{"word":"pellucid","definition":"Translucently clear.","example_sentence":"The pellucid water revealed the river bed."}]'
+
+# Groq uses structured output — the model returns ExtractionResult JSON ({"words": [...]})
+GROQ_SAMPLE_JSON = '{"words":[{"word":"test","definition":"A trial or examination.","example_sentence":"This is a test sentence."}]}'
+GROQ_SINGLE_WORD_JSON = '{"words":[{"word":"pellucid","definition":"Translucently clear.","example_sentence":"The pellucid water revealed the river bed."}]}'
 
 
 def make_mock_response(content: str):
@@ -81,7 +86,7 @@ def test_parse_llm_response_fills_missing_optional_fields():
 @pytest.mark.asyncio
 async def test_groq_text_extraction():
     with patch("providers.groq_provider.AsyncOpenAI") as MockClient:
-        MockClient.return_value = make_mock_client(SAMPLE_JSON)
+        MockClient.return_value = make_mock_client(GROQ_SAMPLE_JSON)
         provider = GroqProvider()
         provider._api_key = "fake-key"
         result = await provider.extract_words(
@@ -96,7 +101,7 @@ async def test_groq_text_extraction():
 @pytest.mark.asyncio
 async def test_groq_image_extraction():
     with patch("providers.groq_provider.AsyncOpenAI") as MockClient:
-        MockClient.return_value = make_mock_client(SAMPLE_JSON)
+        MockClient.return_value = make_mock_client(GROQ_SAMPLE_JSON)
         provider = GroqProvider()
         provider._api_key = "fake-key"
         req = ExtractionRequest(input_type="image", content="abc123", mime_type="image/jpeg")
@@ -347,3 +352,71 @@ async def test_mistral_rate_limit_propagates():
         provider._api_key = "fake-key"
         with pytest.raises(RateLimitError):
             await provider.extract_words(ExtractionRequest(input_type="text", content="text"))
+
+
+# ---------------------------------------------------------------------------
+# GroqProvider — word lookup
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_groq_word_lookup_uses_text_model_and_lookup_prompt():
+    with patch("providers.groq_provider.AsyncOpenAI") as MockOpenAI:
+        mock_client = make_mock_client(GROQ_SINGLE_WORD_JSON)
+        MockOpenAI.return_value = mock_client
+
+        provider = GroqProvider()
+        result = await provider.extract_words(
+            ExtractionRequest(input_type="word", content="pellucid")
+        )
+
+        assert len(result) == 1
+        assert result[0].word == "pellucid"
+        call_kwargs = mock_client.chat.completions.create.call_args.kwargs
+        messages = call_kwargs["messages"]
+        assert any(WORD_LOOKUP_SYSTEM_PROMPT in str(m.get("content", "")) for m in messages)
+
+
+# ---------------------------------------------------------------------------
+# OpenRouterProvider — word lookup
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_openrouter_word_lookup_uses_lookup_prompt():
+    with patch("providers.openrouter_provider.AsyncOpenAI") as MockOpenAI:
+        mock_client = make_mock_client(SINGLE_WORD_JSON)
+        MockOpenAI.return_value = mock_client
+
+        provider = OpenRouterProvider()
+        provider._api_key = "fake-key"
+        result = await provider.extract_words(
+            ExtractionRequest(input_type="word", content="pellucid")
+        )
+
+        assert len(result) == 1
+        assert result[0].word == "pellucid"
+        call_kwargs = mock_client.chat.completions.create.call_args.kwargs
+        messages = call_kwargs["messages"]
+        assert any(WORD_LOOKUP_SYSTEM_PROMPT in str(m.get("content", "")) for m in messages)
+
+
+# ---------------------------------------------------------------------------
+# MistralProvider — word lookup
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_mistral_word_lookup_uses_lookup_prompt():
+    with patch("providers.mistral_provider.AsyncOpenAI") as MockOpenAI:
+        mock_client = make_mock_client(SINGLE_WORD_JSON)
+        MockOpenAI.return_value = mock_client
+
+        provider = MistralProvider()
+        provider._api_key = "fake-key"
+        result = await provider.extract_words(
+            ExtractionRequest(input_type="word", content="pellucid")
+        )
+
+        assert len(result) == 1
+        assert result[0].word == "pellucid"
+        call_kwargs = mock_client.chat.completions.create.call_args.kwargs
+        messages = call_kwargs["messages"]
+        assert any(WORD_LOOKUP_SYSTEM_PROMPT in str(m.get("content", "")) for m in messages)

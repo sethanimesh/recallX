@@ -35,7 +35,6 @@ export default function FlashcardScreen() {
   const [session, setSession] = useState<Session | null>(null);
   const [card, setCard] = useState<CardState | null>(null);
   const [nextCard, setNextCard] = useState<CardState | null | undefined>(undefined);
-  const pendingSRSUpdate = useRef<{ wordId: string; update: SRSUpdate } | null>(null);
   const missedIdsRef = useRef<string[]>([]);
 
   // Shared

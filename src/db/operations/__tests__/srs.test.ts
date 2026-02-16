@@ -16,7 +16,7 @@ jest.mock('@/src/db/client', () => ({
   },
 }));
 
-import { fetchDueWords, updateWordSRS } from '../srs';
+import { fetchDueWords, updateWordSRS, fetchDueWordsFc, updateWordFCSRS } from '../srs';
 
 describe('fetchDueWords', () => {
   beforeEach(() => jest.clearAllMocks());
@@ -57,5 +57,47 @@ describe('updateWordSRS', () => {
 
   it('resolves without throwing', async () => {
     await expect(updateWordSRS('w1', 0, 2.5, new Date(), 0, 0)).resolves.toBeUndefined();
+  });
+});
+
+describe('fetchDueWordsFc', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('calls db.select and resolves to an array', async () => {
+    const result = await fetchDueWordsFc();
+    expect(mockSelect).toHaveBeenCalledTimes(1);
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it('uses innerJoin when tagId is provided', async () => {
+    await fetchDueWordsFc('tag-123');
+    expect(mockInnerJoin).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not use innerJoin when no tagId', async () => {
+    await fetchDueWordsFc();
+    expect(mockInnerJoin).not.toHaveBeenCalled();
+  });
+});
+
+describe('updateWordFCSRS', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('calls db.update with fc_* column values', async () => {
+    await updateWordFCSRS('word-1', 3, 2.3, new Date('2026-05-01'), 2, 4);
+    expect(mockUpdate).toHaveBeenCalledTimes(1);
+    expect(mockSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fc_interval: 3,
+        fc_ease_factor: 2.3,
+        fc_wrong_count: 2,
+        fc_consecutive_correct: 4,
+        updated_at: expect.any(Date),
+      }),
+    );
+  });
+
+  it('resolves without throwing', async () => {
+    await expect(updateWordFCSRS('w1', 0, 2.5, new Date(), 0, 0)).resolves.toBeUndefined();
   });
 });

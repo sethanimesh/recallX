@@ -67,3 +67,60 @@ export async function updateWordSRS(
     })
     .where(eq(words.id, wordId));
 }
+
+const FC_AS_SRS_COLUMNS = {
+  id: words.id,
+  word: words.word,
+  definition: words.definition,
+  example_sentence: words.example_sentence,
+  source_id: words.source_id,
+  created_at: words.created_at,
+  updated_at: words.updated_at,
+  deleted_at: words.deleted_at,
+  srs_interval: words.fc_interval,
+  srs_ease_factor: words.fc_ease_factor,
+  srs_next_review_at: words.fc_next_review_at,
+  srs_wrong_count: words.fc_wrong_count,
+  srs_consecutive_correct: words.fc_consecutive_correct,
+};
+
+export async function fetchDueWordsFc(tagId?: string): Promise<WordSRSRow[]> {
+  const now = new Date();
+  const dueFilter = or(isNull(words.fc_next_review_at), lte(words.fc_next_review_at, now));
+
+  if (tagId) {
+    return db
+      .select(FC_AS_SRS_COLUMNS)
+      .from(words)
+      .innerJoin(wordTags, eq(wordTags.word_id, words.id))
+      .where(and(eq(wordTags.tag_id, tagId), isNull(words.deleted_at), dueFilter))
+      .orderBy(asc(words.word));
+  }
+
+  return db
+    .select(FC_AS_SRS_COLUMNS)
+    .from(words)
+    .where(and(isNull(words.deleted_at), dueFilter))
+    .orderBy(asc(words.word));
+}
+
+export async function updateWordFCSRS(
+  wordId: string,
+  interval: number,
+  easeFactor: number,
+  nextReviewAt: Date,
+  wrongCount: number,
+  consecutiveCorrect: number,
+): Promise<void> {
+  await db
+    .update(words)
+    .set({
+      fc_interval: interval,
+      fc_ease_factor: easeFactor,
+      fc_next_review_at: nextReviewAt,
+      fc_wrong_count: wrongCount,
+      fc_consecutive_correct: consecutiveCorrect,
+      updated_at: new Date(),
+    })
+    .where(eq(words.id, wordId));
+}

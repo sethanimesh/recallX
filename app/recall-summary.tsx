@@ -13,11 +13,12 @@ import { fetchAllWords, type WordRow } from '@/src/db/operations/tags';
 
 export default function RecallSummaryScreen() {
   const router = useRouter();
-  const { score: scoreStr, total: totalStr, tagId, mode, missedIds } = useLocalSearchParams<{
+  const { score: scoreStr, total: totalStr, tagId, mode, fcMode, missedIds } = useLocalSearchParams<{
     score: string;
     total: string;
     tagId: string;
     mode: string;
+    fcMode: string;
     missedIds: string;
   }>();
 
@@ -36,8 +37,13 @@ export default function RecallSummaryScreen() {
   }, [missedIds]);
 
   function handleRestart() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.replace({ pathname: '/recall' as any, params: { tagId: tagId ?? '', mode: mode ?? 'adaptive' } });
+    if (mode === 'flashcard') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      router.replace({ pathname: '/flashcard' as any, params: { tagId: tagId ?? '', fcMode: fcMode ?? 'passive' } });
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      router.replace({ pathname: '/recall' as any, params: { tagId: tagId ?? '', mode: mode ?? 'adaptive' } });
+    }
   }
 
   function handleDone() {

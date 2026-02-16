@@ -21,6 +21,11 @@ export const words = sqliteTable('words', {
   srs_next_review_at: integer('srs_next_review_at', { mode: 'timestamp' }),
   srs_wrong_count: integer('srs_wrong_count').notNull().default(0),
   srs_consecutive_correct: integer('srs_consecutive_correct').notNull().default(0),
+  fc_interval: integer('fc_interval').notNull().default(0),
+  fc_ease_factor: real('fc_ease_factor').notNull().default(2.5),
+  fc_next_review_at: integer('fc_next_review_at', { mode: 'timestamp' }),
+  fc_wrong_count: integer('fc_wrong_count').notNull().default(0),
+  fc_consecutive_correct: integer('fc_consecutive_correct').notNull().default(0),
 });
 
 export const tags = sqliteTable('tags', {

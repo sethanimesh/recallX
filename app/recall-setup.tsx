@@ -10,10 +10,11 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getAllTags, fetchAllWords, fetchWordsByTag, type Tag } from '@/src/db/operations/tags';
-import { fetchDueWords } from '@/src/db/operations/srs';
+import { fetchDueWords, fetchDueWordsFc } from '@/src/db/operations/srs';
 
 type DeckOption = { id: string | null; name: string };
-export type Mode = 'adaptive' | 'classic';
+export type Mode = 'adaptive' | 'classic' | 'flashcard';
+export type FcMode = 'passive' | 'self-rated';
 
 export default function RecallSetupScreen() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function RecallSetupScreen() {
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [wordCount, setWordCount] = useState(0);
   const [mode, setMode] = useState<Mode>('adaptive');
+  const [fcMode, setFcMode] = useState<FcMode>('passive');
 
   useFocusEffect(
     useCallback(() => {
@@ -33,26 +35,46 @@ export default function RecallSetupScreen() {
   useEffect(() => {
     let cancelled = false;
     async function computeCount() {
+      let count = 0;
       if (mode === 'adaptive') {
         const rows = selectedTagId !== null
           ? await fetchDueWords(selectedTagId)
           : await fetchDueWords();
-        if (!cancelled) setWordCount(rows.length);
-      } else {
+        count = rows.length;
+      } else if (mode === 'classic') {
         const rows = selectedTagId === null
           ? await fetchAllWords()
           : await fetchWordsByTag(selectedTagId);
-        if (!cancelled) setWordCount(rows.length);
+        count = rows.length;
+      } else {
+        // flashcard
+        if (fcMode === 'self-rated') {
+          const rows = selectedTagId !== null
+            ? await fetchDueWordsFc(selectedTagId)
+            : await fetchDueWordsFc();
+          count = rows.length;
+        } else {
+          const rows = selectedTagId === null
+            ? await fetchAllWords()
+            : await fetchWordsByTag(selectedTagId);
+          count = rows.length;
+        }
       }
+      if (!cancelled) setWordCount(count);
     }
     computeCount().catch(() => {});
     return () => { cancelled = true; };
-  }, [selectedTagId, mode]);
+  }, [selectedTagId, mode, fcMode]);
 
   const handleStart = useCallback(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.push({ pathname: '/recall' as any, params: { tagId: selectedTagId ?? '', mode } });
-  }, [router, selectedTagId, mode]);
+    if (mode === 'flashcard') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      router.push({ pathname: '/flashcard' as any, params: { tagId: selectedTagId ?? '', fcMode } });
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      router.push({ pathname: '/recall' as any, params: { tagId: selectedTagId ?? '', mode } });
+    }
+  }, [router, selectedTagId, mode, fcMode]);
 
   const deckOptions: DeckOption[] = [{ id: null, name: 'All Words' }, ...tags];
 
@@ -74,13 +96,19 @@ export default function RecallSetupScreen() {
   );
 
   const allCaughtUp = mode === 'adaptive' && wordCount === 0;
+  const fcAllCaughtUp = mode === 'flashcard' && fcMode === 'self-rated' && wordCount === 0;
+
+  const wordCountSuffix =
+    mode === 'adaptive' || (mode === 'flashcard' && fcMode === 'self-rated')
+      ? ' due today'
+      : '';
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
       <Text style={styles.heading}>Choose a deck</Text>
 
       <View style={styles.modeToggle}>
-        {(['adaptive', 'classic'] as Mode[]).map(m => (
+        {(['adaptive', 'classic', 'flashcard'] as Mode[]).map(m => (
           <TouchableOpacity
             key={m}
             style={[styles.modeButton, mode === m && styles.modeButtonActive]}
@@ -88,11 +116,28 @@ export default function RecallSetupScreen() {
             testID={`mode-${m}`}
           >
             <Text style={[styles.modeButtonText, mode === m && styles.modeButtonTextActive]}>
-              {m === 'adaptive' ? 'Adaptive' : 'Classic'}
+              {m === 'adaptive' ? 'Adaptive' : m === 'classic' ? 'Classic' : 'Flashcard'}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
+
+      {mode === 'flashcard' && (
+        <View style={styles.fcModeToggle}>
+          {(['passive', 'self-rated'] as FcMode[]).map(fm => (
+            <TouchableOpacity
+              key={fm}
+              style={[styles.modeButton, fcMode === fm && styles.modeButtonActive]}
+              onPress={() => setFcMode(fm)}
+              testID={`fcmode-${fm}`}
+            >
+              <Text style={[styles.modeButtonText, fcMode === fm && styles.modeButtonTextActive]}>
+                {fm === 'passive' ? 'Passive' : 'Self-Rated'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       <FlatList
         data={deckOptions}
@@ -104,8 +149,7 @@ export default function RecallSetupScreen() {
       />
 
       <Text style={styles.wordCount} testID="word-count-label">
-        {wordCount} {wordCount === 1 ? 'word' : 'words'}
-        {mode === 'adaptive' ? ' due today' : ''}
+        {`${wordCount}`}{` ${wordCount === 1 ? 'word' : 'words'}${wordCountSuffix}`}
       </Text>
 
       {allCaughtUp && (
@@ -114,7 +158,13 @@ export default function RecallSetupScreen() {
         </Text>
       )}
 
-      {wordCount === 0 && mode === 'classic' && (
+      {fcAllCaughtUp && (
+        <Text style={styles.caughtUpLabel} testID="fc-caught-up-label">
+          All caught up! No words due today.
+        </Text>
+      )}
+
+      {wordCount === 0 && (mode === 'classic' || (mode === 'flashcard' && fcMode === 'passive')) && (
         <Text style={styles.noWordsLabel} testID="no-words-label">
           No words to review
         </Text>
@@ -144,7 +194,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
     borderRadius: 10,
     padding: 3,
-    marginBottom: 16,
+    marginBottom: 8,
+  },
+  fcModeToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
+    padding: 3,
+    marginBottom: 8,
   },
   modeButton: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8 },
   modeButtonActive: {

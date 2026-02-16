@@ -27,17 +27,20 @@ jest.mock('@/src/db/operations/tags', () => ({
 }));
 
 const mockFetchDueWords = jest.fn();
+const mockFetchDueWordsFc = jest.fn();
 jest.mock('@/src/db/operations/srs', () => ({
   fetchDueWords: (...args: unknown[]) => mockFetchDueWords(...args),
+  fetchDueWordsFc: (...args: unknown[]) => mockFetchDueWordsFc(...args),
 }));
 
 import RecallSetupScreen from '../recall-setup';
 
 function collectText(
-  node: renderer.ReactTestRendererJSON | renderer.ReactTestRendererJSON[] | null,
+  node: renderer.ReactTestRendererJSON | renderer.ReactTestRendererJSON[] | string | null,
 ): string[] {
   if (!node) return [];
-  if (Array.isArray(node)) return node.flatMap(collectText);
+  if (typeof node === 'string') return [node];
+  if (Array.isArray(node)) return node.flatMap((n) => collectText(n as renderer.ReactTestRendererJSON | string));
   const children = node.children ?? [];
   return [
     ...children.filter((child): child is string => typeof child === 'string'),
@@ -54,6 +57,7 @@ describe('RecallSetupScreen', () => {
     mockGetAllTags.mockResolvedValue([]);
     mockFetchAllWords.mockResolvedValue([]);
     mockFetchDueWords.mockResolvedValue([]);
+    mockFetchDueWordsFc.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -127,6 +131,76 @@ describe('RecallSetupScreen', () => {
 
     expect(mockPush).toHaveBeenCalledWith(
       expect.objectContaining({ params: expect.objectContaining({ mode: 'adaptive' }) })
+    );
+  });
+
+  it('shows Flashcard mode button in toggle', async () => {
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<RecallSetupScreen />); });
+    await act(async () => { await Promise.resolve(); });
+
+    const texts = collectText(tree.toJSON());
+    expect(texts).toContain('Flashcard');
+  });
+
+  it('shows Passive/Self-Rated sub-toggle when Flashcard is selected', async () => {
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<RecallSetupScreen />); });
+    await act(async () => { await Promise.resolve(); });
+
+    await act(async () => {
+      tree.root.findByProps({ testID: 'mode-flashcard' }).props.onPress();
+    });
+    await act(async () => { await Promise.resolve(); });
+
+    const texts = collectText(tree.toJSON());
+    expect(texts).toContain('Passive');
+    expect(texts).toContain('Self-Rated');
+  });
+
+  it('Flashcard Self-Rated uses fetchDueWordsFc for word count', async () => {
+    mockFetchDueWordsFc.mockResolvedValue([{ id: 'w1' }, { id: 'w2' }]);
+
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<RecallSetupScreen />); });
+    await act(async () => { await Promise.resolve(); });
+
+    await act(async () => {
+      tree.root.findByProps({ testID: 'mode-flashcard' }).props.onPress();
+    });
+    await act(async () => { await Promise.resolve(); });
+
+    await act(async () => {
+      tree.root.findByProps({ testID: 'fcmode-self-rated' }).props.onPress();
+    });
+    await act(async () => { await Promise.resolve(); });
+
+    expect(mockFetchDueWordsFc).toHaveBeenCalled();
+    const wordCountLabel = tree.root.findByProps({ testID: 'word-count-label' });
+    expect(collectText(wordCountLabel.props.children ?? wordCountLabel)).toContain('2');
+  });
+
+  it('Start button routes to /flashcard with fcMode param', async () => {
+    mockFetchAllWords.mockResolvedValue([{ id: 'w1' }]);
+
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<RecallSetupScreen />); });
+    await act(async () => { await Promise.resolve(); });
+
+    await act(async () => {
+      tree.root.findByProps({ testID: 'mode-flashcard' }).props.onPress();
+    });
+    await act(async () => { await Promise.resolve(); });
+
+    await act(async () => {
+      tree.root.findByProps({ testID: 'start-button' }).props.onPress();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pathname: '/flashcard',
+        params: expect.objectContaining({ fcMode: 'passive' }),
+      })
     );
   });
 });

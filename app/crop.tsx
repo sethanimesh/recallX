@@ -181,6 +181,41 @@ export default function CropScreen() {
     })
   ).current;
 
+  async function handleDone() {
+    const metrics = metricsRef.current;
+    if (!metrics || !imageSize) return;
+
+    const cropRect = screenToCropRect(
+      x1Ref.current,
+      y1Ref.current,
+      x2Ref.current,
+      y2Ref.current,
+      metrics,
+      imageSize.w,
+      imageSize.h
+    );
+
+    try {
+      const result = await ImageManipulator.manipulateAsync(
+        uri!,
+        [{ crop: cropRect }],
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+      );
+      setPendingCropResult({
+        uri: result.uri,
+        base64: result.base64!,
+        mimeType: 'image/jpeg',
+      });
+      router.back();
+    } catch (err) {
+      Alert.alert(
+        'Crop Failed',
+        err instanceof Error ? err.message : 'Could not crop the image. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
+  }
+
   return (
     <View
       style={styles.container}
@@ -224,10 +259,13 @@ export default function CropScreen() {
       />
 
       <View style={styles.buttonBar}>
-        <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.cancelButton} onPress={() => {
+          takePendingCropUri();
+          router.back();
+        }}>
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.doneButton} onPress={() => {}}>
+        <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
           <Text style={styles.doneText}>Done</Text>
         </TouchableOpacity>
       </View>

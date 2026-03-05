@@ -41,6 +41,26 @@ export async function runMigrations(): Promise<void> {
       PRIMARY KEY (word_id, tag_id)
     );
   `);
+  await expo.execAsync(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY,
+      mode TEXT NOT NULL CHECK(mode IN ('recall', 'flashcard')),
+      tag_id TEXT REFERENCES tags(id),
+      started_at INTEGER NOT NULL,
+      ended_at INTEGER
+    );
+  `);
+  await expo.execAsync(`
+    CREATE TABLE IF NOT EXISTS session_results (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL REFERENCES sessions(id),
+      word_id TEXT NOT NULL REFERENCES words(id),
+      correct INTEGER NOT NULL CHECK(correct IN (0, 1)),
+      attempt_number INTEGER NOT NULL,
+      answered_at INTEGER NOT NULL
+    );
+  `);
+  try { await expo.execAsync('CREATE INDEX IF NOT EXISTS idx_sr_word_at ON session_results(word_id, answered_at);'); } catch {}
   // SRS columns — ALTER TABLE errors if column already exists; suppress with try/catch
   try { await expo.execAsync('ALTER TABLE words ADD COLUMN srs_interval INTEGER NOT NULL DEFAULT 0;'); } catch {}
   try { await expo.execAsync('ALTER TABLE words ADD COLUMN srs_ease_factor REAL NOT NULL DEFAULT 2.5;'); } catch {}

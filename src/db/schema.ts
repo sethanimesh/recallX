@@ -37,3 +37,20 @@ export const wordTags = sqliteTable('word_tags', {
   word_id: text('word_id').notNull().references(() => words.id),
   tag_id: text('tag_id').notNull().references(() => tags.id),
 });
+
+export const sessions = sqliteTable('sessions', {
+  id: text('id').primaryKey(),
+  mode: text('mode', { enum: ['recall', 'flashcard'] }).notNull(),
+  tag_id: text('tag_id').references(() => tags.id),
+  started_at: integer('started_at', { mode: 'timestamp' }).notNull(),
+  ended_at: integer('ended_at', { mode: 'timestamp' }),
+});
+
+export const sessionResults = sqliteTable('session_results', {
+  id: text('id').primaryKey(),
+  session_id: text('session_id').notNull().references(() => sessions.id),
+  word_id: text('word_id').notNull().references(() => words.id),
+  correct: integer('correct').notNull(),
+  attempt_number: integer('attempt_number').notNull(),
+  answered_at: integer('answered_at', { mode: 'timestamp' }).notNull(),
+});

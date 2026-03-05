@@ -105,6 +105,16 @@ export default function CropScreen() {
         resizeMode="contain"
       />
 
+      {/* Overlay — 4 pieces framing the crop rect */}
+      <Animated.View style={[styles.overlay, { top: 0, left: 0, right: 0, height: y1 }]} />
+      <Animated.View style={[styles.overlay, { top: y2, left: 0, right: 0, bottom: 0 }]} />
+      <Animated.View
+        style={[styles.overlay, { top: y1, height: Animated.subtract(y2, y1), left: 0, width: x1 }]}
+      />
+      <Animated.View
+        style={[styles.overlay, { top: y1, height: Animated.subtract(y2, y1), left: x2, right: 0 }]}
+      />
+
       <View style={styles.buttonBar}>
         <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
           <Text style={styles.cancelText}>Cancel</Text>
@@ -129,6 +139,10 @@ const styles = StyleSheet.create({
     right: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  overlay: {
+    position: 'absolute',
+    backgroundColor: 'rgba(0,0,0,0.55)',
   },
   cancelButton: {
     paddingVertical: 14,

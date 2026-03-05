@@ -6,7 +6,6 @@ import { setPendingCropUri } from '@/src/store/pendingCropUri';
 import { takePendingCropResult } from '@/src/store/pendingCropResult';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
 import * as DocumentPicker from 'expo-document-picker';
 import { activeExtractionClient } from '@/src/api/index';
 import type { ImageInput, TextInput } from '@/src/api/types';
@@ -27,20 +26,14 @@ function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-async function toJpeg(uri: string): Promise<{ base64: string; mimeType: string }> {
-  const result = await ImageManipulator.manipulateAsync(
-    uri,
-    [],
-    { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-  );
-  return { base64: result.base64!, mimeType: 'image/jpeg' };
-}
 
 export default function IngestScreen() {
   const params = useLocalSearchParams<{ tagId?: string | string[]; tagName?: string | string[] }>();
   const tagId = firstParam(params.tagId)?.trim();
   const tagName = firstParam(params.tagName)?.trim();
   const defaultTags: Tag[] = tagId && tagName ? [{ id: tagId, name: tagName }] : [];
+  const defaultTagsRef = useRef<Tag[]>(defaultTags);
+  defaultTagsRef.current = defaultTags;
   const [modalState, setModalState] = useState<ModalState>({ phase: 'idle' });
   const lastActivePhaseRef = useRef<'uploading' | 'analyzing' | 'done'>('uploading');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -76,7 +69,7 @@ export default function IngestScreen() {
       const extracted = await activeExtractionClient.extractWords(input);
       const sourceType = input.type === 'image' ? 'image' : 'pdf';
       const sourceUri = input.type === 'image' ? input.uri : input.content;
-      setPendingExtraction({ words: extracted, sourceUri, sourceType, defaultTags });
+      setPendingExtraction({ words: extracted, sourceUri, sourceType, defaultTags: defaultTagsRef.current });
       if (isMountedRef.current) setModalState({ phase: 'done' });
       lastActivePhaseRef.current = 'done';
       timerRef.current = setTimeout(() => router.replace('/review'), DONE_DISPLAY_MS);

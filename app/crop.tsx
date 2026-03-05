@@ -91,6 +91,96 @@ export default function CropScreen() {
     y2.setValue(initY2); y2Ref.current = initY2;
   }, [containerSize, imageSize]);
 
+  // Start values captured on gesture begin
+  const startX1 = useRef(0);
+  const startY1 = useRef(0);
+  const startX2 = useRef(0);
+  const startY2 = useRef(0);
+
+  // Bounds of image in screen space (set after metrics are computed)
+  const imageBoundsRef = useRef({ left: 0, top: 0, right: 0, bottom: 0 });
+  const minScreenPxRef = useRef(MIN_CROP_PX);
+
+  useEffect(() => {
+    if (!metricsRef.current || !imageSize || !containerSize) return;
+    const m = metricsRef.current;
+    imageBoundsRef.current = {
+      left: m.offsetX,
+      top: m.offsetY,
+      right: m.offsetX + imageSize.w * m.scale,
+      bottom: m.offsetY + imageSize.h * m.scale,
+    };
+    minScreenPxRef.current = m.scale * MIN_CROP_PX;
+  }, [containerSize, imageSize]);
+
+  const topLeftPan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        startX1.current = x1Ref.current;
+        startY1.current = y1Ref.current;
+      },
+      onPanResponderMove: (_, gs) => {
+        const b = imageBoundsRef.current;
+        const newX = Math.max(b.left, Math.min(startX1.current + gs.dx, x2Ref.current - minScreenPxRef.current));
+        const newY = Math.max(b.top, Math.min(startY1.current + gs.dy, y2Ref.current - minScreenPxRef.current));
+        x1.setValue(newX); x1Ref.current = newX;
+        y1.setValue(newY); y1Ref.current = newY;
+      },
+    })
+  ).current;
+
+  const topRightPan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        startX2.current = x2Ref.current;
+        startY1.current = y1Ref.current;
+      },
+      onPanResponderMove: (_, gs) => {
+        const b = imageBoundsRef.current;
+        const newX = Math.min(b.right, Math.max(startX2.current + gs.dx, x1Ref.current + minScreenPxRef.current));
+        const newY = Math.max(b.top, Math.min(startY1.current + gs.dy, y2Ref.current - minScreenPxRef.current));
+        x2.setValue(newX); x2Ref.current = newX;
+        y1.setValue(newY); y1Ref.current = newY;
+      },
+    })
+  ).current;
+
+  const bottomLeftPan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        startX1.current = x1Ref.current;
+        startY2.current = y2Ref.current;
+      },
+      onPanResponderMove: (_, gs) => {
+        const b = imageBoundsRef.current;
+        const newX = Math.max(b.left, Math.min(startX1.current + gs.dx, x2Ref.current - minScreenPxRef.current));
+        const newY = Math.min(b.bottom, Math.max(startY2.current + gs.dy, y1Ref.current + minScreenPxRef.current));
+        x1.setValue(newX); x1Ref.current = newX;
+        y2.setValue(newY); y2Ref.current = newY;
+      },
+    })
+  ).current;
+
+  const bottomRightPan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        startX2.current = x2Ref.current;
+        startY2.current = y2Ref.current;
+      },
+      onPanResponderMove: (_, gs) => {
+        const b = imageBoundsRef.current;
+        const newX = Math.min(b.right, Math.max(startX2.current + gs.dx, x1Ref.current + minScreenPxRef.current));
+        const newY = Math.min(b.bottom, Math.max(startY2.current + gs.dy, y1Ref.current + minScreenPxRef.current));
+        x2.setValue(newX); x2Ref.current = newX;
+        y2.setValue(newY); y2Ref.current = newY;
+      },
+    })
+  ).current;
+
   return (
     <View
       style={styles.container}
@@ -113,6 +203,24 @@ export default function CropScreen() {
       />
       <Animated.View
         style={[styles.overlay, { top: y1, height: Animated.subtract(y2, y1), left: x2, right: 0 }]}
+      />
+
+      {/* Corner handles */}
+      <Animated.View
+        style={[styles.handle, { left: Animated.subtract(x1, 12), top: Animated.subtract(y1, 12) }]}
+        {...topLeftPan.panHandlers}
+      />
+      <Animated.View
+        style={[styles.handle, { left: Animated.subtract(x2, 12), top: Animated.subtract(y1, 12) }]}
+        {...topRightPan.panHandlers}
+      />
+      <Animated.View
+        style={[styles.handle, { left: Animated.subtract(x1, 12), top: Animated.subtract(y2, 12) }]}
+        {...bottomLeftPan.panHandlers}
+      />
+      <Animated.View
+        style={[styles.handle, { left: Animated.subtract(x2, 12), top: Animated.subtract(y2, 12) }]}
+        {...bottomRightPan.panHandlers}
       />
 
       <View style={styles.buttonBar}>
@@ -143,6 +251,13 @@ const styles = StyleSheet.create({
   overlay: {
     position: 'absolute',
     backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  handle: {
+    position: 'absolute',
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    backgroundColor: '#fff',
   },
   cancelButton: {
     paddingVertical: 14,

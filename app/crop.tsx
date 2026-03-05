@@ -23,6 +23,7 @@ export default function CropScreen() {
 
   const [containerSize, setContainerSize] = useState<{ w: number; h: number } | null>(null);
   const [imageSize, setImageSize] = useState<{ w: number; h: number } | null>(null);
+  const [initialized, setInitialized] = useState(false);
   const metricsRef = useRef<DisplayMetrics | null>(null);
 
   // Crop rect corners in screen space (Animated.Value for smooth rendering)
@@ -89,6 +90,7 @@ export default function CropScreen() {
     y1.setValue(initY1); y1Ref.current = initY1;
     x2.setValue(initX2); x2Ref.current = initX2;
     y2.setValue(initY2); y2Ref.current = initY2;
+    setInitialized(true);
   }, [containerSize, imageSize]);
 
   // Start values captured on gesture begin
@@ -201,9 +203,10 @@ export default function CropScreen() {
         [{ crop: cropRect }],
         { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG, base64: true }
       );
+      if (!result.base64) throw new Error('ImageManipulator did not return base64 data.');
       setPendingCropResult({
         uri: result.uri,
-        base64: result.base64!,
+        base64: result.base64,
         mimeType: 'image/jpeg',
       });
       router.back();
@@ -230,39 +233,40 @@ export default function CropScreen() {
         resizeMode="contain"
       />
 
-      {/* Overlay — 4 pieces framing the crop rect */}
-      <Animated.View style={[styles.overlay, { top: 0, left: 0, right: 0, height: y1 }]} />
-      <Animated.View style={[styles.overlay, { top: y2, left: 0, right: 0, bottom: 0 }]} />
-      <Animated.View
-        style={[styles.overlay, { top: y1, height: Animated.subtract(y2, y1), left: 0, width: x1 }]}
-      />
-      <Animated.View
-        style={[styles.overlay, { top: y1, height: Animated.subtract(y2, y1), left: x2, right: 0 }]}
-      />
+      {initialized && (
+        <>
+          {/* Overlay — 4 pieces framing the crop rect */}
+          <Animated.View style={[styles.overlay, { top: 0, left: 0, right: 0, height: y1 }]} />
+          <Animated.View style={[styles.overlay, { top: y2, left: 0, right: 0, bottom: 0 }]} />
+          <Animated.View
+            style={[styles.overlay, { top: y1, height: Animated.subtract(y2, y1), left: 0, width: x1 }]}
+          />
+          <Animated.View
+            style={[styles.overlay, { top: y1, height: Animated.subtract(y2, y1), left: x2, right: 0 }]}
+          />
 
-      {/* Corner handles */}
-      <Animated.View
-        style={[styles.handle, { left: Animated.subtract(x1, 12), top: Animated.subtract(y1, 12) }]}
-        {...topLeftPan.panHandlers}
-      />
-      <Animated.View
-        style={[styles.handle, { left: Animated.subtract(x2, 12), top: Animated.subtract(y1, 12) }]}
-        {...topRightPan.panHandlers}
-      />
-      <Animated.View
-        style={[styles.handle, { left: Animated.subtract(x1, 12), top: Animated.subtract(y2, 12) }]}
-        {...bottomLeftPan.panHandlers}
-      />
-      <Animated.View
-        style={[styles.handle, { left: Animated.subtract(x2, 12), top: Animated.subtract(y2, 12) }]}
-        {...bottomRightPan.panHandlers}
-      />
+          {/* Corner handles */}
+          <Animated.View
+            style={[styles.handle, { left: Animated.subtract(x1, 12), top: Animated.subtract(y1, 12) }]}
+            {...topLeftPan.panHandlers}
+          />
+          <Animated.View
+            style={[styles.handle, { left: Animated.subtract(x2, 12), top: Animated.subtract(y1, 12) }]}
+            {...topRightPan.panHandlers}
+          />
+          <Animated.View
+            style={[styles.handle, { left: Animated.subtract(x1, 12), top: Animated.subtract(y2, 12) }]}
+            {...bottomLeftPan.panHandlers}
+          />
+          <Animated.View
+            style={[styles.handle, { left: Animated.subtract(x2, 12), top: Animated.subtract(y2, 12) }]}
+            {...bottomRightPan.panHandlers}
+          />
+        </>
+      )}
 
       <View style={styles.buttonBar}>
-        <TouchableOpacity style={styles.cancelButton} onPress={() => {
-          takePendingCropUri();
-          router.back();
-        }}>
+        <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.doneButton} onPress={handleDone}>

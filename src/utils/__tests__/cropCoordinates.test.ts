@@ -46,7 +46,17 @@ describe('screenToCropRect', () => {
   it('clamps width/height to image bounds', () => {
     const metrics = { scale: 1, offsetX: 0, offsetY: 0 };
     const rect = screenToCropRect(0, 0, 150, 150, metrics, 100, 100);
+    expect(rect.originX).toBeCloseTo(0);
+    expect(rect.originY).toBeCloseTo(0);
     expect(rect.width).toBeCloseTo(100);
     expect(rect.height).toBeCloseTo(100);
+  });
+
+  it('produces non-negative width/height when both corners are in the letterbox', () => {
+    // offsetX=20 means the image starts at x=20; both handles are left of the image
+    const metrics = { scale: 1, offsetX: 20, offsetY: 0 };
+    const rect = screenToCropRect(5, 0, 10, 50, metrics, 100, 100);
+    expect(rect.width).toBeGreaterThanOrEqual(0);
+    expect(rect.height).toBeGreaterThanOrEqual(0);
   });
 });

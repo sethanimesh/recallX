@@ -33,7 +33,7 @@ export function screenToCropRect(
   return {
     originX,
     originY,
-    width: x2px - originX,
-    height: y2px - originY,
+    width: Math.max(0, x2px - originX),
+    height: Math.max(0, y2px - originY),
   };
 }

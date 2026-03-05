@@ -1,7 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { setPendingCropUri } from '@/src/store/pendingCropUri';
+import { takePendingCropResult } from '@/src/store/pendingCropResult';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -51,6 +53,20 @@ export default function IngestScreen() {
     };
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      const cropResult = takePendingCropResult();
+      if (cropResult) {
+        startExtraction({
+          type: 'image',
+          uri: cropResult.uri,
+          base64: cropResult.base64,
+          mimeType: cropResult.mimeType,
+        });
+      }
+    }, [])
+  );
+
   async function startExtraction(input: ImageInput | TextInput) {
     if (isMountedRef.current) setModalState({ phase: 'uploading' });
     lastActivePhaseRef.current = 'uploading';
@@ -78,8 +94,8 @@ export default function IngestScreen() {
       quality: 0.8,
     });
     if (result.canceled) return;
-    const { base64: b64, mimeType } = await toJpeg(result.assets[0].uri);
-    await startExtraction({ type: 'image', uri: result.assets[0].uri, base64: b64, mimeType });
+    setPendingCropUri(result.assets[0].uri);
+    router.push('/crop');
   }
 
   async function handleLibrary() {
@@ -90,8 +106,8 @@ export default function IngestScreen() {
       quality: 0.8,
     });
     if (result.canceled) return;
-    const { base64: b64, mimeType } = await toJpeg(result.assets[0].uri);
-    await startExtraction({ type: 'image', uri: result.assets[0].uri, base64: b64, mimeType });
+    setPendingCropUri(result.assets[0].uri);
+    router.push('/crop');
   }
 
   async function handleDocument() {

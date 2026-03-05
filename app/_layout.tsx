@@ -56,6 +56,7 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="ingest" options={{ presentation: 'modal', headerShown: false }} />
+        <Stack.Screen name="crop" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
         <Stack.Screen name="add-word" options={{ presentation: 'modal', headerShown: false }} />
         <Stack.Screen name="review" options={{ headerShown: false }} />
         <Stack.Screen name="words/[id]" options={{ title: '', headerBackTitle: 'Library', animation: 'none' }} />

@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 import database
-from routers import extract, grade, words, tags, transcribe
+from routers import extract, grade, words, tags, transcribe, pronunciations
 
 
 @asynccontextmanager
@@ -18,3 +18,4 @@ app.include_router(grade.router)
 app.include_router(words.router)
 app.include_router(tags.router)
 app.include_router(transcribe.router)
+app.include_router(pronunciations.router)

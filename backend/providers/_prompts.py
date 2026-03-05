@@ -12,7 +12,7 @@ Your tasks:
 3. Extract ONLY the answer choices in their original order.
 4. Remove labels such as A., B), (C), 1., etc.
 5. Ignore explanations, diagrams, headers, page numbers, watermarks, and any non-choice text.
-6. Determine the meaning of each answer choice ONLY from the sentence/context, not the most common dictionary meaning.
+6. Determine the meaning of each answer choice.
 7. If the sentence suggests a rare, secondary, figurative, or tone-based meaning, use that meaning.
 8. For each choice return:
    - word
@@ -20,7 +20,7 @@ Your tasks:
    - example_sentence
 
 Meaning rules:
-- Return ONLY the clean contextual meaning phrase.
+- Return ONLY the clean meaning phrase.
 - Do NOT write filler text such as:
   "here it means", "in this context", "in this sentence", "it means", "refers to".
 - Use 1 to 4 simple words whenever possible.
@@ -28,7 +28,6 @@ Meaning rules:
 Example sentence rules:
 - Must be very easy and memorable.
 - Must use the word naturally.
-- Must match the same contextual meaning.
 
 Output rules:
 - Return JSON list only.
@@ -44,7 +43,7 @@ Use the question sentence only to understand context.
 Then extract only the answer choices in order.
 Ignore all other unnecessary text.
 
-Return meanings of each choice based on the sentence context.
+Return meanings of each choice.
 """
 
 WORD_LOOKUP_SYSTEM_PROMPT = """You are a vocabulary assistant. The user has provided a single word (possibly misspelled or in an inflected form). Return the correctly spelled base form of the word, a concise plain-English definition (1-2 sentences), and one memorable example sentence that helps a learner remember it. Return exactly one result."""

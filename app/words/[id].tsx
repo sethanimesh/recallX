@@ -13,6 +13,7 @@ import {
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Audio } from 'expo-av';
 
 import {
   fetchWordWithSource,
@@ -23,6 +24,9 @@ import {
 import { getTagsForWord, removeTagFromWord, type Tag } from '@/src/db/operations/tags';
 import TagPickerSheet from '@/src/components/TagPickerSheet';
 import { getNav, navigate, clearNav } from '@/src/store/libraryNav';
+import { getPronunciation } from '@/src/api/wordServerClient';
+
+type PronunciationState = 'idle' | 'loading' | 'playing' | 'unavailable' | 'error';
 
 // ── Source helpers ────────────────────────────────────────────────────────────
 
@@ -123,12 +127,15 @@ export default function WordDetailScreen() {
   const insets = useSafeAreaInsets();
   const currentIdRef = useRef<string | undefined>(id);
   const currentWordRef = useRef<string | undefined>(undefined);
+  const previousPronunciationWordRef = useRef<string | undefined>(undefined);
 
   const [loading, setLoading] = useState(true);
   const [wordData, setWordData] = useState<WordWithSource | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagPickerVisible, setTagPickerVisible] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [pronunciationState, setPronunciationState] = useState<PronunciationState>('idle');
+  const soundRef = useRef<Audio.Sound | null>(null);
 
   const load = useCallback(async () => {
     if (!id) {
@@ -157,9 +164,26 @@ export default function WordDetailScreen() {
   }, [load]);
 
   useEffect(() => {
+    return () => {
+      void soundRef.current?.unloadAsync();
+      soundRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
     currentIdRef.current = id;
     currentWordRef.current = wordData?.word;
   }, [id, wordData?.word]);
+
+  useEffect(() => {
+    const previousWord = previousPronunciationWordRef.current;
+    previousPronunciationWordRef.current = wordData?.word;
+    if (!previousWord || previousWord === wordData?.word) return;
+
+    setPronunciationState('idle');
+    void soundRef.current?.unloadAsync();
+    soundRef.current = null;
+  }, [wordData?.word]);
 
   // ── Delete handler ──────────────────────────────────────────────────────────
 
@@ -219,6 +243,37 @@ export default function WordDetailScreen() {
     },
     [id],
   );
+
+  const handlePronunciationPress = useCallback(async () => {
+    if (!wordData?.word || pronunciationState === 'loading') return;
+
+    setPronunciationState('loading');
+    try {
+      await soundRef.current?.unloadAsync();
+      soundRef.current = null;
+      const pronunciation = await getPronunciation(wordData.word);
+      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+      const { sound } = await Audio.Sound.createAsync({ uri: pronunciation.audio_url });
+      soundRef.current = sound;
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if ('isLoaded' in status && status.isLoaded && status.didJustFinish) {
+          setPronunciationState('idle');
+          void sound.unloadAsync();
+          if (soundRef.current === sound) soundRef.current = null;
+        }
+      });
+      setPronunciationState('playing');
+      await sound.playAsync();
+    } catch (err) {
+      await soundRef.current?.unloadAsync().catch(() => {});
+      soundRef.current = null;
+      if (typeof err === 'object' && err !== null && 'statusCode' in err && err.statusCode === 404) {
+        setPronunciationState('unavailable');
+      } else {
+        setPronunciationState('error');
+      }
+    }
+  }, [pronunciationState, wordData?.word]);
 
   useEffect(() => {
     const { active, ids, index } = getNav();
@@ -302,7 +357,41 @@ export default function WordDetailScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Word heading */}
-        <Text style={styles.wordHeading}>{wordData.word}</Text>
+        <View style={styles.wordHeaderRow}>
+          <Text style={styles.wordHeading}>{wordData.word}</Text>
+          <TouchableOpacity
+            testID="pronunciation-button"
+            accessibilityLabel={`Play pronunciation for ${wordData.word}`}
+            accessibilityRole="button"
+            disabled={pronunciationState === 'loading'}
+            onPress={handlePronunciationPress}
+            hitSlop={10}
+            style={[
+              styles.pronunciationButton,
+              pronunciationState === 'loading' && styles.pronunciationButtonDisabled,
+            ]}
+          >
+            {pronunciationState === 'loading' ? (
+              <ActivityIndicator size="small" color="#007AFF" />
+            ) : (
+              <Ionicons
+                name={pronunciationState === 'playing' ? 'volume-high-outline' : 'volume-medium-outline'}
+                size={24}
+                color="#007AFF"
+              />
+            )}
+          </TouchableOpacity>
+        </View>
+        {pronunciationState === 'unavailable' && (
+          <Text testID="pronunciation-status" style={styles.pronunciationStatus}>
+            No pronunciation available
+          </Text>
+        )}
+        {pronunciationState === 'error' && (
+          <Text testID="pronunciation-status" style={styles.pronunciationStatus}>
+            Could not play pronunciation
+          </Text>
+        )}
 
         {/* Source row */}
         {wordData.source && (
@@ -432,6 +521,29 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '800',
     color: '#111827',
+    flexShrink: 1,
+  },
+  wordHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  pronunciationButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+    backgroundColor: '#EFF6FF',
+  },
+  pronunciationButtonDisabled: {
+    opacity: 0.65,
+  },
+  pronunciationStatus: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: -6,
     marginBottom: 12,
   },
   sourceRow: {

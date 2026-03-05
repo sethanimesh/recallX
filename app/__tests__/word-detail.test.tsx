@@ -59,11 +59,53 @@ jest.mock('@/src/db/operations/tags', () => ({
 
 jest.mock('@/src/components/TagPickerSheet', () => () => null);
 
+const mockGetPronunciation = jest.fn();
+class MockWordServerError extends Error {
+  constructor(message: string, public readonly statusCode: number) {
+    super(message);
+    this.name = 'WordServerError';
+  }
+}
+jest.mock('@/src/api/wordServerClient', () => ({
+  getPronunciation: (...args: unknown[]) => mockGetPronunciation(...args),
+  WordServerError: MockWordServerError,
+}));
+
+const mockPlayAsync = jest.fn();
+const mockUnloadAsync = jest.fn();
+const mockSetOnPlaybackStatusUpdate = jest.fn();
+const mockCreateAsync = jest.fn();
+const mockSetAudioModeAsync = jest.fn();
+jest.mock('expo-av', () => ({
+  Audio: {
+    setAudioModeAsync: (...args: unknown[]) => mockSetAudioModeAsync(...args),
+    Sound: {
+      createAsync: (...args: unknown[]) => mockCreateAsync(...args),
+    },
+  },
+}));
+
 import WordDetailScreen from '../words/[id]';
 
 describe('WordDetailScreen header delete action', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetPronunciation.mockResolvedValue({
+      word: 'alacrity',
+      audio_url: 'https://audio.example/alacrity-us.mp3',
+      source: 'dictionaryapi.dev',
+      accent: 'us',
+    });
+    mockSetAudioModeAsync.mockResolvedValue(undefined);
+    mockCreateAsync.mockResolvedValue({
+      sound: {
+        playAsync: mockPlayAsync,
+        unloadAsync: mockUnloadAsync,
+        setOnPlaybackStatusUpdate: mockSetOnPlaybackStatusUpdate,
+      },
+    });
+    mockPlayAsync.mockResolvedValue(undefined);
+    mockUnloadAsync.mockResolvedValue(undefined);
     mockFetchWordWithSource.mockResolvedValue({
       id: 'word-1',
       word: 'alacrity',
@@ -111,6 +153,22 @@ describe('WordDetailScreen header delete action', () => {
 describe('WordDetailScreen navigation bar', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetPronunciation.mockResolvedValue({
+      word: 'alacrity',
+      audio_url: 'https://audio.example/alacrity-us.mp3',
+      source: 'dictionaryapi.dev',
+      accent: 'us',
+    });
+    mockSetAudioModeAsync.mockResolvedValue(undefined);
+    mockCreateAsync.mockResolvedValue({
+      sound: {
+        playAsync: mockPlayAsync,
+        unloadAsync: mockUnloadAsync,
+        setOnPlaybackStatusUpdate: mockSetOnPlaybackStatusUpdate,
+      },
+    });
+    mockPlayAsync.mockResolvedValue(undefined);
+    mockUnloadAsync.mockResolvedValue(undefined);
     mockFetchWordWithSource.mockResolvedValue({
       id: 'word-1',
       word: 'alacrity',
@@ -181,5 +239,79 @@ describe('WordDetailScreen navigation bar', () => {
     render(<WordDetailScreen />);
     await waitFor(() => expect(mockFetchWordWithSource).toHaveBeenCalled());
     expect(mockClearNav).toHaveBeenCalled();
+  });
+});
+
+describe('WordDetailScreen pronunciation playback', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockFetchWordWithSource.mockResolvedValue({
+      id: 'word-1',
+      word: 'alacrity',
+      definition: 'A feeling of happy excitement.',
+      example_sentence: 'She accepted the challenge with alacrity.',
+      source: null,
+    });
+    mockGetTagsForWord.mockResolvedValue([]);
+    mockGetNav.mockReturnValue({ active: false, ids: [], index: 0 });
+    mockGetPronunciation.mockResolvedValue({
+      word: 'alacrity',
+      audio_url: 'https://audio.example/alacrity-us.mp3',
+      source: 'dictionaryapi.dev',
+      accent: 'us',
+    });
+    mockSetAudioModeAsync.mockResolvedValue(undefined);
+    mockCreateAsync.mockResolvedValue({
+      sound: {
+        playAsync: mockPlayAsync,
+        unloadAsync: mockUnloadAsync,
+        setOnPlaybackStatusUpdate: mockSetOnPlaybackStatusUpdate,
+      },
+    });
+    mockPlayAsync.mockResolvedValue(undefined);
+    mockUnloadAsync.mockResolvedValue(undefined);
+  });
+
+  it('renders a pronunciation button on word detail', async () => {
+    const { getByTestId } = render(<WordDetailScreen />);
+    await waitFor(() => expect(mockFetchWordWithSource).toHaveBeenCalled());
+    expect(getByTestId('pronunciation-button')).toBeTruthy();
+  });
+
+  it('fetches dictionary pronunciation and plays the returned audio URL', async () => {
+    const { getByTestId } = render(<WordDetailScreen />);
+    await waitFor(() => expect(mockFetchWordWithSource).toHaveBeenCalled());
+
+    await actRTL(async () => {
+      fireEvent.press(getByTestId('pronunciation-button'));
+    });
+
+    expect(mockGetPronunciation).toHaveBeenCalledWith('alacrity');
+    expect(mockCreateAsync).toHaveBeenCalledWith({ uri: 'https://audio.example/alacrity-us.mp3' });
+    expect(mockPlayAsync).toHaveBeenCalled();
+  });
+
+  it('shows unavailable message when no dictionary audio exists', async () => {
+    mockGetPronunciation.mockRejectedValueOnce(new MockWordServerError('missing', 404));
+    const { getByTestId, getByText } = render(<WordDetailScreen />);
+    await waitFor(() => expect(mockFetchWordWithSource).toHaveBeenCalled());
+
+    await actRTL(async () => {
+      fireEvent.press(getByTestId('pronunciation-button'));
+    });
+
+    expect(getByText('No pronunciation available')).toBeTruthy();
+  });
+
+  it('shows playback error message when audio playback fails', async () => {
+    mockCreateAsync.mockRejectedValueOnce(new Error('playback failed'));
+    const { getByTestId, getByText } = render(<WordDetailScreen />);
+    await waitFor(() => expect(mockFetchWordWithSource).toHaveBeenCalled());
+
+    await actRTL(async () => {
+      fireEvent.press(getByTestId('pronunciation-button'));
+    });
+
+    expect(getByText('Could not play pronunciation')).toBeTruthy();
   });
 });

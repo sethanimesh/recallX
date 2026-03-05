@@ -23,7 +23,7 @@
           "NSAllowsArbitraryLoads": true
         }
       },
-      "bundleIdentifier": "com.anonymous.RecallX"
+      "bundleIdentifier": "com.animesh.RecallX"
     },
     "android": {
       "adaptiveIcon": {
@@ -35,7 +35,7 @@
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.anonymous.RecallX"
+      "package": "com.animesh.RecallX"
     },
     "web": {
       "bundler": "metro",

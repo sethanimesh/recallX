@@ -110,6 +110,12 @@ export function useVoiceInput() {
       };
 
       ws.onopen = async () => {
+        // Unload any stale recording before preparing a new one
+        if (recordingRef.current) {
+          await recordingRef.current.stopAndUnloadAsync().catch(() => {});
+          recordingRef.current = null;
+        }
+
         const recording = new Audio.Recording();
         recordingRef.current = recording;
 

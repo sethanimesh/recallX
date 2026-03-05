@@ -9,6 +9,7 @@ import {
   removeTagFromWord,
   getWords,
   getTags,
+  getPronunciation,
   WordServerError,
 } from '../wordServerClient';
 
@@ -122,6 +123,29 @@ describe('getTags', () => {
     const result = await getTags(BASE);
     expect(global.fetch).toHaveBeenCalledWith(`${BASE}/tags`, expect.objectContaining({ method: 'GET' }));
     expect(result).toEqual([]);
+  });
+});
+
+describe('getPronunciation', () => {
+  it('calls GET /pronunciations/{word} with encoded word', async () => {
+    const record = {
+      word: 'ice cream',
+      audio_url: 'https://audio.example/ice-cream-us.mp3',
+      source: 'dictionaryapi.dev',
+      accent: 'us',
+    };
+    mockResponse(200, record);
+    const result = await getPronunciation('ice cream', BASE);
+    expect(global.fetch).toHaveBeenCalledWith(
+      `${BASE}/pronunciations/ice%20cream`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+    expect(result).toEqual(record);
+  });
+
+  it('throws WordServerError with status 404 when unavailable', async () => {
+    mockResponse(404, { detail: 'Pronunciation not available' });
+    await expect(getPronunciation('missing', BASE)).rejects.toMatchObject({ statusCode: 404 });
   });
 });
 

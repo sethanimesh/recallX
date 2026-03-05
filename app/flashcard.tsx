@@ -172,52 +172,55 @@ export default function FlashcardScreen() {
       : `${currentIndex + 1} / ${deck.length}`;
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <Text style={styles.progress}>{progressText}</Text>
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <Text style={styles.progress}>{progressText}</Text>
 
-      <Text style={styles.wordText}>{currentWord!.word}</Text>
+        <Text style={styles.wordText}>{currentWord!.word}</Text>
 
-      {phase === 'question' && (
-        <TouchableOpacity style={styles.revealButton} onPress={handleReveal} testID="reveal-button">
-          <Text style={styles.revealButtonText}>Reveal Answer</Text>
-        </TouchableOpacity>
-      )}
-
-      {phase === 'revealed' && (
-        <View style={styles.revealedSection}>
-          <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>Definition</Text>
-            <Text style={styles.infoText}>{currentWord!.definition}</Text>
-          </View>
-          <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>Example</Text>
-            <Text style={styles.infoText}>{currentWord!.example_sentence}</Text>
-          </View>
-
-          {fcMode === 'passive' ? (
-            <TouchableOpacity style={styles.nextButton} onPress={handleNext} testID="next-button">
-              <Text style={styles.nextButtonText}>
-                {isLastCard ? 'Next — See Results' : 'Next →'}
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.ratingRow}>
-              <TouchableOpacity style={styles.missedButton} onPress={handleMissedIt} testID="missed-it-button">
-                <Text style={styles.missedButtonText}>Missed it ✗</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.gotItButton} onPress={handleGotIt} testID="got-it-button">
-                <Text style={styles.gotItButtonText}>Got it ✓</Text>
-              </TouchableOpacity>
+        {phase === 'revealed' && (
+          <View style={styles.revealedSection}>
+            <View style={styles.infoBlock}>
+              <Text style={styles.infoLabel}>Definition</Text>
+              <Text style={styles.infoText}>{currentWord!.definition}</Text>
             </View>
-          )}
-        </View>
-      )}
-    </ScrollView>
+            <View style={styles.infoBlock}>
+              <Text style={styles.infoLabel}>Example</Text>
+              <Text style={styles.infoText}>{currentWord!.example_sentence}</Text>
+            </View>
+          </View>
+        )}
+      </ScrollView>
+
+      <View style={styles.actionFooter}>
+        {phase === 'question' ? (
+          <TouchableOpacity style={styles.revealButton} onPress={handleReveal} testID="reveal-button">
+            <Text style={styles.revealButtonText}>Reveal Answer</Text>
+          </TouchableOpacity>
+        ) : fcMode === 'passive' ? (
+          <TouchableOpacity style={styles.nextButton} onPress={handleNext} testID="next-button">
+            <Text style={styles.nextButtonText}>
+              {isLastCard ? 'Next — See Results' : 'Next →'}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.ratingRow}>
+            <TouchableOpacity style={styles.missedButton} onPress={handleMissedIt} testID="missed-it-button">
+              <Text style={styles.missedButtonText}>Missed it ✗</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.gotItButton} onPress={handleGotIt} testID="got-it-button">
+              <Text style={styles.gotItButtonText}>Got it ✓</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 24, backgroundColor: '#fff', flexGrow: 1 },
+  screen: { flex: 1, backgroundColor: '#fff' },
+  container: { padding: 24, paddingBottom: 24, backgroundColor: '#fff', flexGrow: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff', padding: 24 },
   progress: { fontSize: 13, color: '#9CA3AF', textAlign: 'right', marginBottom: 24 },
   wordText: { fontSize: 36, fontWeight: 'bold', color: '#111827', marginBottom: 40, textAlign: 'center' },
@@ -227,9 +230,10 @@ const styles = StyleSheet.create({
   infoBlock: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 16, gap: 4 },
   infoLabel: { fontSize: 12, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 },
   infoText: { fontSize: 15, color: '#111827', lineHeight: 22 },
-  nextButton: { backgroundColor: '#3B82F6', borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
+  actionFooter: { borderTopWidth: 1, borderTopColor: '#E5E7EB', padding: 24, backgroundColor: '#fff' },
+  nextButton: { backgroundColor: '#3B82F6', borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
   nextButtonText: { fontSize: 17, fontWeight: '700', color: '#fff' },
-  ratingRow: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  ratingRow: { flexDirection: 'row', gap: 12 },
   missedButton: { flex: 1, backgroundColor: '#FEE2E2', borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
   missedButtonText: { fontSize: 17, fontWeight: '700', color: '#EF4444' },
   gotItButton: { flex: 1, backgroundColor: '#DCFCE7', borderRadius: 12, paddingVertical: 16, alignItems: 'center' },

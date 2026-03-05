@@ -51,6 +51,11 @@ export default function CropScreen() {
     };
   }, [x1, y1, x2, y2]);
 
+  // Guard against missing URI (should not happen in normal flow)
+  useEffect(() => {
+    if (!uri) router.back();
+  }, []);
+
   // Load image natural dimensions
   useEffect(() => {
     if (!uri) return;
@@ -85,12 +90,6 @@ export default function CropScreen() {
     x2.setValue(initX2); x2Ref.current = initX2;
     y2.setValue(initY2); y2Ref.current = initY2;
   }, [containerSize, imageSize]);
-
-  if (!uri) {
-    // Should not happen in normal flow, but guard against stale navigation
-    router.back();
-    return null;
-  }
 
   return (
     <View

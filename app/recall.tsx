@@ -19,6 +19,7 @@ import {
   insertSessionResult,
   fetchRecentlyWrongIds,
   fetchTodayWordIds,
+  fetchWordsCreatedTodayForRecall,
 } from '@/src/db/operations/sessionHistory';
 import { useVoiceInput } from '@/src/audio/useVoiceInput';
 import { VoiceInputButton } from '@/src/components/VoiceInputButton';
@@ -36,7 +37,7 @@ type Mode = 'adaptive' | 'classic';
 
 export default function RecallScreen() {
   const router = useRouter();
-  const { tagId, mode: modeParam } = useLocalSearchParams<{ tagId: string; mode: string }>();
+  const { tagId, mode: modeParam, todayOnly } = useLocalSearchParams<{ tagId: string; mode: string; todayOnly: string }>();
   const mode: Mode = modeParam === 'classic' ? 'classic' : 'adaptive';
 
   // Classic mode
@@ -70,12 +71,14 @@ export default function RecallScreen() {
   useEffect(() => {
     async function loadDeck() {
       if (mode === 'adaptive') {
-        const wordsPool = tagId && tagId.length > 0
-          ? await fetchDueWords(tagId)
-          : await fetchDueWords();
+        const wordsPool = todayOnly === 'true'
+          ? await fetchWordsCreatedTodayForRecall(tagId && tagId.length > 0 ? tagId : undefined)
+          : tagId && tagId.length > 0
+            ? await fetchDueWords(tagId)
+            : await fetchDueWords();
         const dueIds = wordsPool.map(w => w.id);
         const wrongIds = await fetchRecentlyWrongIds('recall', dueIds);
-        const todayIds = await fetchTodayWordIds(dueIds);
+        const todayIds = todayOnly === 'true' ? [] : await fetchTodayWordIds(dueIds);
         recentlyWrongIdsRef.current = wrongIds;
         preSeededIdsRef.current = new Set(wrongIds);
         const session = createSession(wordsPool, wrongIds, todayIds);

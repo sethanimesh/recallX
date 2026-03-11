@@ -16,6 +16,7 @@ import {
   insertSessionResult,
   fetchRecentlyWrongIds,
   fetchTodayWordIds,
+  fetchWordsCreatedTodayForFlashcard,
 } from '@/src/db/operations/sessionHistory';
 import {
   createSession,
@@ -31,7 +32,7 @@ type FcMode = 'passive' | 'self-rated';
 
 export default function FlashcardScreen() {
   const router = useRouter();
-  const { tagId, fcMode: fcModeParam } = useLocalSearchParams<{ tagId: string; fcMode: string }>();
+  const { tagId, fcMode: fcModeParam, todayOnly } = useLocalSearchParams<{ tagId: string; fcMode: string; todayOnly: string }>();
   const fcMode: FcMode = fcModeParam === 'self-rated' ? 'self-rated' : 'passive';
 
   // Passive mode state
@@ -58,12 +59,14 @@ export default function FlashcardScreen() {
   useEffect(() => {
     async function loadDeck() {
       if (fcMode === 'self-rated') {
-        const wordsPool = tagId && tagId.length > 0
-          ? await fetchDueWordsFc(tagId)
-          : await fetchDueWordsFc();
+        const wordsPool = todayOnly === 'true'
+          ? await fetchWordsCreatedTodayForFlashcard(tagId && tagId.length > 0 ? tagId : undefined)
+          : tagId && tagId.length > 0
+            ? await fetchDueWordsFc(tagId)
+            : await fetchDueWordsFc();
         const dueIds = wordsPool.map(w => w.id);
         const wrongIds = await fetchRecentlyWrongIds('flashcard', dueIds);
-        const todayIds = await fetchTodayWordIds(dueIds);
+        const todayIds = todayOnly === 'true' ? [] : await fetchTodayWordIds(dueIds);
         recentlyWrongIdsRef.current = wrongIds;
         preSeededIdsRef.current = new Set(wrongIds);
         const s = createSession(wordsPool, wrongIds, todayIds);

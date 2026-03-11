@@ -33,6 +33,11 @@ jest.mock('@/src/db/operations/srs', () => ({
   fetchDueWordsFc: (...args: unknown[]) => mockFetchDueWordsFc(...args),
 }));
 
+const mockFetchTodayWordCount = jest.fn();
+jest.mock('@/src/db/operations/sessionHistory', () => ({
+  fetchTodayWordCount: (...args: unknown[]) => mockFetchTodayWordCount(...args),
+}));
+
 import RecallSetupScreen from '../recall-setup';
 
 function collectText(
@@ -58,6 +63,7 @@ describe('RecallSetupScreen', () => {
     mockFetchAllWords.mockResolvedValue([]);
     mockFetchDueWords.mockResolvedValue([]);
     mockFetchDueWordsFc.mockResolvedValue([]);
+    mockFetchTodayWordCount.mockResolvedValue(0);
   });
 
   afterEach(() => {

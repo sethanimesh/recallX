@@ -11,6 +11,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getAllTags, fetchAllWords, fetchWordsByTag, type Tag } from '@/src/db/operations/tags';
 import { fetchDueWords, fetchDueWordsFc } from '@/src/db/operations/srs';
+import { fetchTodayWordCount } from '@/src/db/operations/sessionHistory';
 
 type DeckOption = { id: string | null; name: string };
 export type Mode = 'adaptive' | 'classic' | 'flashcard';
@@ -25,10 +26,12 @@ export default function RecallSetupScreen() {
   const [wordCount, setWordCount] = useState(0);
   const [mode, setMode] = useState<Mode>('adaptive');
   const [fcMode, setFcMode] = useState<FcMode>('passive');
+  const [todayCount, setTodayCount] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
       getAllTags().then(setTags);
+      fetchTodayWordCount().then(setTodayCount).catch(() => {});
     }, [])
   );
 
@@ -75,6 +78,14 @@ export default function RecallSetupScreen() {
       router.push({ pathname: '/recall' as any, params: { tagId: selectedTagId ?? '', mode } });
     }
   }, [router, selectedTagId, mode, fcMode]);
+
+  const handleTodayWords = useCallback(() => {
+    if (mode === 'flashcard') {
+      router.push({ pathname: '/flashcard' as any, params: { tagId: '', fcMode, todayOnly: 'true' } });
+    } else {
+      router.push({ pathname: '/recall' as any, params: { tagId: '', mode, todayOnly: 'true' } });
+    }
+  }, [router, mode, fcMode]);
 
   const deckOptions: DeckOption[] = [{ id: null, name: 'All Words' }, ...tags];
 
@@ -171,6 +182,17 @@ export default function RecallSetupScreen() {
       )}
 
       <TouchableOpacity
+        style={[styles.todayButton, todayCount === 0 && styles.startButtonDisabled]}
+        onPress={handleTodayWords}
+        disabled={todayCount === 0}
+        testID="today-words-button"
+      >
+        <Text style={[styles.todayButtonText, todayCount === 0 && styles.startButtonTextDisabled]}>
+          Today's Words ({todayCount})
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
         style={[styles.startButton, wordCount === 0 && styles.startButtonDisabled]}
         onPress={handleStart}
         disabled={wordCount === 0}
@@ -233,4 +255,6 @@ const styles = StyleSheet.create({
   startButtonDisabled: { backgroundColor: '#E5E7EB' },
   startButtonText: { fontSize: 17, fontWeight: '700', color: '#fff' },
   startButtonTextDisabled: { color: '#9CA3AF' },
+  todayButton: { marginTop: 8, backgroundColor: '#8B5CF6', borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  todayButtonText: { fontSize: 15, fontWeight: '700', color: '#fff' },
 });

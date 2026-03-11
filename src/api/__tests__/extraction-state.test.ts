@@ -1,3 +1,6 @@
+jest.mock('@/src/db/client', () => ({ db: { transaction: jest.fn() } }));
+jest.mock('@/src/db/schema', () => ({ words: 'words', sessions: 'sessions', sessionResults: 'sessionResults' }));
+
 import { activeExtractionClient, StubExtractionClient } from '../index';
 
 describe('activeExtractionClient.extractWords', () => {

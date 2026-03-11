@@ -1,4 +1,4 @@
-import { DEFAULT_BASE_URL } from './http';
+import { getBackendUrl, getCommonHeaders } from '@/src/config/settings';
 
 export type Period = 'today' | 'week' | 'month' | 'all';
 
@@ -31,11 +31,14 @@ export class StatsError extends Error {
 
 export async function fetchLlmStats(
   period: Period,
-  baseUrl = DEFAULT_BASE_URL,
+  baseUrl?: string,
 ): Promise<LlmStatsResponse> {
   let response: Response;
   try {
-    response = await fetch(`${baseUrl.replace(/\/$/, '')}/stats/llm?period=${period}`);
+    response = await fetch(
+      `${(baseUrl ?? getBackendUrl()).replace(/\/$/, '')}/stats/llm?period=${period}`,
+      { headers: getCommonHeaders() },
+    );
   } catch {
     throw new StatsError('Network error', 0);
   }

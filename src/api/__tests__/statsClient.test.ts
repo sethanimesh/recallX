@@ -1,3 +1,6 @@
+jest.mock('@/src/db/client', () => ({ db: { transaction: jest.fn() } }));
+jest.mock('@/src/db/schema', () => ({ words: 'words', sessions: 'sessions', sessionResults: 'sessionResults' }));
+
 import { fetchLlmStats, StatsError, LlmStatsResponse } from '../statsClient';
 
 const mockFetch = jest.fn();
@@ -78,6 +81,9 @@ describe('fetchLlmStats', () => {
 
     await fetchLlmStats('today', 'http://localhost:8000/');
 
-    expect(mockFetch).toHaveBeenCalledWith('http://localhost:8000/stats/llm?period=today');
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://localhost:8000/stats/llm?period=today',
+      expect.objectContaining({ headers: expect.any(Object) }),
+    );
   });
 });

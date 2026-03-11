@@ -1,4 +1,4 @@
-const DEFAULT_BASE_URL = 'http://192.168.68.104:8000'; // matches http.ts
+import { getBackendUrl, getCommonHeaders } from '@/src/config/settings';
 
 export interface ServerTagRecord {
   id: string;
@@ -47,7 +47,7 @@ async function request<T>(url: string, options: RequestInit): Promise<T> {
   try {
     response = await fetch(url, {
       ...options,
-      headers: { 'Content-Type': 'application/json', ...(options.headers ?? {}) },
+      headers: { 'Content-Type': 'application/json', ...getCommonHeaders(), ...(options.headers ?? {}) },
     });
   } catch {
     throw new WordServerError('Network error', 0);
@@ -68,72 +68,72 @@ async function request<T>(url: string, options: RequestInit): Promise<T> {
   }
 }
 
-export function postWord(payload: CreateWordPayload, baseUrl = DEFAULT_BASE_URL) {
-  return request<ServerWordRecord>(`${baseUrl}/words`, {
+export function postWord(payload: CreateWordPayload, baseUrl?: string) {
+  return request<ServerWordRecord>(`${(baseUrl ?? getBackendUrl())}/words`, {
     method: 'POST',
     body: JSON.stringify(payload),
   });
 }
 
-export function getWords(baseUrl = DEFAULT_BASE_URL) {
-  return request<ServerWordRecord[]>(`${baseUrl}/words`, { method: 'GET' });
+export function getWords(baseUrl?: string) {
+  return request<ServerWordRecord[]>(`${(baseUrl ?? getBackendUrl())}/words`, { method: 'GET' });
 }
 
 export function patchWord(
   id: string,
   updates: { definition?: string; example_sentence?: string },
-  baseUrl = DEFAULT_BASE_URL,
+  baseUrl?: string,
 ) {
-  return request<ServerWordRecord>(`${baseUrl}/words/${id}`, {
+  return request<ServerWordRecord>(`${(baseUrl ?? getBackendUrl())}/words/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(updates),
   });
 }
 
-export function deleteWord(id: string, baseUrl = DEFAULT_BASE_URL) {
-  return request<ServerWordRecord>(`${baseUrl}/words/${id}`, { method: 'DELETE' });
+export function deleteWord(id: string, baseUrl?: string) {
+  return request<ServerWordRecord>(`${(baseUrl ?? getBackendUrl())}/words/${id}`, { method: 'DELETE' });
 }
 
-export function postTag(payload: { id: string; name: string }, baseUrl = DEFAULT_BASE_URL) {
-  return request<ServerTagRecord>(`${baseUrl}/tags`, {
+export function postTag(payload: { id: string; name: string }, baseUrl?: string) {
+  return request<ServerTagRecord>(`${(baseUrl ?? getBackendUrl())}/tags`, {
     method: 'POST',
     body: JSON.stringify(payload),
   });
 }
 
-export function getTags(baseUrl = DEFAULT_BASE_URL) {
-  return request<ServerTagRecord[]>(`${baseUrl}/tags`, { method: 'GET' });
+export function getTags(baseUrl?: string) {
+  return request<ServerTagRecord[]>(`${(baseUrl ?? getBackendUrl())}/tags`, { method: 'GET' });
 }
 
-export function patchTag(id: string, payload: { name: string }, baseUrl = DEFAULT_BASE_URL) {
-  return request<ServerTagRecord>(`${baseUrl}/tags/${id}`, {
+export function patchTag(id: string, payload: { name: string }, baseUrl?: string) {
+  return request<ServerTagRecord>(`${(baseUrl ?? getBackendUrl())}/tags/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
   });
 }
 
-export function deleteTag(id: string, baseUrl = DEFAULT_BASE_URL) {
-  return request<void>(`${baseUrl}/tags/${id}`, { method: 'DELETE' });
+export function deleteTag(id: string, baseUrl?: string) {
+  return request<void>(`${(baseUrl ?? getBackendUrl())}/tags/${id}`, { method: 'DELETE' });
 }
 
-export function mergeTag(sourceTagId: string, targetTagId: string, baseUrl = DEFAULT_BASE_URL) {
-  return request<ServerTagRecord>(`${baseUrl}/tags/${sourceTagId}/merge`, {
+export function mergeTag(sourceTagId: string, targetTagId: string, baseUrl?: string) {
+  return request<ServerTagRecord>(`${(baseUrl ?? getBackendUrl())}/tags/${sourceTagId}/merge`, {
     method: 'POST',
     body: JSON.stringify({ target_tag_id: targetTagId }),
   });
 }
 
-export function addTagToWord(wordId: string, tagId: string, baseUrl = DEFAULT_BASE_URL) {
-  return request<void>(`${baseUrl}/words/${wordId}/tags/${tagId}`, { method: 'POST' });
+export function addTagToWord(wordId: string, tagId: string, baseUrl?: string) {
+  return request<void>(`${(baseUrl ?? getBackendUrl())}/words/${wordId}/tags/${tagId}`, { method: 'POST' });
 }
 
-export function removeTagFromWord(wordId: string, tagId: string, baseUrl = DEFAULT_BASE_URL) {
-  return request<void>(`${baseUrl}/words/${wordId}/tags/${tagId}`, { method: 'DELETE' });
+export function removeTagFromWord(wordId: string, tagId: string, baseUrl?: string) {
+  return request<void>(`${(baseUrl ?? getBackendUrl())}/words/${wordId}/tags/${tagId}`, { method: 'DELETE' });
 }
 
-export function getPronunciation(word: string, baseUrl = DEFAULT_BASE_URL) {
+export function getPronunciation(word: string, baseUrl?: string) {
   return request<PronunciationRecord>(
-    `${baseUrl}/pronunciations/${encodeURIComponent(word)}`,
+    `${(baseUrl ?? getBackendUrl())}/pronunciations/${encodeURIComponent(word)}`,
     { method: 'GET' },
   );
 }

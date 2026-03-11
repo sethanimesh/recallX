@@ -1,4 +1,4 @@
-const DEFAULT_BASE_URL = 'http://192.168.68.104:8000'; // same as http.ts
+import { getBackendUrl, getCommonHeaders } from '@/src/config/settings';
 
 export interface GradeResult {
   correct: boolean;
@@ -16,12 +16,12 @@ export async function gradeAnswer(
   word: string,
   userAnswer: string,
   storedDefinition: string,
-  baseUrl: string = DEFAULT_BASE_URL,
+  baseUrl?: string,
 ): Promise<GradeResult> {
-  const url = `${baseUrl.replace(/\/$/, '')}/grade`;
+  const url = `${(baseUrl ?? getBackendUrl()).replace(/\/$/, '')}/grade`;
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getCommonHeaders() },
     body: JSON.stringify({ word, user_answer: userAnswer, stored_definition: storedDefinition }),
   });
   if (!response.ok) {

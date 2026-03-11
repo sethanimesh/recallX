@@ -1,3 +1,6 @@
+jest.mock('@/src/db/client', () => ({ db: { transaction: jest.fn() } }));
+jest.mock('@/src/db/schema', () => ({ words: 'words', sessions: 'sessions', sessionResults: 'sessionResults' }));
+
 import { HttpExtractionClient, ExtractionError, lookupWord } from '../http';
 import type { ImageInput, TextInput } from '../types';
 
@@ -72,12 +75,13 @@ describe('HttpExtractionClient', () => {
 
   it('uses default base URL when none provided', () => {
     const defaultClient = new HttpExtractionClient();
-    expect((defaultClient as any).baseUrl).toBe('http://localhost:8000');
+    // baseUrl is undefined; getBackendUrl() is called at request time
+    expect((defaultClient as any).baseUrl).toBeUndefined();
   });
 
-  it('strips trailing slash from base URL', () => {
+  it('stores base URL as-is (trailing slash stripped at request time)', () => {
     const c = new HttpExtractionClient('http://localhost:8000/');
-    expect((c as any).baseUrl).toBe('http://localhost:8000');
+    expect((c as any).baseUrl).toBe('http://localhost:8000/');
   });
 });
 

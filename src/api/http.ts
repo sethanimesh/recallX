@@ -1,6 +1,7 @@
 import type { ExtractedWord, ExtractionClient, ImageInput, TextInput } from './types';
+import { getBackendUrl, getCommonHeaders } from '@/src/config/settings';
 
-export const DEFAULT_BASE_URL = 'http://192.168.68.104:8000'; // Phase 8: make configurable in Settings
+export { DEFAULT_BACKEND_URL } from '@/src/config/settings';
 
 export class ExtractionError extends Error {
   constructor(
@@ -13,22 +14,23 @@ export class ExtractionError extends Error {
 }
 
 export class HttpExtractionClient implements ExtractionClient {
-  private readonly baseUrl: string;
+  private readonly baseUrl?: string;
 
-  constructor(baseUrl: string = DEFAULT_BASE_URL) {
-    this.baseUrl = baseUrl.replace(/\/$/, ''); // strip trailing slash
+  constructor(baseUrl?: string) {
+    this.baseUrl = baseUrl;
   }
 
   async extractWords(input: ImageInput | TextInput): Promise<ExtractedWord[]> {
+    const base = (this.baseUrl ?? getBackendUrl()).replace(/\/$/, '');
     const body =
       input.type === 'image'
         ? { input_type: 'image' as const, content: input.base64, mime_type: input.mimeType }
         : { input_type: 'text' as const, content: input.content, mime_type: null };
 
-    const url = `${this.baseUrl}/extract`;
+    const url = `${base}/extract`;
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getCommonHeaders() },
       body: JSON.stringify(body),
     });
 
@@ -46,12 +48,13 @@ export class HttpExtractionClient implements ExtractionClient {
   }
 }
 
-export async function lookupWord(word: string, baseUrl = DEFAULT_BASE_URL): Promise<ExtractedWord> {
+export async function lookupWord(word: string, baseUrl?: string): Promise<ExtractedWord> {
+  const base = (baseUrl ?? getBackendUrl()).replace(/\/$/, '');
   let response: Response;
   try {
-    response = await fetch(`${baseUrl}/extract`, {
+    response = await fetch(`${base}/extract`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getCommonHeaders() },
       body: JSON.stringify({ input_type: 'word', content: word }),
     });
   } catch {

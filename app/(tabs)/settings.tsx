@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActionSheetIOS } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 import {
@@ -20,25 +20,25 @@ export default function SettingsScreen() {
   const [providersStatus, setProvidersStatus] = useState<ProvidersStatus>('loading');
   const [selectedProvider, setSelectedProvider] = useState<string | null>(getPreferredProvider());
 
-  useEffect(() => {
-    async function loadProviders() {
-      try {
-        const res = await fetch(`${getBackendUrl()}/providers`);
-        if (!res.ok) throw new Error('Failed');
-        const data = await res.json();
-        setProviders(data.providers as string[]);
-        setProvidersStatus('loaded');
-      } catch {
-        setProvidersStatus('error');
+  useFocusEffect(
+    useCallback(() => {
+      setCurrentUrl(getBackendUrl());
+      setProvidersStatus('loading');
+      async function loadProviders() {
+        try {
+          const res = await fetch(`${getBackendUrl()}/providers`);
+          if (!res.ok) throw new Error('Failed');
+          const data = await res.json();
+          setProviders(data.providers as string[]);
+          setProvidersStatus('loaded');
+        } catch (err) {
+          console.warn('[Settings] loadProviders failed:', err);
+          setProvidersStatus('error');
+        }
       }
-    }
-    loadProviders();
-  }, []);
-
-  // Refresh URL display when returning from the URL edit screen
-  useEffect(() => {
-    setCurrentUrl(getBackendUrl());
-  });
+      loadProviders();
+    }, []),
+  );
 
   function openProviderPicker() {
     const options = ['None (auto)', ...providers, 'Cancel'];
@@ -48,7 +48,7 @@ export default function SettingsScreen() {
         if (index === options.length - 1) return;
         const chosen = index === 0 ? null : providers[index - 1];
         setSelectedProvider(chosen);
-        setPreferredProvider(chosen).catch(() => {});
+        setPreferredProvider(chosen).catch((err) => console.warn('[Settings] setPreferredProvider failed:', err));
       },
     );
   }

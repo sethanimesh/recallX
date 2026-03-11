@@ -3,6 +3,38 @@ import { sessions, sessionResults, words, wordTags } from '@/src/db/schema';
 import { eq, and, isNull, gte, desc } from 'drizzle-orm';
 import type { WordSRSRow } from '@/src/db/operations/srs';
 
+const RECALL_TODAY_COLUMNS = {
+  id: words.id,
+  word: words.word,
+  definition: words.definition,
+  example_sentence: words.example_sentence,
+  source_id: words.source_id,
+  created_at: words.created_at,
+  updated_at: words.updated_at,
+  deleted_at: words.deleted_at,
+  srs_interval: words.srs_interval,
+  srs_ease_factor: words.srs_ease_factor,
+  srs_next_review_at: words.srs_next_review_at,
+  srs_wrong_count: words.srs_wrong_count,
+  srs_consecutive_correct: words.srs_consecutive_correct,
+};
+
+const FLASHCARD_TODAY_COLUMNS = {
+  id: words.id,
+  word: words.word,
+  definition: words.definition,
+  example_sentence: words.example_sentence,
+  source_id: words.source_id,
+  created_at: words.created_at,
+  updated_at: words.updated_at,
+  deleted_at: words.deleted_at,
+  srs_interval: words.fc_interval,
+  srs_ease_factor: words.fc_ease_factor,
+  srs_next_review_at: words.fc_next_review_at,
+  srs_wrong_count: words.fc_wrong_count,
+  srs_consecutive_correct: words.fc_consecutive_correct,
+};
+
 export interface SessionResultRow {
   word_id: string;
   correct: number;
@@ -124,27 +156,13 @@ export async function fetchWordsCreatedTodayForRecall(tagId?: string): Promise<W
   todayStart.setHours(0, 0, 0, 0);
   if (tagId) {
     return db
-      .select({
-        id: words.id, word: words.word, definition: words.definition,
-        example_sentence: words.example_sentence, source_id: words.source_id,
-        created_at: words.created_at, updated_at: words.updated_at, deleted_at: words.deleted_at,
-        srs_interval: words.srs_interval, srs_ease_factor: words.srs_ease_factor,
-        srs_next_review_at: words.srs_next_review_at, srs_wrong_count: words.srs_wrong_count,
-        srs_consecutive_correct: words.srs_consecutive_correct,
-      })
+      .select(RECALL_TODAY_COLUMNS)
       .from(words)
       .innerJoin(wordTags, eq(wordTags.word_id, words.id))
       .where(and(eq(wordTags.tag_id, tagId), isNull(words.deleted_at), gte(words.created_at, todayStart)));
   }
   return db
-    .select({
-      id: words.id, word: words.word, definition: words.definition,
-      example_sentence: words.example_sentence, source_id: words.source_id,
-      created_at: words.created_at, updated_at: words.updated_at, deleted_at: words.deleted_at,
-      srs_interval: words.srs_interval, srs_ease_factor: words.srs_ease_factor,
-      srs_next_review_at: words.srs_next_review_at, srs_wrong_count: words.srs_wrong_count,
-      srs_consecutive_correct: words.srs_consecutive_correct,
-    })
+    .select(RECALL_TODAY_COLUMNS)
     .from(words)
     .where(and(isNull(words.deleted_at), gte(words.created_at, todayStart)));
 }
@@ -154,27 +172,13 @@ export async function fetchWordsCreatedTodayForFlashcard(tagId?: string): Promis
   todayStart.setHours(0, 0, 0, 0);
   if (tagId) {
     return db
-      .select({
-        id: words.id, word: words.word, definition: words.definition,
-        example_sentence: words.example_sentence, source_id: words.source_id,
-        created_at: words.created_at, updated_at: words.updated_at, deleted_at: words.deleted_at,
-        srs_interval: words.fc_interval, srs_ease_factor: words.fc_ease_factor,
-        srs_next_review_at: words.fc_next_review_at, srs_wrong_count: words.fc_wrong_count,
-        srs_consecutive_correct: words.fc_consecutive_correct,
-      })
+      .select(FLASHCARD_TODAY_COLUMNS)
       .from(words)
       .innerJoin(wordTags, eq(wordTags.word_id, words.id))
       .where(and(eq(wordTags.tag_id, tagId), isNull(words.deleted_at), gte(words.created_at, todayStart)));
   }
   return db
-    .select({
-      id: words.id, word: words.word, definition: words.definition,
-      example_sentence: words.example_sentence, source_id: words.source_id,
-      created_at: words.created_at, updated_at: words.updated_at, deleted_at: words.deleted_at,
-      srs_interval: words.fc_interval, srs_ease_factor: words.fc_ease_factor,
-      srs_next_review_at: words.fc_next_review_at, srs_wrong_count: words.fc_wrong_count,
-      srs_consecutive_correct: words.fc_consecutive_correct,
-    })
+    .select(FLASHCARD_TODAY_COLUMNS)
     .from(words)
     .where(and(isNull(words.deleted_at), gte(words.created_at, todayStart)));
 }

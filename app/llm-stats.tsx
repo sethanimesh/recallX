@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { fetchLlmStats, type Period, type LlmStatsResponse, type LlmCall } from '@/src/api/statsClient';
 
-const TASK_LABELS: Record<string, string> = { extract: 'Extract', grade: 'Grade' };
+const TASK_LABELS: Record<string, string> = { image: 'Image', text: 'Extract', word: 'Lookup', grade: 'Grade' };
 
 const PERIODS: { label: string; value: Period }[] = [
   { label: 'Today', value: 'today' },
@@ -49,7 +49,7 @@ export default function LlmStatsScreen() {
 
   const renderCall = useCallback(({ item }: { item: LlmCall }) => (
     <View style={styles.callRow}>
-      <View style={[styles.taskBadge, item.task === 'extract' ? styles.badgeExtract : styles.badgeGrade]}>
+      <View style={[styles.taskBadge, item.task === 'grade' ? styles.badgeGrade : styles.badgeExtract]}>
         <Text style={styles.taskBadgeText}>{TASK_LABELS[item.task] ?? item.task}</Text>
       </View>
       <View style={styles.callInfo}>

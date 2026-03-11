@@ -27,7 +27,7 @@ class LlmCall(BaseModel):
 
 
 class LlmStatsResponse(BaseModel):
-    period: str
+    period: Period
     total_calls: int
     by_provider: list[ProviderCount]
     calls: list[LlmCall]

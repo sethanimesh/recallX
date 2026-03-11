@@ -17,8 +17,8 @@ describe('fetchLlmStats', () => {
         { provider: 'anthropic', model: 'claude-3', count: 2 },
       ],
       calls: [
-        { provider: 'openai', model: 'gpt-4', task: 'grade', called_at: 1609459200000 },
-        { provider: 'anthropic', model: 'claude-3', task: 'summarize', called_at: 1609459201000 },
+        { provider: 'openai', model: 'gpt-4', task: 'grade', called_at: 1609459200 },
+        { provider: 'anthropic', model: 'claude-3', task: 'summarize', called_at: 1609459201 },
       ],
     };
 

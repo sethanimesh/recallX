@@ -111,7 +111,7 @@ async def test_chain_records_llm_call_on_extract_success():
     req = ExtractionRequest(input_type="text", content="hello")
     with patch("providers.chain.database.record_llm_call") as mock_record:
         await chain.extract(req)
-    mock_record.assert_called_once_with("groq", "llama-3.3-70b", "extract")
+    mock_record.assert_called_once_with("groq", "llama-3.3-70b", "text")
 
 
 @pytest.mark.asyncio

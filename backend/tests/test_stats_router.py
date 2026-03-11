@@ -56,8 +56,8 @@ def test_stats_all_period(tmp_path):
 
 
 def test_stats_today_period_filters_old(tmp_path):
-    now = int(time.time())
-    midnight = now - (now % 86400)  # UTC midnight approximation
+    from datetime import datetime, timezone
+    midnight = int(datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
     path = _seed(tmp_path, [
         ("groq", "llama-3.3-70b", "extract", midnight + 60),   # today
         ("groq", "llama-3.3-70b", "grade", midnight - 3600),   # yesterday

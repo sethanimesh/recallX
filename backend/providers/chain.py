@@ -61,7 +61,7 @@ class ProviderChain:
                     len(result),
                 )
                 try:
-                    database.record_llm_call(provider.name, model, "extract")
+                    database.record_llm_call(provider.name, model, req.input_type)
                 except Exception:
                     logger.warning("Failed to record LLM call for provider=%s", provider.name, exc_info=True)
                 return result

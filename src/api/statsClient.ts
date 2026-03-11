@@ -1,4 +1,4 @@
-const DEFAULT_BASE_URL = 'http://192.168.68.104:8000';
+import { DEFAULT_BASE_URL } from './http';
 
 export type Period = 'today' | 'week' | 'month' | 'all';
 

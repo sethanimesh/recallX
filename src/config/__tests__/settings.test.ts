@@ -38,13 +38,17 @@ import {
   DEFAULT_BACKEND_URL,
 } from '../settings';
 
-beforeEach(() => {
-  mockGetItem.mockReset();
+beforeEach(async () => {
+  mockGetItem.mockReset().mockResolvedValue(null);
   mockSetItem.mockReset();
   mockRemoveItem.mockReset();
   mockDelete.mockReset().mockResolvedValue(undefined);
   mockUpdate.mockReset().mockReturnValue({ set: mockSet });
   mockSet.mockReset().mockResolvedValue(undefined);
+  // Reset module-level state to defaults before each test
+  await initSettings();
+  mockGetItem.mockReset();
+  mockSetItem.mockReset();
 });
 
 describe('initSettings', () => {

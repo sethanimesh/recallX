@@ -13,8 +13,8 @@ let _preferredProvider: string | null = null;
 function getStorage() {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const mod = require('@react-native-async-storage/async-storage');
-  // Real module has __esModule + default export; jest mocks return a plain object.
-  return mod.__esModule ? mod.default : mod;
+  // Real module uses a default export; Jest mock factories return a plain object.
+  return mod.default ?? mod;
 }
 
 export async function initSettings(): Promise<void> {
@@ -26,8 +26,8 @@ export async function initSettings(): Promise<void> {
     ]);
     _backendUrl = url ?? DEFAULT_BACKEND_URL;
     _preferredProvider = provider ?? null;
-  } catch {
-    // fall back to defaults — app must boot regardless
+  } catch (err) {
+    console.warn('[Settings] initSettings failed, using defaults:', err);
     _backendUrl = DEFAULT_BACKEND_URL;
     _preferredProvider = null;
   }

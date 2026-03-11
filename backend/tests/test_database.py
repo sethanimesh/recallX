@@ -1,5 +1,6 @@
 """Tests for database.py — expanded schema."""
 import sqlite3
+import time
 import database
 
 
@@ -72,7 +73,6 @@ def test_record_llm_call_inserts_row(tmp_path):
 
 
 def test_record_llm_call_stores_timestamp(tmp_path):
-    import time
     before = int(time.time())
     path = _fresh(tmp_path)
     database.record_llm_call("groq", "llama-3.3-70b", "grade", db_path=path)

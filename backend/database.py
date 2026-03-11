@@ -46,7 +46,7 @@ def init_db(db_path: str = _DEFAULT_DB_PATH) -> None:
                 provider  TEXT    NOT NULL,
                 model     TEXT    NOT NULL,
                 task      TEXT    NOT NULL,
-                called_at INTEGER NOT NULL
+                called_at INTEGER NOT NULL   -- Unix timestamp (UTC seconds)
             )
         """)
         conn.commit()
@@ -58,6 +58,7 @@ def record_llm_call(
     task: str,
     db_path: str = _DEFAULT_DB_PATH,
 ) -> None:
+    """Append one row to llm_calls. Requires init_db() to have been called first."""
     with sqlite3.connect(db_path) as conn:
         conn.execute(
             "INSERT INTO llm_calls (provider, model, task, called_at) VALUES (?, ?, ?, ?)",

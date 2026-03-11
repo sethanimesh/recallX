@@ -56,10 +56,20 @@ function calculateNextInterval(
   return sm2;
 }
 
-export function createSession(words: WordSRSRow[]): Session {
-  const shuffled = [...words].sort(() => Math.random() - 0.5);
-  return {
-    mainDeck: shuffled.map(w => ({
+export function createSession(
+  words: WordSRSRow[],
+  recentlyWrongIds: string[] = [],
+  todayWordIds: string[] = [],
+): Session {
+  const wrongIdSet = new Set(recentlyWrongIds);
+  const todayIdSet = new Set(todayWordIds);
+
+  const bufferCards: CardState[] = [];
+  const todayCards: CardState[] = [];
+  const restCards: CardState[] = [];
+
+  for (const w of words) {
+    const card: CardState = {
       word: w,
       interval: w.srs_interval,
       easeFactor: w.srs_ease_factor,
@@ -67,8 +77,22 @@ export function createSession(words: WordSRSRow[]): Session {
       successCount: 0,
       wrongCount: w.srs_wrong_count,
       consecutiveCorrect: w.srs_consecutive_correct,
-    })),
-    buffer: [],
+    };
+    if (wrongIdSet.has(w.id)) {
+      bufferCards.push({ ...card, inBuffer: true });
+    } else if (todayIdSet.has(w.id)) {
+      todayCards.push(card);
+    } else {
+      restCards.push(card);
+    }
+  }
+
+  const shuffledToday = [...todayCards].sort(() => Math.random() - 0.5);
+  const shuffledRest = [...restCards].sort(() => Math.random() - 0.5);
+
+  return {
+    mainDeck: [...shuffledToday, ...shuffledRest],
+    buffer: bufferCards,
     cardsSinceBuffer: 0,
   };
 }

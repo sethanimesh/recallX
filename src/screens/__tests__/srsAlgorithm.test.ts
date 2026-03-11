@@ -304,3 +304,49 @@ describe('handleResponse — buffer card lifecycle', () => {
     expect(next.cardsSinceBuffer).toBe(0);
   });
 });
+
+describe('createSession with recentlyWrongIds and todayWordIds', () => {
+  it('pre-seeds recentlyWrongIds into buffer, not mainDeck', () => {
+    const words = [makeWord('a'), makeWord('b'), makeWord('c')];
+    const session = createSession(words, ['a'], []);
+    const bufferIds = session.buffer.map(c => c.word.id);
+    const mainIds = session.mainDeck.map(c => c.word.id);
+    expect(bufferIds).toContain('a');
+    expect(mainIds).not.toContain('a');
+    expect(session.buffer[0].inBuffer).toBe(true);
+  });
+
+  it('places todayWordIds at the front of mainDeck', () => {
+    const words = [makeWord('x'), makeWord('y'), makeWord('z')];
+    const session = createSession(words, [], ['z']);
+    const mainIds = session.mainDeck.map(c => c.word.id);
+    const zIdx = mainIds.indexOf('z');
+    const xIdx = mainIds.indexOf('x');
+    const yIdx = mainIds.indexOf('y');
+    expect(zIdx).toBeLessThan(xIdx);
+    expect(zIdx).toBeLessThan(yIdx);
+  });
+
+  it('word in recentlyWrongIds is not duplicated in mainDeck', () => {
+    const words = [makeWord('a'), makeWord('b')];
+    const session = createSession(words, ['a'], ['a']);
+    const allIds = [...session.mainDeck, ...session.buffer].map(c => c.word.id);
+    const aCount = allIds.filter(id => id === 'a').length;
+    expect(aCount).toBe(1);
+  });
+
+  it('empty arrays behave identically to no args', () => {
+    const words = [makeWord('a'), makeWord('b')];
+    const s1 = createSession(words);
+    const s2 = createSession(words, [], []);
+    expect(s1.buffer).toHaveLength(s2.buffer.length);
+    expect(s1.mainDeck).toHaveLength(s2.mainDeck.length);
+  });
+
+  it('recentlyWrongIds not in words list are silently ignored', () => {
+    const words = [makeWord('a')];
+    const session = createSession(words, ['no-such-id'], []);
+    expect(session.mainDeck).toHaveLength(1);
+    expect(session.buffer).toHaveLength(0);
+  });
+});

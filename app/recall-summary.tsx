@@ -13,13 +13,15 @@ import { fetchAllWords, type WordRow } from '@/src/db/operations/tags';
 
 export default function RecallSummaryScreen() {
   const router = useRouter();
-  const { score: scoreStr, total: totalStr, tagId, mode, fcMode, missedIds } = useLocalSearchParams<{
+  const { score: scoreStr, total: totalStr, tagId, mode, fcMode, missedIds, recentlyWrongIds, clearedFromBuffer } = useLocalSearchParams<{
     score: string;
     total: string;
     tagId: string;
     mode: string;
     fcMode: string;
     missedIds: string;
+    recentlyWrongIds: string;
+    clearedFromBuffer: string;
   }>();
 
   const score = parseInt(scoreStr ?? '0', 10);
@@ -27,6 +29,8 @@ export default function RecallSummaryScreen() {
   const pct = total > 0 ? score / total : 0;
 
   const [missedWords, setMissedWords] = useState<WordRow[]>([]);
+  const [clearedWords, setClearedWords] = useState<WordRow[]>([]);
+  const [stillStrugglingWords, setStillStrugglingWords] = useState<WordRow[]>([]);
 
   useEffect(() => {
     if (!missedIds || missedIds.length === 0) return;
@@ -35,6 +39,18 @@ export default function RecallSummaryScreen() {
       .then(all => setMissedWords(all.filter(w => ids.has(w.id))))
       .catch(() => {});
   }, [missedIds]);
+
+  useEffect(() => {
+    if (!recentlyWrongIds || recentlyWrongIds.length === 0) return;
+    const allPriorIds = new Set(recentlyWrongIds.split(',').filter(Boolean));
+    const clearedIds = new Set((clearedFromBuffer ?? '').split(',').filter(Boolean));
+    fetchAllWords()
+      .then(all => {
+        setClearedWords(all.filter(w => clearedIds.has(w.id)));
+        setStillStrugglingWords(all.filter(w => allPriorIds.has(w.id) && !clearedIds.has(w.id)));
+      })
+      .catch(() => {});
+  }, [recentlyWrongIds, clearedFromBuffer]);
 
   function handleRestart() {
     if (mode === 'flashcard') {
@@ -85,6 +101,24 @@ export default function RecallSummaryScreen() {
             />
           </View>
         )}
+
+        {(clearedWords.length > 0 || stillStrugglingWords.length > 0) && (
+          <View style={styles.lastSessionSection}>
+            <Text style={styles.lastSessionHeading}>From last session</Text>
+            {clearedWords.map(w => (
+              <View key={w.id} style={styles.lastSessionRow} testID={`cleared-row-${w.id}`}>
+                <Text style={styles.lastSessionCheck}>✓</Text>
+                <Text style={styles.lastSessionWord}>{w.word}</Text>
+              </View>
+            ))}
+            {stillStrugglingWords.map(w => (
+              <View key={w.id} style={styles.lastSessionRow} testID={`struggling-row-${w.id}`}>
+                <Text style={styles.lastSessionCross}>✗</Text>
+                <Text style={styles.lastSessionWord}>{w.word}</Text>
+              </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
 
       <View style={styles.buttons}>
@@ -125,6 +159,12 @@ const styles = StyleSheet.create({
   missedWord: { fontSize: 15, fontWeight: '700', color: '#111827' },
   missedDefinition: { fontSize: 13, color: '#6B7280', lineHeight: 18 },
   missedSeparator: { height: StyleSheet.hairlineWidth, backgroundColor: '#E5E7EB' },
+  lastSessionSection: { width: '100%', marginTop: 8 },
+  lastSessionHeading: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 12 },
+  lastSessionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 10 },
+  lastSessionCheck: { fontSize: 16, color: '#22C55E', fontWeight: '700', width: 20, textAlign: 'center' },
+  lastSessionCross: { fontSize: 16, color: '#EF4444', fontWeight: '700', width: 20, textAlign: 'center' },
+  lastSessionWord: { fontSize: 15, fontWeight: '600', color: '#111827' },
   buttons: { gap: 12, marginBottom: 16, marginTop: 8 },
   restartButton: { backgroundColor: '#22c55e', borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
   restartText: { fontSize: 17, fontWeight: '700', color: '#fff' },

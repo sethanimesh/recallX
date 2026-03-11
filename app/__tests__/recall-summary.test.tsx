@@ -3,6 +3,7 @@ import renderer, { act } from 'react-test-renderer';
 
 let mockParams: Record<string, string> = {
   score: '7', total: '10', tagId: 'tag1', mode: 'adaptive', missedIds: '',
+  recentlyWrongIds: '', clearedFromBuffer: '',
 };
 
 const mockReplace = jest.fn();
@@ -31,7 +32,7 @@ describe('RecallSummaryScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockFetchAllWords.mockResolvedValue([]);
-    mockParams = { score: '7', total: '10', tagId: 'tag1', mode: 'adaptive', missedIds: '' };
+    mockParams = { score: '7', total: '10', tagId: 'tag1', mode: 'adaptive', missedIds: '', recentlyWrongIds: '', clearedFromBuffer: '' };
   });
 
   it('renders score fraction correctly', async () => {
@@ -105,7 +106,7 @@ describe('RecallSummaryScreen', () => {
   });
 
   it('only shows words whose IDs are in missedIds (filters correctly)', async () => {
-    mockParams = { score: '4', total: '5', tagId: '', mode: 'adaptive', missedIds: 'w2' };
+    mockParams = { score: '4', total: '5', tagId: '', mode: 'adaptive', missedIds: 'w2', recentlyWrongIds: '', clearedFromBuffer: '' };
     mockFetchAllWords.mockResolvedValue([
       {
         id: 'w1', word: 'ephemeral', definition: 'Short-lived',
@@ -130,5 +131,54 @@ describe('RecallSummaryScreen', () => {
     const rowsText = rows.map(collectText).join('');
     expect(rowsText).toContain('tenacious');
     expect(rowsText).not.toContain('ephemeral');
+  });
+
+  it('renders From last session section with cleared and struggling words', async () => {
+    mockParams = {
+      score: '5', total: '10', tagId: 'tag1', mode: 'adaptive', missedIds: '',
+      recentlyWrongIds: 'w1,w2,w3', clearedFromBuffer: 'w1',
+    };
+    mockFetchAllWords.mockResolvedValue([
+      {
+        id: 'w1', word: 'ephemeral', definition: 'Short-lived',
+        example_sentence: 'ex', source_id: null, created_at: new Date(),
+        updated_at: new Date(), deleted_at: null,
+      },
+      {
+        id: 'w2', word: 'tenacious', definition: 'Holding fast',
+        example_sentence: 'ex', source_id: null, created_at: new Date(),
+        updated_at: new Date(), deleted_at: null,
+      },
+      {
+        id: 'w3', word: 'serendipity', definition: 'Luck',
+        example_sentence: 'ex', source_id: null, created_at: new Date(),
+        updated_at: new Date(), deleted_at: null,
+      },
+    ]);
+
+    let tree: any;
+    await act(async () => { tree = renderer.create(<RecallSummaryScreen />); });
+    await act(async () => { await Promise.resolve(); });
+
+    const clearedRows = tree.root.findAll((n: any) => n.props?.testID?.startsWith('cleared-row-') && n.type === 'View');
+    expect(clearedRows.length).toBeGreaterThanOrEqual(1);
+    expect(collectText(clearedRows[0])).toContain('ephemeral');
+
+    const strugglingRows = tree.root.findAll((n: any) => n.props?.testID?.startsWith('struggling-row-') && n.type === 'View');
+    expect(strugglingRows.length).toBeGreaterThanOrEqual(2);
+    const allText = strugglingRows.map(collectText).join('');
+    expect(allText).toContain('tenacious');
+    expect(allText).toContain('serendipity');
+  });
+
+  it('does not render From last session section when recentlyWrongIds is empty', async () => {
+    let tree: any;
+    await act(async () => { tree = renderer.create(<RecallSummaryScreen />); });
+    await act(async () => { await Promise.resolve(); });
+
+    const clearedRows = tree.root.findAll((n: any) => n.props?.testID?.startsWith('cleared-row-'));
+    const strugglingRows = tree.root.findAll((n: any) => n.props?.testID?.startsWith('struggling-row-'));
+    expect(clearedRows).toHaveLength(0);
+    expect(strugglingRows).toHaveLength(0);
   });
 });

@@ -91,7 +91,7 @@ export function patchWord(
 }
 
 export function deleteWord(id: string, baseUrl = DEFAULT_BASE_URL) {
-  return request<void>(`${baseUrl}/words/${id}`, { method: 'DELETE' });
+  return request<ServerWordRecord>(`${baseUrl}/words/${id}`, { method: 'DELETE' });
 }
 
 export function postTag(payload: { id: string; name: string }, baseUrl = DEFAULT_BASE_URL) {

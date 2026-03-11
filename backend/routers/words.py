@@ -73,8 +73,8 @@ def _row_to_record(row: tuple, tags: list[TagInfo]) -> WordRecord:
 @router.post("/words", response_model=WordRecord, status_code=201)
 def create_word(req: CreateWordRequest) -> WordRecord:
     normalized_word = _normalize_stored_word(req.word)
-    try:
-        with sqlite3.connect(database._DEFAULT_DB_PATH) as conn:
+    with sqlite3.connect(database._DEFAULT_DB_PATH) as conn:
+        try:
             conn.execute(
                 "INSERT INTO words (id, word, definition, example_sentence, source_type, "
                 "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -82,8 +82,28 @@ def create_word(req: CreateWordRequest) -> WordRecord:
                  req.source_type, req.created_at, req.updated_at),
             )
             conn.commit()
-    except sqlite3.IntegrityError:
-        raise HTTPException(status_code=409, detail="Word already exists")
+        except sqlite3.IntegrityError:
+            # Check if a deleted version exists — if so, hard-delete it and retry
+            deleted_row = conn.execute(
+                "SELECT id FROM words WHERE word = ? COLLATE NOCASE AND deleted_at IS NOT NULL",
+                (normalized_word,)
+            ).fetchone()
+            if deleted_row:
+                # Hard-delete the old soft-deleted row and its tags
+                conn.execute("DELETE FROM word_tags WHERE word_id = ?", (deleted_row[0],))
+                conn.execute("DELETE FROM words WHERE id = ?", (deleted_row[0],))
+                conn.commit()
+                # Now insert the new word with the new req.id
+                conn.execute(
+                    "INSERT INTO words (id, word, definition, example_sentence, source_type, "
+                    "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (req.id, normalized_word, req.definition, req.example_sentence,
+                     req.source_type, req.created_at, req.updated_at),
+                )
+                conn.commit()
+            else:
+                # Active version exists — can't re-add
+                raise HTTPException(status_code=409, detail="Word already exists")
     return WordRecord(
         id=req.id, word=normalized_word, definition=req.definition,
         example_sentence=req.example_sentence, source_type=req.source_type,
@@ -134,8 +154,8 @@ def update_word(word_id: str, req: UpdateWordRequest) -> WordRecord:
     return _row_to_record(row, tags_by_word.get(word_id, []))
 
 
-@router.delete("/words/{word_id}", status_code=204)
-def delete_word(word_id: str) -> None:
+@router.delete("/words/{word_id}", response_model=WordRecord)
+def delete_word(word_id: str) -> WordRecord:
     now_ms = int(time.time() * 1000)
     with sqlite3.connect(database._DEFAULT_DB_PATH) as conn:
         cursor = conn.execute(
@@ -143,5 +163,12 @@ def delete_word(word_id: str) -> None:
             (now_ms, word_id),
         )
         conn.commit()
-    if cursor.rowcount == 0:
-        raise HTTPException(status_code=404, detail="Word not found")
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Word not found")
+        row = conn.execute(
+            "SELECT id, word, definition, example_sentence, source_type, "
+            "created_at, updated_at, deleted_at FROM words WHERE id = ?",
+            (word_id,),
+        ).fetchone()
+        tags_by_word = _get_tags_for_words(conn, [word_id])
+    return _row_to_record(row, tags_by_word.get(word_id, []))

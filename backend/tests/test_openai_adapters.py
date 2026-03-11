@@ -79,6 +79,13 @@ def test_parse_llm_response_fills_missing_optional_fields():
     assert result[0].example_sentence == ""
 
 
+def test_prompts_use_definition_key_not_meaning_key():
+    prompts = [IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, WORD_LOOKUP_SYSTEM_PROMPT]
+    for prompt in prompts:
+        assert '"definition"' in prompt or "definition" in prompt
+        assert '"meaning"' not in prompt
+
+
 # ---------------------------------------------------------------------------
 # GroqProvider tests
 # ---------------------------------------------------------------------------

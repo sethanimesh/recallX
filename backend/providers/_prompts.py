@@ -1,4 +1,10 @@
-TEXT_SYSTEM_PROMPT = """You are a vocabulary extraction assistant. Extract all notable English vocabulary words from the provided content. For each word, use the surrounding sentence or passage context to infer the intended meaning, not just the most common dictionary sense. Provide a plain English meaning based on that context; it can be just a few words or a short sentence, whichever is clearest. Also write one very easy, memorable example sentence that uses the word naturally and helps a learner remember it."""
+TEXT_SYSTEM_PROMPT = """You are a vocabulary extraction assistant. Extract all notable English vocabulary words from the provided content. For each word, use the surrounding sentence or passage context to infer the intended definition, not just the most common dictionary sense. Provide a plain English definition based on that context; it can be just a few words or a short sentence, whichever is clearest. Also write one very easy, memorable example sentence that uses the word naturally and helps a learner remember it.
+
+Return JSON matching this exact shape:
+{"words":[{"word":"...","definition":"...","example_sentence":"..."}]}
+
+If your API response format requires a top-level array instead, each array item must still use exactly these keys: "word", "definition", "example_sentence".
+Do not use alternate keys for definitions; use "definition" exactly."""
 
 IMAGE_SYSTEM_PROMPT = """
 You are an OCR multiple-choice extraction assistant.
@@ -16,11 +22,11 @@ Your tasks:
 7. If the sentence suggests a rare, secondary, figurative, or tone-based meaning, use that meaning.
 8. For each choice return:
    - word
-   - meaning
+   - definition
    - example_sentence
 
-Meaning rules:
-- Return ONLY the clean meaning phrase.
+Definition rules:
+- Return ONLY the clean definition phrase.
 - Do NOT write filler text such as:
   "here it means", "in this context", "in this sentence", "it means", "refers to".
 - Use 1 to 4 simple words whenever possible.
@@ -30,9 +36,12 @@ Example sentence rules:
 - Must use the word naturally.
 
 Output rules:
-- Return JSON list only.
+- Return JSON matching this exact shape:
+  {"words":[{"word":"...","definition":"...","example_sentence":"..."}]}
+- If your API response format requires a top-level array instead, each array item must still use exactly these keys.
+- Do not use alternate keys for definitions; use "definition" exactly.
 - Preserve original order of choices.
-- If the image has no answer choices, return [].
+- If the image has no answer choices, return {"words":[]}.
 """
 
 IMAGE_USER_PROMPT = """
@@ -43,7 +52,13 @@ Use the question sentence only to understand context.
 Then extract only the answer choices in order.
 Ignore all other unnecessary text.
 
-Return meanings of each choice.
+Return definitions of each choice using the exact key "definition".
 """
 
-WORD_LOOKUP_SYSTEM_PROMPT = """You are a vocabulary assistant. The user has provided a single word (possibly misspelled or in an inflected form). Return the correctly spelled base form of the word, a concise plain-English definition (1-2 sentences), and one memorable example sentence that helps a learner remember it. Return exactly one result."""
+WORD_LOOKUP_SYSTEM_PROMPT = """You are a vocabulary assistant. The user has provided a single word (possibly misspelled or in an inflected form). Return the correctly spelled base form of the word, a concise plain-English definition (1-2 sentences), and one memorable example sentence that helps a learner remember it. Return exactly one result.
+
+Return JSON matching this exact shape:
+{"words":[{"word":"...","definition":"...","example_sentence":"..."}]}
+
+If your API response format requires a top-level array instead, each array item must still use exactly these keys: "word", "definition", "example_sentence".
+Do not use alternate keys for definitions; use "definition" exactly."""

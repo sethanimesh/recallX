@@ -231,25 +231,14 @@ Session Termination: A session only ends when the Priority Buffer is empty, ensu
 
 ---
 
-## Phase 9 — Settings (Day 10–11)
-- Settings screen: configure FastAPI backend URL (default `http://localhost:8000`; stored in AsyncStorage)
+## Phase 9 — Settings ✅ (2026-05-02)
+- Settings screen: configure FastAPI backend URL (default `http://192.168.68.104:8000`; stored in AsyncStorage)
 - Choose preferred LLM vendor (Claude / OpenAI / Gemini) — sent as a preference to the backend, which holds the keys
 - Basic app info, reset progress option
 
 **Done when:** User can point the app at a different backend URL and switch preferred vendor without touching code.
 
----
-
-## Phase 10 — Sharing (Day 12–13)
-- Export a tag/deck as JSON or shareable link (deep link)
-- Import a shared deck (parse JSON, merge into local DB, skip duplicates)
-- Share sheet integration via `expo-sharing`
-
-**Done when:** User can send a deck to a friend who can import it.
-
----
-
-## Phase 11 — Cloud Sync Prep (Future)
+## Phase 10 — Cloud Sync Prep (Future)
 - Add `synced_at` column to all tables
 - Set up Supabase project, mirror schema
 - Background sync worker: push local-only rows, pull remote changes

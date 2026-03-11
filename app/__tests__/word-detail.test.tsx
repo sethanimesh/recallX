@@ -57,6 +57,11 @@ jest.mock('@/src/db/operations/tags', () => ({
   removeTagFromWord: (...args: unknown[]) => mockRemoveTagFromWord(...args),
 }));
 
+const mockFetchWordHistory = jest.fn();
+jest.mock('@/src/db/operations/sessionHistory', () => ({
+  fetchWordHistory: (...args: unknown[]) => mockFetchWordHistory(...args),
+}));
+
 jest.mock('@/src/components/TagPickerSheet', () => () => null);
 
 const mockGetPronunciation = jest.fn();
@@ -116,6 +121,7 @@ describe('WordDetailScreen header delete action', () => {
     mockGetTagsForWord.mockResolvedValue([]);
     mockUpdateWordField.mockResolvedValue(undefined);
     mockSoftDeleteWord.mockResolvedValue(undefined);
+    mockFetchWordHistory.mockResolvedValue([]);
     mockGetNav.mockReturnValue({ active: false, ids: [], index: 0 });
   });
 
@@ -177,6 +183,7 @@ describe('WordDetailScreen navigation bar', () => {
       source: null,
     });
     mockGetTagsForWord.mockResolvedValue([]);
+    mockFetchWordHistory.mockResolvedValue([]);
     mockGetNav.mockReturnValue({ active: false, ids: [], index: 0 });
   });
 
@@ -253,6 +260,7 @@ describe('WordDetailScreen pronunciation playback', () => {
       source: null,
     });
     mockGetTagsForWord.mockResolvedValue([]);
+    mockFetchWordHistory.mockResolvedValue([]);
     mockGetNav.mockReturnValue({ active: false, ids: [], index: 0 });
     mockGetPronunciation.mockResolvedValue({
       word: 'alacrity',

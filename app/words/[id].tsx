@@ -22,6 +22,7 @@ import {
   type WordWithSource,
 } from '@/src/db/operations/wordDetail';
 import { getTagsForWord, removeTagFromWord, type Tag } from '@/src/db/operations/tags';
+import { fetchWordHistory, type SessionResultRow } from '@/src/db/operations/sessionHistory';
 import TagPickerSheet from '@/src/components/TagPickerSheet';
 import { getNav, navigate, clearNav } from '@/src/store/libraryNav';
 import { getPronunciation } from '@/src/api/wordServerClient';
@@ -135,6 +136,7 @@ export default function WordDetailScreen() {
   const [tagPickerVisible, setTagPickerVisible] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [pronunciationState, setPronunciationState] = useState<PronunciationState>('idle');
+  const [history, setHistory] = useState<SessionResultRow[]>([]);
   const soundRef = useRef<Audio.Sound | null>(null);
 
   const load = useCallback(async () => {
@@ -184,6 +186,11 @@ export default function WordDetailScreen() {
     void soundRef.current?.unloadAsync();
     soundRef.current = null;
   }, [wordData?.word]);
+
+  useEffect(() => {
+    if (!id) return;
+    fetchWordHistory(String(id), 5).then(setHistory).catch(() => {});
+  }, [id]);
 
   // ── Delete handler ──────────────────────────────────────────────────────────
 
@@ -455,6 +462,25 @@ export default function WordDetailScreen() {
             <Text style={styles.noTagsText}>No tags — tap + to add</Text>
           )}
         </View>
+
+        {/* Review history */}
+        <View style={styles.historySection}>
+          <Text style={styles.historyLabel}>Review history</Text>
+          {history.length === 0 ? (
+            <Text style={styles.historyEmpty}>Not reviewed yet</Text>
+          ) : (
+            history.map((r, i) => (
+              <View key={i} style={styles.historyRow}>
+                <Text style={r.correct === 1 ? styles.historyCheck : styles.historyCross}>
+                  {r.correct === 1 ? '✓' : '✗'}
+                </Text>
+                <Text style={styles.historyDate}>
+                  {new Date(r.answered_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </Text>
+              </View>
+            ))
+          )}
+        </View>
       </ScrollView>
 
       {navActive && (
@@ -683,5 +709,45 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#6B7280',
     fontWeight: '500',
+  },
+  historySection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E5E7EB',
+  },
+  historyLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  historyEmpty: {
+    fontSize: 14,
+    color: '#9CA3AF',
+  },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  historyCheck: {
+    fontSize: 14,
+    color: '#22C55E',
+    fontWeight: '700',
+    width: 18,
+  },
+  historyCross: {
+    fontSize: 14,
+    color: '#EF4444',
+    fontWeight: '700',
+    width: 18,
+  },
+  historyDate: {
+    fontSize: 14,
+    color: '#6B7280',
   },
 });

@@ -13,10 +13,6 @@ router = APIRouter()
 Period = Literal["today", "week", "month", "all"]
 
 
-def get_db_path() -> str:
-    return database._DEFAULT_DB_PATH
-
-
 class ProviderCount(BaseModel):
     provider: str
     model: str
@@ -51,7 +47,7 @@ def _period_cutoff(period: Period) -> int | None:
 
 @router.get("/stats/llm", response_model=LlmStatsResponse)
 def get_llm_stats(period: Period = "all") -> LlmStatsResponse:
-    db_path = get_db_path()
+    db_path = database._DEFAULT_DB_PATH
     cutoff = _period_cutoff(period)
 
     where = "WHERE called_at >= ?" if cutoff is not None else ""

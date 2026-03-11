@@ -11,6 +11,13 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { fetchAllWords, fetchWordsByTag, type WordRow } from '@/src/db/operations/tags';
 import { fetchDueWordsFc, updateWordFCSRS, type WordSRSRow } from '@/src/db/operations/srs';
 import {
+  insertSession,
+  closeSession,
+  insertSessionResult,
+  fetchRecentlyWrongIds,
+  fetchTodayWordIds,
+} from '@/src/db/operations/sessionHistory';
+import {
   createSession,
   getNextCard,
   handleResponse,
@@ -36,6 +43,11 @@ export default function FlashcardScreen() {
   const [card, setCard] = useState<CardState | null>(null);
   const [nextCard, setNextCard] = useState<CardState | null | undefined>(undefined);
   const missedIdsRef = useRef<string[]>([]);
+  const sessionIdRef = useRef<string>(Date.now().toString(36) + Math.random().toString(36).slice(2));
+  const attemptCountRef = useRef<Map<string, number>>(new Map());
+  const preSeededIdsRef = useRef<Set<string>>(new Set());
+  const clearedFromBufferRef = useRef<string[]>([]);
+  const recentlyWrongIdsRef = useRef<string[]>([]);
 
   // Shared
   const [deckLoaded, setDeckLoaded] = useState(false);
@@ -46,10 +58,16 @@ export default function FlashcardScreen() {
   useEffect(() => {
     async function loadDeck() {
       if (fcMode === 'self-rated') {
-        const words = tagId && tagId.length > 0
+        const wordsPool = tagId && tagId.length > 0
           ? await fetchDueWordsFc(tagId)
           : await fetchDueWordsFc();
-        const s = createSession(words);
+        const dueIds = wordsPool.map(w => w.id);
+        const wrongIds = await fetchRecentlyWrongIds('flashcard', dueIds);
+        const todayIds = await fetchTodayWordIds(dueIds);
+        recentlyWrongIdsRef.current = wrongIds;
+        preSeededIdsRef.current = new Set(wrongIds);
+        const s = createSession(wordsPool, wrongIds, todayIds);
+        await insertSession(sessionIdRef.current, 'flashcard', tagId && tagId.length > 0 ? tagId : undefined);
         setSession(s);
         setCard(getNextCard(s));
       } else {
@@ -67,11 +85,19 @@ export default function FlashcardScreen() {
   const currentWord: WordRow | WordSRSRow | null =
     fcMode === 'self-rated' ? (card?.word ?? null) : (deck[currentIndex] ?? null);
 
+  function recordAnswer(wordId: string, correct: boolean) {
+    const prev = attemptCountRef.current.get(wordId) ?? 0;
+    const attempt = prev + 1;
+    attemptCountRef.current.set(wordId, attempt);
+    insertSessionResult(sessionIdRef.current, wordId, correct, attempt).catch(() => {});
+  }
+
   function handleReveal() {
     setPhase('revealed');
   }
 
   function navigateToSummary(currentScore: number, currentTotal: number) {
+    closeSession(sessionIdRef.current).catch(() => {});
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     router.replace({
       pathname: '/recall-summary' as any,
@@ -81,6 +107,8 @@ export default function FlashcardScreen() {
         tagId: tagId ?? '',
         mode: 'flashcard',
         fcMode,
+        recentlyWrongIds: recentlyWrongIdsRef.current.join(','),
+        clearedFromBuffer: clearedFromBufferRef.current.join(','),
         missedIds: missedIdsRef.current.join(','),
       },
     });
@@ -105,6 +133,16 @@ export default function FlashcardScreen() {
     const newTotal = total + 1;
     setScore(newScore);
     setTotal(newTotal);
+    recordAnswer(card.word.id, true);
+    if (
+      card.inBuffer &&
+      preSeededIdsRef.current.has(card.word.id) &&
+      !newSession.buffer.some(c => c.word.id === card.word.id)
+    ) {
+      if (!clearedFromBufferRef.current.includes(card.word.id)) {
+        clearedFromBufferRef.current.push(card.word.id);
+      }
+    }
     handleNextSelfRated(nc, { wordId: card.word.id, update: srsUpdate }, newScore, newTotal);
   }
 
@@ -115,6 +153,7 @@ export default function FlashcardScreen() {
     if (!missedIdsRef.current.includes(card.word.id)) {
       missedIdsRef.current.push(card.word.id);
     }
+    recordAnswer(card.word.id, false);
     // Compute next card based on mainDeck without current card (missed → buffer),
     // so navigation decision is consistent regardless of mock vs real algorithm.
     const remainingMainDeck = session.mainDeck.filter(c => c !== card);
@@ -177,6 +216,17 @@ export default function FlashcardScreen() {
         <Text style={styles.progress}>{progressText}</Text>
 
         <Text style={styles.wordText}>{currentWord!.word}</Text>
+
+        {fcMode === 'self-rated' && card && card.wrongCount > 0 && (
+          <Text style={[
+            styles.difficultyBadge,
+            card.wrongCount >= 6 ? styles.badgeRed :
+            card.wrongCount >= 3 ? styles.badgeOrange :
+            styles.badgeAmber,
+          ]}>
+            Struggled {card.wrongCount}×
+          </Text>
+        )}
 
         {phase === 'revealed' && (
           <View style={styles.revealedSection}>
@@ -241,4 +291,8 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 18, color: '#6B7280', marginBottom: 24, textAlign: 'center' },
   backButton: { backgroundColor: '#3B82F6', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 32 },
   backButtonText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  difficultyBadge: { fontSize: 12, fontWeight: '600', textAlign: 'center', marginTop: 4, marginBottom: 8 },
+  badgeAmber: { color: '#D97706' },
+  badgeOrange: { color: '#EA580C' },
+  badgeRed: { color: '#DC2626' },
 });

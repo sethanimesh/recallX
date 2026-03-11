@@ -16,6 +16,14 @@ jest.mock('@/src/db/operations/srs', () => ({
   updateWordFCSRS: (...args: unknown[]) => mockUpdateWordFCSRS(...args),
 }));
 
+jest.mock('@/src/db/operations/sessionHistory', () => ({
+  insertSession: jest.fn().mockResolvedValue(undefined),
+  closeSession: jest.fn().mockResolvedValue(undefined),
+  insertSessionResult: jest.fn().mockResolvedValue(undefined),
+  fetchRecentlyWrongIds: jest.fn().mockResolvedValue([]),
+  fetchTodayWordIds: jest.fn().mockResolvedValue([]),
+}));
+
 jest.mock('@/src/screens/srsAlgorithm', () => ({
   createSession: jest.fn((words: unknown[]) => ({
     mainDeck: words.map((w: unknown) => ({

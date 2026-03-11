@@ -7,9 +7,9 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
-import { Stack } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { fetchLlmStats, type Period, type LlmStatsResponse } from '@/src/api/statsClient';
+import { fetchLlmStats, type Period, type LlmStatsResponse, type LlmCall } from '@/src/api/statsClient';
+
+const TASK_LABELS: Record<string, string> = { extract: 'Extract', grade: 'Grade' };
 
 const PERIODS: { label: string; value: Period }[] = [
   { label: 'Today', value: 'today' },
@@ -27,7 +27,6 @@ function relativeTime(unixSeconds: number): string {
 }
 
 export default function LlmStatsScreen() {
-  const insets = useSafeAreaInsets();
   const [period, setPeriod] = useState<Period>('week');
   const [data, setData] = useState<LlmStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,10 +47,20 @@ export default function LlmStatsScreen() {
 
   useEffect(() => { load(period); }, [period, load]);
 
+  const renderCall = useCallback(({ item }: { item: LlmCall }) => (
+    <View style={styles.callRow}>
+      <View style={[styles.taskBadge, item.task === 'extract' ? styles.badgeExtract : styles.badgeGrade]}>
+        <Text style={styles.taskBadgeText}>{TASK_LABELS[item.task] ?? item.task}</Text>
+      </View>
+      <View style={styles.callInfo}>
+        <Text style={styles.callProvider}>{item.provider} · {item.model}</Text>
+      </View>
+      <Text style={styles.callTime}>{relativeTime(item.called_at)}</Text>
+    </View>
+  ), []);
+
   return (
-    <>
-      <Stack.Screen options={{ title: 'AI Usage', headerBackTitle: 'Settings' }} />
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
         {/* Period picker */}
         <View style={styles.pickerRow}>
           {PERIODS.map((p) => (
@@ -113,22 +122,11 @@ export default function LlmStatsScreen() {
                 )}
               </>
             }
-            renderItem={({ item }) => (
-              <View style={styles.callRow}>
-                <View style={[styles.taskBadge, item.task === 'extract' ? styles.badgeExtract : styles.badgeGrade]}>
-                  <Text style={styles.taskBadgeText}>{item.task === 'extract' ? 'Extract' : 'Grade'}</Text>
-                </View>
-                <View style={styles.callInfo}>
-                  <Text style={styles.callProvider}>{item.provider} · {item.model}</Text>
-                </View>
-                <Text style={styles.callTime}>{relativeTime(item.called_at)}</Text>
-              </View>
-            )}
+            renderItem={renderCall}
             contentContainerStyle={styles.listContent}
           />
         )}
-      </View>
-    </>
+    </View>
   );
 }
 

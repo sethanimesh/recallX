@@ -63,6 +63,7 @@ export default function RootLayout() {
         <Stack.Screen name="recall-setup" options={{ title: 'Start Review', headerShown: true }} />
         <Stack.Screen name="recall" options={{ title: 'Recall', headerShown: true }} />
         <Stack.Screen name="recall-summary" options={{ title: 'Session Complete', headerShown: false }} />
+        <Stack.Screen name="llm-stats" options={{ title: 'AI Usage', headerBackTitle: 'Settings' }} />
       </Stack>
     </ThemeProvider>
   );

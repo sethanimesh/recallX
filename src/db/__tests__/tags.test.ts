@@ -5,6 +5,8 @@ import {
   addTagToWord,
   removeTagFromWord,
   renameTag,
+  findTagByName,
+  mergeTagIntoExisting,
   deleteTag,
   fetchWordsByTag,
   getTagWordCounts,
@@ -17,6 +19,7 @@ jest.mock('@/src/db/client', () => ({
     insert: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    transaction: jest.fn(),
   },
 }));
 
@@ -28,6 +31,7 @@ jest.mock('@/src/api/wordServerClient', () => ({
   postTag: jest.fn().mockResolvedValue(undefined),
   patchTag: jest.fn().mockResolvedValue(undefined),
   deleteTag: jest.fn().mockResolvedValue(undefined),
+  mergeTag: jest.fn().mockResolvedValue(undefined),
   addTagToWord: jest.fn().mockResolvedValue(undefined),
   removeTagFromWord: jest.fn().mockResolvedValue(undefined),
   WordServerError: class WordServerError extends Error {
@@ -103,6 +107,23 @@ function makeDeleteChain() {
   return chain;
 }
 
+function makeTransaction() {
+  const txInsertChain = {
+    values: jest.fn().mockReturnValue({
+      onConflictDoNothing: jest.fn().mockResolvedValue(undefined),
+    }),
+  };
+  const txDeleteChain = {
+    where: jest.fn().mockResolvedValue(undefined),
+  };
+  const tx = {
+    insert: jest.fn().mockReturnValue(txInsertChain),
+    delete: jest.fn().mockReturnValue(txDeleteChain),
+  };
+  (db.transaction as jest.Mock).mockImplementation(async (callback) => callback(tx));
+  return { tx, txInsertChain, txDeleteChain };
+}
+
 // ── createOrGetTag ────────────────────────────────────────────────────────────
 
 describe('createOrGetTag', () => {
@@ -143,6 +164,29 @@ describe('getAllTags', () => {
 
     const result = await getAllTags();
     expect(result).toEqual(rows);
+  });
+});
+
+// ── findTagByName ─────────────────────────────────────────────────────────────
+
+describe('findTagByName', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('returns the matching tag case-insensitively', async () => {
+    const rows = [{ id: 't1', name: 'GRE Prep' }];
+    makeSelectChainReturning(rows);
+
+    const result = await findTagByName('gre prep');
+
+    expect(result).toEqual(rows[0]);
+  });
+
+  it('returns null when no tag matches', async () => {
+    makeSelectChainReturning([]);
+
+    const result = await findTagByName('missing');
+
+    expect(result).toBeNull();
   });
 });
 
@@ -244,6 +288,41 @@ describe('renameTag', () => {
 
     await expect(renameTag('t1', 'Existing')).rejects.toThrow(WordServerError);
     expect(db.update).not.toHaveBeenCalled();
+  });
+});
+
+// ── mergeTagIntoExisting ──────────────────────────────────────────────────────
+
+describe('mergeTagIntoExisting', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('calls server then moves local word-tag pairs and deletes the source tag locally', async () => {
+    const { mergeTag } = require('@/src/api/wordServerClient');
+    mergeTag.mockResolvedValue(undefined);
+    makeSelectChainReturning([{ word_id: 'w1' }, { word_id: 'w2' }]);
+    const { tx, txInsertChain, txDeleteChain } = makeTransaction();
+
+    await mergeTagIntoExisting('source', 'target');
+
+    expect(mergeTag).toHaveBeenCalledWith('source', 'target');
+    expect(db.transaction).toHaveBeenCalledTimes(1);
+    expect(tx.insert).toHaveBeenCalledTimes(1);
+    expect(txInsertChain.values).toHaveBeenCalledWith([
+      { word_id: 'w1', tag_id: 'target' },
+      { word_id: 'w2', tag_id: 'target' },
+    ]);
+    expect(txDeleteChain.where).toHaveBeenCalledTimes(2);
+    expect(tx.delete).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not mutate locally when server merge fails', async () => {
+    const { mergeTag, WordServerError } = require('@/src/api/wordServerClient');
+    mergeTag.mockRejectedValue(new WordServerError('missing', 404));
+
+    await expect(mergeTagIntoExisting('source', 'target')).rejects.toThrow(WordServerError);
+
+    expect(db.select).not.toHaveBeenCalled();
+    expect(db.transaction).not.toHaveBeenCalled();
   });
 });
 

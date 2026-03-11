@@ -11,10 +11,76 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getAllTags, renameTag, deleteTag, getTagWordCounts, type Tag } from '@/src/db/operations/tags';
+import {
+  getAllTags,
+  renameTag,
+  deleteTag,
+  getTagWordCounts,
+  findTagByName,
+  mergeTagIntoExisting,
+  type Tag,
+} from '@/src/db/operations/tags';
+import { WordServerError } from '@/src/api/wordServerClient';
 
 interface TagWithCount extends Tag {
   count: number;
+}
+
+export async function submitTagRename(tag: Tag, newName: string | undefined, load: () => Promise<void>): Promise<void> {
+  const trimmedName = newName?.trim();
+  if (!trimmedName || trimmedName === tag.name) return;
+
+  const confirmMerge = (targetTag: Tag) => {
+    Alert.alert(
+      'Merge Tags?',
+      `"${tag.name}" will be merged into "${targetTag.name}". Words from both tags will use "${targetTag.name}", and duplicates will be ignored.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Merge',
+          onPress: () => {
+            Alert.alert(
+              'Are You Sure?',
+              `This will remove "${tag.name}" and keep "${targetTag.name}" as the combined tag.`,
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Merge Tags',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await mergeTagIntoExisting(tag.id, targetTag.id);
+                      await load();
+                    } catch (err) {
+                      const message = err instanceof Error ? err.message : 'Could not merge tags.';
+                      Alert.alert('Merge Failed', message);
+                    }
+                  },
+                },
+              ],
+            );
+          },
+        },
+      ],
+    );
+  };
+
+  try {
+    await renameTag(tag.id, trimmedName);
+    await load();
+  } catch (err) {
+    if (err instanceof WordServerError && err.statusCode === 409) {
+      try {
+        const existingTag = await findTagByName(trimmedName);
+        if (existingTag && existingTag.id !== tag.id) {
+          confirmMerge(existingTag);
+          return;
+        }
+      } catch {}
+    }
+    const message = err instanceof Error ? err.message : 'Could not rename tag.';
+    Alert.alert('Rename Failed', message);
+  }
 }
 
 export default function ManageTagsScreen() {
@@ -36,15 +102,8 @@ export default function ManageTagsScreen() {
     Alert.prompt(
       'Rename Tag',
       `Rename "${tag.name}" to:`,
-      async (newName) => {
-        if (!newName?.trim() || newName.trim() === tag.name) return;
-        try {
-          await renameTag(tag.id, newName.trim());
-          await load();
-        } catch (err) {
-          const message = err instanceof Error ? err.message : 'Could not rename tag.';
-          Alert.alert('Rename Failed', message);
-        }
+      (newName) => {
+        submitTagRename(tag, newName, load);
       },
       'plain-text',
       tag.name,
@@ -81,7 +140,12 @@ export default function ManageTagsScreen() {
           <Text style={styles.tagCount}>{item.count} {item.count === 1 ? 'word' : 'words'}</Text>
         </View>
         <View style={styles.rowActions}>
-          <TouchableOpacity onPress={() => handleRename(item)} hitSlop={8} style={styles.actionBtn}>
+          <TouchableOpacity
+            testID={`rename-tag-${item.id}`}
+            onPress={() => handleRename(item)}
+            hitSlop={8}
+            style={styles.actionBtn}
+          >
             <Ionicons name="pencil-outline" size={20} color="#007AFF" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleDelete(item)} hitSlop={8} style={styles.actionBtn}>

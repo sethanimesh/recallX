@@ -81,6 +81,70 @@ def test_patch_tag_not_found_returns_404():
     assert resp.status_code == 404
 
 
+# --- POST /tags/{source_tag_id}/merge ---
+
+def test_merge_tag_moves_source_words_to_target():
+    _create_word("w1", "alpha")
+    _create_word("w2", "beta")
+    client.post("/tags", json={"id": "source", "name": "Source"})
+    client.post("/tags", json={"id": "target", "name": "Target"})
+    client.post("/words/w1/tags/source")
+    client.post("/words/w2/tags/target")
+
+    resp = client.post("/tags/source/merge", json={"target_tag_id": "target"})
+
+    assert resp.status_code == 200
+    assert resp.json()["id"] == "target"
+    assert resp.json()["word_count"] == 2
+    words = client.get("/words").json()
+    tags_by_word = {word["id"]: [tag["id"] for tag in word["tags"]] for word in words}
+    assert tags_by_word["w1"] == ["target"]
+    assert tags_by_word["w2"] == ["target"]
+
+
+def test_merge_tag_dedupes_words_already_on_target():
+    _create_word("w1", "alpha")
+    client.post("/tags", json={"id": "source", "name": "Source"})
+    client.post("/tags", json={"id": "target", "name": "Target"})
+    client.post("/words/w1/tags/source")
+    client.post("/words/w1/tags/target")
+
+    resp = client.post("/tags/source/merge", json={"target_tag_id": "target"})
+
+    assert resp.status_code == 200
+    assert resp.json()["word_count"] == 1
+    words = client.get("/words").json()
+    assert words[0]["tags"] == [{"id": "target", "name": "Target"}]
+
+
+def test_merge_tag_removes_source_tag():
+    client.post("/tags", json={"id": "source", "name": "Source"})
+    client.post("/tags", json={"id": "target", "name": "Target"})
+
+    resp = client.post("/tags/source/merge", json={"target_tag_id": "target"})
+
+    assert resp.status_code == 200
+    assert [tag["id"] for tag in client.get("/tags").json()] == ["target"]
+
+
+def test_merge_tag_missing_source_or_target_returns_404():
+    client.post("/tags", json={"id": "target", "name": "Target"})
+
+    missing_source = client.post("/tags/missing/merge", json={"target_tag_id": "target"})
+    missing_target = client.post("/tags/target/merge", json={"target_tag_id": "missing"})
+
+    assert missing_source.status_code == 404
+    assert missing_target.status_code == 404
+
+
+def test_merge_tag_into_itself_returns_400():
+    client.post("/tags", json={"id": "target", "name": "Target"})
+
+    resp = client.post("/tags/target/merge", json={"target_tag_id": "target"})
+
+    assert resp.status_code == 400
+
+
 # --- DELETE /tags/{id} ---
 
 def test_delete_tag_returns_204():

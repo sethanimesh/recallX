@@ -116,6 +116,13 @@ export function deleteTag(id: string, baseUrl = DEFAULT_BASE_URL) {
   return request<void>(`${baseUrl}/tags/${id}`, { method: 'DELETE' });
 }
 
+export function mergeTag(sourceTagId: string, targetTagId: string, baseUrl = DEFAULT_BASE_URL) {
+  return request<ServerTagRecord>(`${baseUrl}/tags/${sourceTagId}/merge`, {
+    method: 'POST',
+    body: JSON.stringify({ target_tag_id: targetTagId }),
+  });
+}
+
 export function addTagToWord(wordId: string, tagId: string, baseUrl = DEFAULT_BASE_URL) {
   return request<void>(`${baseUrl}/words/${wordId}/tags/${tagId}`, { method: 'POST' });
 }

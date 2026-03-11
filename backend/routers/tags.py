@@ -23,6 +23,10 @@ class UpdateTagRequest(BaseModel):
     name: str
 
 
+class MergeTagRequest(BaseModel):
+    target_tag_id: str
+
+
 @router.post("/tags", response_model=TagRecord, status_code=201)
 def create_tag(req: CreateTagRequest) -> TagRecord:
     try:
@@ -61,6 +65,39 @@ def update_tag(tag_id: str, req: UpdateTagRequest) -> TagRecord:
         conn.execute("UPDATE tags SET name = ? WHERE id = ?", (req.name, tag_id))
         conn.commit()
     return TagRecord(id=tag_id, name=req.name)
+
+
+@router.post("/tags/{source_tag_id}/merge", response_model=TagRecord)
+def merge_tag(source_tag_id: str, req: MergeTagRequest) -> TagRecord:
+    if source_tag_id == req.target_tag_id:
+        raise HTTPException(status_code=400, detail="Cannot merge a tag into itself")
+
+    with sqlite3.connect(database._DEFAULT_DB_PATH) as conn:
+        source = conn.execute("SELECT id FROM tags WHERE id = ?", (source_tag_id,)).fetchone()
+        target = conn.execute(
+            "SELECT id, name FROM tags WHERE id = ?",
+            (req.target_tag_id,),
+        ).fetchone()
+        if not source or not target:
+            raise HTTPException(status_code=404, detail="Tag not found")
+
+        conn.execute("BEGIN")
+        conn.execute(
+            "INSERT OR IGNORE INTO word_tags (word_id, tag_id) "
+            "SELECT word_id, ? FROM word_tags WHERE tag_id = ?",
+            (req.target_tag_id, source_tag_id),
+        )
+        conn.execute("DELETE FROM word_tags WHERE tag_id = ?", (source_tag_id,))
+        conn.execute("DELETE FROM tags WHERE id = ?", (source_tag_id,))
+        count = conn.execute(
+            "SELECT COUNT(*) FROM word_tags wt "
+            "JOIN words w ON w.id = wt.word_id "
+            "WHERE wt.tag_id = ? AND w.deleted_at IS NULL",
+            (req.target_tag_id,),
+        ).fetchone()[0]
+        conn.commit()
+
+    return TagRecord(id=target[0], name=target[1], word_count=count)
 
 
 @router.delete("/tags/{tag_id}", status_code=204)

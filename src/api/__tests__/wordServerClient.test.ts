@@ -5,6 +5,7 @@ import {
   postTag,
   patchTag,
   deleteTag,
+  mergeTag,
   addTagToWord,
   removeTagFromWord,
   getWords,
@@ -105,6 +106,18 @@ describe('removeTagFromWord', () => {
     expect(global.fetch).toHaveBeenCalledWith(`${BASE}/words/w1/tags/t1`, expect.objectContaining({
       method: 'DELETE',
     }));
+  });
+});
+
+describe('mergeTag', () => {
+  it('calls POST /tags/{source_tag_id}/merge', async () => {
+    mockResponse(200, { id: 'target', name: 'GRE', word_count: 2 });
+    const result = await mergeTag('source', 'target', BASE);
+    expect(global.fetch).toHaveBeenCalledWith(`${BASE}/tags/source/merge`, expect.objectContaining({
+      method: 'POST',
+      body: '{"target_tag_id":"target"}',
+    }));
+    expect(result.id).toBe('target');
   });
 });
 

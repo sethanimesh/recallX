@@ -6,6 +6,7 @@ import {
   postTag,
   patchTag as serverPatchTag,
   deleteTag as serverDeleteTag,
+  mergeTag as serverMergeTag,
   addTagToWord as serverAddTagToWord,
   removeTagFromWord as serverRemoveTagFromWord,
   WordServerError,
@@ -52,6 +53,15 @@ export async function getAllTags(): Promise<Tag[]> {
   return db.select({ id: tags.id, name: tags.name }).from(tags).orderBy(asc(tags.name));
 }
 
+export async function findTagByName(name: string): Promise<Tag | null> {
+  const trimmed = name.trim();
+  const rows = await db
+    .select({ id: tags.id, name: tags.name })
+    .from(tags)
+    .where(sql`lower(${tags.name}) = lower(${trimmed})`);
+  return rows[0] ?? null;
+}
+
 export async function getTagsForWord(wordId: string): Promise<Tag[]> {
   const rows = await db
     .select({ id: tags.id, name: tags.name })
@@ -83,6 +93,26 @@ export async function renameTag(tagId: string, newName: string): Promise<void> {
   const trimmed = newName.trim();
   await serverPatchTag(tagId, { name: trimmed }); // throws WordServerError(409) on name collision
   await db.update(tags).set({ name: trimmed }).where(eq(tags.id, tagId));
+}
+
+export async function mergeTagIntoExisting(sourceTagId: string, targetTagId: string): Promise<void> {
+  await serverMergeTag(sourceTagId, targetTagId);
+
+  const sourceRows = await db
+    .select({ word_id: wordTags.word_id })
+    .from(wordTags)
+    .where(eq(wordTags.tag_id, sourceTagId));
+
+  await db.transaction(async (tx) => {
+    if (sourceRows.length > 0) {
+      await tx
+        .insert(wordTags)
+        .values(sourceRows.map((row) => ({ word_id: row.word_id, tag_id: targetTagId })))
+        .onConflictDoNothing();
+    }
+    await tx.delete(wordTags).where(eq(wordTags.tag_id, sourceTagId));
+    await tx.delete(tags).where(eq(tags.id, sourceTagId));
+  });
 }
 
 export async function deleteTag(tagId: string): Promise<void> {

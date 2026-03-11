@@ -53,3 +53,39 @@ def test_init_db_migrates_old_schema(tmp_path):
     assert "id" in {row[1] for row in words_info}
     assert {row[1] for row in tags_info} >= {"id", "name"}
     assert {row[1] for row in word_tags_info} >= {"word_id", "tag_id"}
+
+
+def test_init_db_creates_llm_calls_table(tmp_path):
+    path = _fresh(tmp_path)
+    with sqlite3.connect(path) as conn:
+        info = conn.execute("PRAGMA table_info(llm_calls)").fetchall()
+    col_names = {row[1] for row in info}
+    assert col_names >= {"id", "provider", "model", "task", "called_at"}
+
+
+def test_record_llm_call_inserts_row(tmp_path):
+    path = _fresh(tmp_path)
+    database.record_llm_call("groq", "llama-3.3-70b", "extract", db_path=path)
+    with sqlite3.connect(path) as conn:
+        rows = conn.execute("SELECT provider, model, task FROM llm_calls").fetchall()
+    assert rows == [("groq", "llama-3.3-70b", "extract")]
+
+
+def test_record_llm_call_stores_timestamp(tmp_path):
+    import time
+    before = int(time.time())
+    path = _fresh(tmp_path)
+    database.record_llm_call("groq", "llama-3.3-70b", "grade", db_path=path)
+    after = int(time.time())
+    with sqlite3.connect(path) as conn:
+        ts = conn.execute("SELECT called_at FROM llm_calls").fetchone()[0]
+    assert before <= ts <= after
+
+
+def test_record_llm_call_multiple_rows(tmp_path):
+    path = _fresh(tmp_path)
+    database.record_llm_call("groq", "llama-3.3-70b", "extract", db_path=path)
+    database.record_llm_call("openrouter", "mistral-7b", "grade", db_path=path)
+    with sqlite3.connect(path) as conn:
+        count = conn.execute("SELECT COUNT(*) FROM llm_calls").fetchone()[0]
+    assert count == 2

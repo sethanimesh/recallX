@@ -1,5 +1,6 @@
 """SQLite persistence layer for RecallX. Exposes init_db() to create the schema."""
 import sqlite3
+import time
 from pathlib import Path
 
 _DEFAULT_DB_PATH = str(Path(__file__).parent / "db.sqlite")
@@ -39,4 +40,27 @@ def init_db(db_path: str = _DEFAULT_DB_PATH) -> None:
                 PRIMARY KEY (word_id, tag_id)
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS llm_calls (
+                id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                provider  TEXT    NOT NULL,
+                model     TEXT    NOT NULL,
+                task      TEXT    NOT NULL,
+                called_at INTEGER NOT NULL
+            )
+        """)
+        conn.commit()
+
+
+def record_llm_call(
+    provider: str,
+    model: str,
+    task: str,
+    db_path: str = _DEFAULT_DB_PATH,
+) -> None:
+    with sqlite3.connect(db_path) as conn:
+        conn.execute(
+            "INSERT INTO llm_calls (provider, model, task, called_at) VALUES (?, ?, ?, ?)",
+            (provider, model, task, int(time.time())),
+        )
         conn.commit()

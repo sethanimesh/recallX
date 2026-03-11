@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useColorScheme, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { runMigrations } from '@/src/db/client';
 import { syncFromServer } from '@/src/db/operations/sync';
+import { initSettings } from '@/src/config/settings';
 import { LoadingScreen } from '@/src/components/LoadingScreen';
 
 export { ErrorBoundary } from 'expo-router';
@@ -22,6 +23,11 @@ export default function RootLayout() {
   useEffect(() => {
     async function init() {
       const minDelay = new Promise<void>((r) => setTimeout(r, 2800));
+      try {
+        await initSettings();
+      } catch (err) {
+        console.warn('[Settings] Init error:', err);
+      }
       try {
         await runMigrations();
       } catch (err) {
@@ -64,6 +70,7 @@ export default function RootLayout() {
         <Stack.Screen name="recall" options={{ title: 'Recall', headerShown: true }} />
         <Stack.Screen name="recall-summary" options={{ title: 'Session Complete', headerShown: false }} />
         <Stack.Screen name="llm-stats" options={{ title: 'AI Usage', headerBackTitle: 'Settings' }} />
+        <Stack.Screen name="settings-url" options={{ title: 'Backend URL', headerBackTitle: 'Settings' }} />
       </Stack>
     </ThemeProvider>
   );

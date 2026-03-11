@@ -60,7 +60,10 @@ class ProviderChain:
                     model,
                     len(result),
                 )
-                database.record_llm_call(provider.name, model, "extract")
+                try:
+                    database.record_llm_call(provider.name, model, "extract")
+                except Exception:
+                    logger.warning("Failed to record LLM call for provider=%s", provider.name, exc_info=True)
                 return result
             except (RateLimitError, ValueError) as e:
                 msg = f"{provider.name}: {type(e).__name__}: {e}"
@@ -152,7 +155,10 @@ class ProviderChain:
                     provider.name,
                     text_model,
                 )
-                database.record_llm_call(provider.name, text_model, "grade")
+                try:
+                    database.record_llm_call(provider.name, text_model, "grade")
+                except Exception:
+                    logger.warning("Failed to record LLM call for provider=%s", provider.name, exc_info=True)
                 return GradeResult.model_validate_json(raw)
             except (RateLimitError, ValueError) as e:
                 msg = f"{provider.name}: {type(e).__name__}: {e}"

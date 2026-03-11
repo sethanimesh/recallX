@@ -13,6 +13,13 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { fetchAllWords, fetchWordsByTag, type WordRow } from '@/src/db/operations/tags';
 import { fetchDueWords, updateWordSRS, type WordSRSRow } from '@/src/db/operations/srs';
 import { gradeAnswer, type GradeResult } from '@/src/api/gradeClient';
+import {
+  insertSession,
+  closeSession,
+  insertSessionResult,
+  fetchRecentlyWrongIds,
+  fetchTodayWordIds,
+} from '@/src/db/operations/sessionHistory';
 import { useVoiceInput } from '@/src/audio/useVoiceInput';
 import { VoiceInputButton } from '@/src/components/VoiceInputButton';
 import {
@@ -42,6 +49,11 @@ export default function RecallScreen() {
   const [adaptiveNextCard, setAdaptiveNextCard] = useState<CardState | null | undefined>(undefined);
   const pendingSRSUpdate = useRef<{ wordId: string; update: SRSUpdate } | null>(null);
   const missedIdsRef = useRef<string[]>([]);
+  const sessionIdRef = useRef<string>(Date.now().toString(36) + Math.random().toString(36).slice(2));
+  const attemptCountRef = useRef<Map<string, number>>(new Map());
+  const preSeededIdsRef = useRef<Set<string>>(new Set());
+  const clearedFromBufferRef = useRef<string[]>([]);
+  const recentlyWrongIdsRef = useRef<string[]>([]);
 
   // Shared
   const [deckLoaded, setDeckLoaded] = useState(false);
@@ -58,10 +70,16 @@ export default function RecallScreen() {
   useEffect(() => {
     async function loadDeck() {
       if (mode === 'adaptive') {
-        const words = tagId && tagId.length > 0
+        const wordsPool = tagId && tagId.length > 0
           ? await fetchDueWords(tagId)
           : await fetchDueWords();
-        const session = createSession(words);
+        const dueIds = wordsPool.map(w => w.id);
+        const wrongIds = await fetchRecentlyWrongIds('recall', dueIds);
+        const todayIds = await fetchTodayWordIds(dueIds);
+        recentlyWrongIdsRef.current = wrongIds;
+        preSeededIdsRef.current = new Set(wrongIds);
+        const session = createSession(wordsPool, wrongIds, todayIds);
+        await insertSession(sessionIdRef.current, 'recall', tagId && tagId.length > 0 ? tagId : undefined);
         setAdaptiveSession(session);
         setAdaptiveCard(getNextCard(session));
       } else {
@@ -105,6 +123,13 @@ export default function RecallScreen() {
   const currentWord: WordRow | WordSRSRow | null =
     mode === 'adaptive' ? (adaptiveCard?.word ?? null) : (deck[currentIndex] ?? null);
 
+  function recordAnswer(wordId: string, correct: boolean) {
+    const prev = attemptCountRef.current.get(wordId) ?? 0;
+    const attempt = prev + 1;
+    attemptCountRef.current.set(wordId, attempt);
+    insertSessionResult(sessionIdRef.current, wordId, correct, attempt).catch(() => {});
+  }
+
   async function handleSubmit(answerOverride?: string) {
     const answer = answerOverride ?? userAnswer;
     if (!currentWord || loading) return;
@@ -119,8 +144,18 @@ export default function RecallScreen() {
         const { session: newSession, srsUpdate } = handleResponse(adaptiveSession, adaptiveCard, result.correct);
         setAdaptiveSession(newSession);
         pendingSRSUpdate.current = { wordId: adaptiveCard.word.id, update: srsUpdate };
+        recordAnswer(adaptiveCard.word.id, result.correct);
         if (!result.correct && !missedIdsRef.current.includes(adaptiveCard.word.id)) {
           missedIdsRef.current.push(adaptiveCard.word.id);
+        }
+        if (
+          adaptiveCard.inBuffer &&
+          preSeededIdsRef.current.has(adaptiveCard.word.id) &&
+          !newSession.buffer.some(c => c.word.id === adaptiveCard.word.id)
+        ) {
+          if (!clearedFromBufferRef.current.includes(adaptiveCard.word.id)) {
+            clearedFromBufferRef.current.push(adaptiveCard.word.id);
+          }
         }
         setAdaptiveNextCard(getNextCard(newSession));
       }
@@ -143,7 +178,7 @@ export default function RecallScreen() {
         pendingSRSUpdate.current = null;
       }
       if (adaptiveNextCard == null) {
-        navigateToSummary();
+        navigateToSummary(score, total);
       } else {
         setAdaptiveCard(adaptiveNextCard);
         setAdaptiveNextCard(undefined);
@@ -158,20 +193,23 @@ export default function RecallScreen() {
         setUserAnswer('');
         setGradeResult(null);
       } else {
-        navigateToSummary();
+        navigateToSummary(score, total);
       }
     }
   }
 
-  function navigateToSummary() {
+  function navigateToSummary(currentScore: number, currentTotal: number) {
+    closeSession(sessionIdRef.current).catch(() => {});
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     router.replace({
       pathname: '/recall-summary' as any,
       params: {
-        score: String(score),
-        total: String(total),
+        score: String(currentScore),
+        total: String(currentTotal),
         tagId: tagId ?? '',
         mode,
+        recentlyWrongIds: recentlyWrongIdsRef.current.join(','),
+        clearedFromBuffer: clearedFromBufferRef.current.join(','),
         missedIds: missedIdsRef.current.join(','),
       },
     });
@@ -211,6 +249,17 @@ export default function RecallScreen() {
       <Text style={styles.scoreText}>Score: {score} / {total}</Text>
 
       <Text style={styles.wordText} testID="word-display">{currentWord!.word}</Text>
+
+      {adaptiveCard && adaptiveCard.wrongCount > 0 && (
+        <Text style={[
+          styles.difficultyBadge,
+          adaptiveCard.wrongCount >= 6 ? styles.badgeRed :
+          adaptiveCard.wrongCount >= 3 ? styles.badgeOrange :
+          styles.badgeAmber,
+        ]}>
+          Struggled {adaptiveCard.wrongCount}×
+        </Text>
+      )}
 
       {phase === 'input' && (
         <View style={styles.inputSection}>
@@ -332,4 +381,8 @@ const styles = StyleSheet.create({
   voiceError: { fontSize: 13, color: '#ef4444', textAlign: 'center' },
   retryButton: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#FEE2E2', borderRadius: 8 },
   retryButtonText: { fontSize: 13, fontWeight: '600', color: '#ef4444' },
+  difficultyBadge: { fontSize: 12, fontWeight: '600', textAlign: 'center', marginTop: 4, marginBottom: 8 },
+  badgeAmber: { color: '#D97706' },
+  badgeOrange: { color: '#EA580C' },
+  badgeRed: { color: '#DC2626' },
 });

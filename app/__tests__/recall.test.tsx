@@ -24,6 +24,15 @@ jest.mock('@/src/db/operations/srs', () => ({
   updateWordSRS: jest.fn().mockResolvedValue(undefined),
 }));
 
+// Mock session history operations
+jest.mock('@/src/db/operations/sessionHistory', () => ({
+  insertSession: jest.fn().mockResolvedValue(undefined),
+  closeSession: jest.fn().mockResolvedValue(undefined),
+  insertSessionResult: jest.fn().mockResolvedValue(undefined),
+  fetchRecentlyWrongIds: jest.fn().mockResolvedValue([]),
+  fetchTodayWordIds: jest.fn().mockResolvedValue([]),
+}));
+
 // Mock SRS algorithm — minimal stubs; classic-mode tests never call these
 jest.mock('@/src/screens/srsAlgorithm', () => ({
   createSession: jest.fn((words: unknown[]) => ({

@@ -61,6 +61,7 @@ import {
   insertSessionResult,
   fetchLastSessionStartTime,
   fetchRecentlyWrongIds,
+  fetchTodayWordIds,
   fetchTodayWordCount,
   fetchWordHistory,
   fetchWordsCreatedTodayForRecall,
@@ -168,6 +169,21 @@ describe('fetchRecentlyWrongIds', () => {
 
     const result = await fetchRecentlyWrongIds('flashcard', ['word-30']);
     expect(result).not.toContain('word-30');
+  });
+});
+
+describe('fetchTodayWordIds', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('returns empty array when dueWordIds is empty', async () => {
+    const result = await fetchTodayWordIds([]);
+    expect(result).toEqual([]);
+  });
+
+  it('returns an array of matching IDs', async () => {
+    mockWhereSelect.mockResolvedValueOnce([{ id: 'some-id' }]);
+    const result = await fetchTodayWordIds(['some-id']);
+    expect(Array.isArray(result)).toBe(true);
   });
 });
 

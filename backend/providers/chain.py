@@ -2,6 +2,7 @@ import logging
 from openai import RateLimitError
 from providers.base import ExtractionRequest, ExtractedWord, GradeResult, LLMProvider
 from config import get_provider_order
+import database
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,7 @@ class ProviderChain:
                     model,
                     len(result),
                 )
+                database.record_llm_call(provider.name, model, "extract")
                 return result
             except (RateLimitError, ValueError) as e:
                 msg = f"{provider.name}: {type(e).__name__}: {e}"
@@ -150,6 +152,7 @@ class ProviderChain:
                     provider.name,
                     text_model,
                 )
+                database.record_llm_call(provider.name, text_model, "grade")
                 return GradeResult.model_validate_json(raw)
             except (RateLimitError, ValueError) as e:
                 msg = f"{provider.name}: {type(e).__name__}: {e}"

@@ -33,7 +33,8 @@ async def test_chain_uses_first_provider():
     p2 = mock_provider("openrouter", True)
     chain = make_chain([p1, p2])
     req = ExtractionRequest(input_type="text", content="hello")
-    result = await chain.extract(req)
+    with patch("providers.chain.database.record_llm_call"):
+        result = await chain.extract(req)
     p1.extract_words.assert_called_once()
     p2.extract_words.assert_not_called()
     assert result[0].word == "test"
@@ -46,7 +47,8 @@ async def test_chain_falls_back_on_rate_limit():
     p2 = mock_provider("openrouter", True)
     chain = make_chain([p1, p2])
     req = ExtractionRequest(input_type="text", content="hello")
-    result = await chain.extract(req)
+    with patch("providers.chain.database.record_llm_call"):
+        result = await chain.extract(req)
     p1.extract_words.assert_called_once()
     p2.extract_words.assert_called_once()
     assert result[0].word == "test"
@@ -58,7 +60,8 @@ async def test_chain_falls_back_on_missing_key():
     p2 = mock_provider("openrouter", True)
     chain = make_chain([p1, p2])
     req = ExtractionRequest(input_type="text", content="hello")
-    result = await chain.extract(req)
+    with patch("providers.chain.database.record_llm_call"):
+        result = await chain.extract(req)
     assert result[0].word == "test"
 
 
@@ -68,7 +71,8 @@ async def test_chain_skips_no_vision_for_image():
     p2 = mock_provider("groq", True)
     chain = make_chain([p1, p2])
     req = ExtractionRequest(input_type="image", content="abc", mime_type="image/jpeg")
-    result = await chain.extract(req)
+    with patch("providers.chain.database.record_llm_call"):
+        result = await chain.extract(req)
     p1.extract_words.assert_not_called()  # skipped
     p2.extract_words.assert_called_once()
     assert result[0].word == "test"
@@ -81,8 +85,9 @@ async def test_chain_raises_extraction_failed_when_all_fail():
     p2 = mock_provider("openrouter", True, raises=ValueError("no key"))
     chain = make_chain([p1, p2])
     req = ExtractionRequest(input_type="text", content="hello")
-    with pytest.raises(ExtractionFailedError) as exc_info:
-        await chain.extract(req)
+    with patch("providers.chain.database.record_llm_call"):
+        with pytest.raises(ExtractionFailedError) as exc_info:
+            await chain.extract(req)
     assert len(exc_info.value.failures) == 2
 
 
@@ -92,6 +97,30 @@ async def test_chain_skips_not_implemented():
     p2 = mock_provider("groq", True)
     chain = make_chain([p1, p2])
     req = ExtractionRequest(input_type="image", content="abc", mime_type="image/jpeg")
-    result = await chain.extract(req)
+    with patch("providers.chain.database.record_llm_call"):
+        result = await chain.extract(req)
     p2.extract_words.assert_called_once()
     assert result[0].word == "test"
+
+
+@pytest.mark.asyncio
+async def test_chain_records_llm_call_on_extract_success():
+    p1 = mock_provider("groq", True)
+    p1._text_model = "llama-3.3-70b"
+    chain = make_chain([p1])
+    req = ExtractionRequest(input_type="text", content="hello")
+    with patch("providers.chain.database.record_llm_call") as mock_record:
+        await chain.extract(req)
+    mock_record.assert_called_once_with("groq", "llama-3.3-70b", "extract")
+
+
+@pytest.mark.asyncio
+async def test_chain_does_not_record_on_extract_failure():
+    err = RateLimitError("rate limited", response=MagicMock(), body={})
+    p1 = mock_provider("groq", True, raises=err)
+    chain = make_chain([p1])
+    req = ExtractionRequest(input_type="text", content="hello")
+    with patch("providers.chain.database.record_llm_call") as mock_record:
+        with pytest.raises(ExtractionFailedError):
+            await chain.extract(req)
+    mock_record.assert_not_called()

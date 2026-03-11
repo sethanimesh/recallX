@@ -14,6 +14,12 @@ export default function SettingsScreen() {
         <Text style={styles.rowLabel}>Manage Tags</Text>
         <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
       </TouchableOpacity>
+
+      <TouchableOpacity style={styles.row} onPress={() => router.push('/llm-stats')} activeOpacity={0.7}>
+        <Ionicons name="hardware-chip-outline" size={22} color="#374151" style={styles.rowIcon} />
+        <Text style={styles.rowLabel}>AI Usage</Text>
+        <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+      </TouchableOpacity>
     </View>
   );
 }

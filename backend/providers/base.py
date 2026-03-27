@@ -18,6 +18,12 @@ class GradeResult(BaseModel):
     feedback: str
 
 
+class TutorChatResponse(BaseModel):
+    response: str
+    evaluation: Literal["correct", "close", "incorrect"]
+    hint_provided: bool
+
+
 class ExtractionRequest(BaseModel):
     input_type: Literal["image", "text", "word"]
     content: str        # base64 string for images, raw text for text

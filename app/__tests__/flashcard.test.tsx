@@ -185,6 +185,70 @@ describe('FlashcardScreen — Passive mode', () => {
       })
     );
   });
+
+  it('sorts words alphabetically if sortOrder is alphabetical', async () => {
+    mockParams = { tagId: '', fcMode: 'passive', sortOrder: 'alphabetical' };
+    mockFetchAllWords.mockResolvedValue([WORD_B, WORD_A]); // tenacious (B), ephemeral (A)
+
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<FlashcardScreen />); });
+    await act(async () => { await Promise.resolve(); });
+
+    // Should sort alphabetically, so 'ephemeral' (A) is first
+    const texts = collectText(tree.toJSON());
+    expect(texts).toContain('ephemeral');
+  });
+
+  it('allows going back to the previous card', async () => {
+    mockParams = { tagId: '', fcMode: 'passive', sortOrder: 'alphabetical' };
+    mockFetchAllWords.mockResolvedValue([WORD_B, WORD_A]);
+
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<FlashcardScreen />); });
+    await act(async () => { await Promise.resolve(); });
+
+    // Sorted alphabetically: WORD_A (ephemeral) is first, WORD_B (tenacious) is second.
+    await act(async () => {
+      tree.root.findByProps({ testID: 'reveal-button' }).props.onPress();
+    });
+    // Go to next card
+    await act(async () => {
+      tree.root.findByProps({ testID: 'next-button' }).props.onPress();
+    });
+
+    // We should be on card 2. Now tap back
+    await act(async () => {
+      tree.root.findByProps({ testID: 'prev-button' }).props.onPress();
+    });
+
+    // Check we are back in the question phase of card 1
+    const texts = collectText(tree.toJSON());
+    expect(texts).toContain(WORD_A.word);
+    expect(texts).not.toContain(WORD_A.definition);
+  });
+
+  it('allows skipping a card without revealing', async () => {
+    mockParams = { tagId: '', fcMode: 'passive', sortOrder: 'alphabetical' };
+    mockFetchAllWords.mockResolvedValue([WORD_B, WORD_A]);
+
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<FlashcardScreen />); });
+    await act(async () => { await Promise.resolve(); });
+
+    // Starts on card 1 (WORD_A). Tap skip to go to card 2 (WORD_B).
+    await act(async () => {
+      tree.root.findByProps({ testID: 'skip-button' }).props.onPress();
+    });
+
+    // Now we should be on card 2 (WORD_B). We can reveal it
+    await act(async () => {
+      tree.root.findByProps({ testID: 'reveal-button' }).props.onPress();
+    });
+
+    const texts = collectText(tree.toJSON());
+    expect(texts).toContain(WORD_B.word);
+    expect(texts).toContain(WORD_B.definition);
+  });
 });
 
 describe('FlashcardScreen — Self-Rated mode', () => {

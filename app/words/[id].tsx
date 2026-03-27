@@ -13,7 +13,7 @@ import {
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Audio } from 'expo-av';
+import * as Speech from 'expo-speech';
 
 import {
   fetchWordWithSource,
@@ -25,9 +25,8 @@ import { getTagsForWord, removeTagFromWord, type Tag } from '@/src/db/operations
 import { fetchWordHistory, type SessionResultRow } from '@/src/db/operations/sessionHistory';
 import TagPickerSheet from '@/src/components/TagPickerSheet';
 import { getNav, navigate, clearNav } from '@/src/store/libraryNav';
-import { getPronunciation } from '@/src/api/wordServerClient';
 
-type PronunciationState = 'idle' | 'loading' | 'playing' | 'unavailable' | 'error';
+type PronunciationState = 'idle' | 'playing' | 'error';
 
 // ── Source helpers ────────────────────────────────────────────────────────────
 
@@ -137,7 +136,6 @@ export default function WordDetailScreen() {
   const [notFound, setNotFound] = useState(false);
   const [pronunciationState, setPronunciationState] = useState<PronunciationState>('idle');
   const [history, setHistory] = useState<SessionResultRow[]>([]);
-  const soundRef = useRef<Audio.Sound | null>(null);
 
   const load = useCallback(async () => {
     if (!id) {
@@ -167,8 +165,7 @@ export default function WordDetailScreen() {
 
   useEffect(() => {
     return () => {
-      void soundRef.current?.unloadAsync();
-      soundRef.current = null;
+      void Speech.stop();
     };
   }, []);
 
@@ -183,8 +180,7 @@ export default function WordDetailScreen() {
     if (!previousWord || previousWord === wordData?.word) return;
 
     setPronunciationState('idle');
-    void soundRef.current?.unloadAsync();
-    soundRef.current = null;
+    void Speech.stop();
   }, [wordData?.word]);
 
   useEffect(() => {
@@ -252,33 +248,33 @@ export default function WordDetailScreen() {
   );
 
   const handlePronunciationPress = useCallback(async () => {
-    if (!wordData?.word || pronunciationState === 'loading') return;
+    if (!wordData?.word) return;
 
-    setPronunciationState('loading');
-    try {
-      await soundRef.current?.unloadAsync();
-      soundRef.current = null;
-      const pronunciation = await getPronunciation(wordData.word);
-      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-      const { sound } = await Audio.Sound.createAsync({ uri: pronunciation.audio_url });
-      soundRef.current = sound;
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if ('isLoaded' in status && status.isLoaded && status.didJustFinish) {
-          setPronunciationState('idle');
-          void sound.unloadAsync();
-          if (soundRef.current === sound) soundRef.current = null;
-        }
-      });
-      setPronunciationState('playing');
-      await sound.playAsync();
-    } catch (err) {
-      await soundRef.current?.unloadAsync().catch(() => {});
-      soundRef.current = null;
-      if (typeof err === 'object' && err !== null && 'statusCode' in err && err.statusCode === 404) {
-        setPronunciationState('unavailable');
-      } else {
-        setPronunciationState('error');
+    if (pronunciationState === 'playing') {
+      try {
+        await Speech.stop();
+      } catch (err) {
+        if (__DEV__) console.warn('[WordDetail] speech stop error', err);
       }
+      setPronunciationState('idle');
+      return;
+    }
+
+    setPronunciationState('playing');
+    try {
+      await Speech.stop();
+      Speech.speak(wordData.word, {
+        language: 'en',
+        onDone: () => setPronunciationState('idle'),
+        onStopped: () => setPronunciationState('idle'),
+        onError: (err) => {
+          if (__DEV__) console.warn('[WordDetail] speech speak callback error', err);
+          setPronunciationState('error');
+        },
+      });
+    } catch (err) {
+      if (__DEV__) console.warn('[WordDetail] speech speak catch error', err);
+      setPronunciationState('error');
     }
   }, [pronunciationState, wordData?.word]);
 
@@ -370,30 +366,17 @@ export default function WordDetailScreen() {
             testID="pronunciation-button"
             accessibilityLabel={`Play pronunciation for ${wordData.word}`}
             accessibilityRole="button"
-            disabled={pronunciationState === 'loading'}
             onPress={handlePronunciationPress}
             hitSlop={10}
-            style={[
-              styles.pronunciationButton,
-              pronunciationState === 'loading' && styles.pronunciationButtonDisabled,
-            ]}
+            style={styles.pronunciationButton}
           >
-            {pronunciationState === 'loading' ? (
-              <ActivityIndicator size="small" color="#007AFF" />
-            ) : (
-              <Ionicons
-                name={pronunciationState === 'playing' ? 'volume-high-outline' : 'volume-medium-outline'}
-                size={24}
-                color="#007AFF"
-              />
-            )}
+            <Ionicons
+              name={pronunciationState === 'playing' ? 'volume-high-outline' : 'volume-medium-outline'}
+              size={24}
+              color="#007AFF"
+            />
           </TouchableOpacity>
         </View>
-        {pronunciationState === 'unavailable' && (
-          <Text testID="pronunciation-status" style={styles.pronunciationStatus}>
-            No pronunciation available
-          </Text>
-        )}
         {pronunciationState === 'error' && (
           <Text testID="pronunciation-status" style={styles.pronunciationStatus}>
             Could not play pronunciation

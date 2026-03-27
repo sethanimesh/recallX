@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system/legacy';
+import { getBackendUrl } from '@/src/config/settings';
 
 export type VoiceState =
   | 'idle'
@@ -11,7 +12,6 @@ export type VoiceState =
   | 'done'
   | 'error';
 
-const WS_URL = 'ws://192.168.68.104:8000/ws/transcribe';
 const SILENCE_THRESHOLD_DBFS = -40;
 const SILENCE_DEBOUNCE_MS = 1500;
 
@@ -79,7 +79,9 @@ export function useVoiceInput() {
 
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
 
-      const ws = new WebSocket(WS_URL);
+      const backendUrl = getBackendUrl();
+      const wsUrl = backendUrl.replace(/^http/, 'ws') + '/ws/transcribe';
+      const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onerror = () => {

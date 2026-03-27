@@ -97,11 +97,11 @@ describe('getNextCard', () => {
     expect(card!.inBuffer).toBe(true);
   });
 
-  it('returns mainDeck card when only buffer exists but cardsSinceBuffer is 0', () => {
+  it('returns mainDeck card when active buffer card is not yet due', () => {
     const session = createSession([makeWord('a')]);
-    const bufferCard = { word: makeWord('x'), interval: 0, easeFactor: 2.5, inBuffer: true, successCount: 0, wrongCount: 1, consecutiveCorrect: 0 };
+    const bufferCard = { word: makeWord('x'), interval: 0, easeFactor: 2.5, inBuffer: true, successCount: 0, wrongCount: 1, consecutiveCorrect: 0, nextAppearanceIndex: 2 };
     const sessionWithBuffer = { ...session, buffer: [bufferCard], cardsSinceBuffer: 0 };
-    const card = getNextCard(sessionWithBuffer, () => 0); // threshold = 3, 0 < 3 → main deck
+    const card = getNextCard(sessionWithBuffer);
     expect(card!.inBuffer).toBe(false);
   });
 
@@ -237,10 +237,10 @@ describe('handleResponse — incorrect, main deck card', () => {
     expect(srsUpdate.consecutiveCorrect).toBe(0);
   });
 
-  it('resets cardsSinceBuffer to 0', () => {
+  it('increments cardsSinceBuffer', () => {
     const session = { ...createSession([makeWord('a'), makeWord('b')]), cardsSinceBuffer: 4 };
     const { session: next } = handleResponse(session, session.mainDeck[0], false);
-    expect(next.cardsSinceBuffer).toBe(0);
+    expect(next.cardsSinceBuffer).toBe(5);
   });
 });
 
@@ -296,12 +296,12 @@ describe('handleResponse — buffer card lifecycle', () => {
     expect(srsUpdate.consecutiveCorrect).toBe(0);
   });
 
-  it('resets cardsSinceBuffer to 0 after any buffer card interaction', () => {
+  it('increments cardsSinceBuffer after any buffer card interaction', () => {
     const card = makeBufferCard('a', 1, 0, 0);
     const sess = createSession([]);
     const session = { ...sess, mainDeck: [], buffer: [card], cardsSinceBuffer: 4 };
     const { session: next } = handleResponse(session, card, true);
-    expect(next.cardsSinceBuffer).toBe(0);
+    expect(next.cardsSinceBuffer).toBe(5);
   });
 });
 

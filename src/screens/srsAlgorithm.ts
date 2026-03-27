@@ -5,15 +5,16 @@ export interface CardState {
   interval: number;
   easeFactor: number;
   inBuffer: boolean;
-  successCount: number;
+  successCount: number; // Consecutive correct answers in this session (acts as streak)
   wrongCount: number;
   consecutiveCorrect: number;
+  nextAppearanceIndex?: number; // Absolute step index when this card is next due
 }
 
 export interface Session {
-  mainDeck: CardState[];
-  buffer: CardState[];
-  cardsSinceBuffer: number;
+  mainDeck: CardState[]; // Pending pool of unintroduced words
+  buffer: CardState[];   // Active pool of words currently in play (max 3)
+  cardsSinceBuffer: number; // Acts as currentStepIndex (incremented after each response)
 }
 
 export interface SRSUpdate {
@@ -77,9 +78,10 @@ export function createSession(
       successCount: 0,
       wrongCount: w.srs_wrong_count,
       consecutiveCorrect: w.srs_consecutive_correct,
+      nextAppearanceIndex: 0,
     };
     if (wrongIdSet.has(w.id)) {
-      bufferCards.push({ ...card, inBuffer: true });
+      bufferCards.push({ ...card, inBuffer: true, nextAppearanceIndex: 0 });
     } else if (todayIdSet.has(w.id)) {
       todayCards.push(card);
     } else {
@@ -97,39 +99,122 @@ export function createSession(
   };
 }
 
-export function getNextCard(session: Session, randomFn: () => number = Math.random): CardState | null {
+export function getNextCard(session: Session, _randomFn: () => number = Math.random): CardState | null {
   if (session.mainDeck.length === 0 && session.buffer.length === 0) return null;
 
-  // Serve a buffer card every 3–5 main-deck cards
-  const threshold = 3 + Math.floor(randomFn() * 3);
-  if (session.buffer.length > 0 && session.cardsSinceBuffer >= threshold) {
-    return session.buffer[0];
+  const step = session.cardsSinceBuffer;
+
+  // 1. Check if any card in the active pool (buffer) is due
+  const dueCards = session.buffer.filter(c => (c.nextAppearanceIndex ?? 0) <= step);
+
+  if (dueCards.length > 0) {
+    // Pick the one with the lowest successCount (streak)
+    // If equal, pick the one with the lowest nextAppearanceIndex (most overdue)
+    dueCards.sort((a, b) => {
+      if (a.successCount !== b.successCount) {
+        return a.successCount - b.successCount;
+      }
+      return (a.nextAppearanceIndex ?? 0) - (b.nextAppearanceIndex ?? 0);
+    });
+    return dueCards[0];
   }
 
-  if (session.mainDeck.length > 0) return session.mainDeck[0];
+  // 2. If no active card is due, introduce a new card from mainDeck if active pool is not full (max 3 in play)
+  const MAX_ACTIVE_POOL_SIZE = 3;
+  if (session.buffer.length < MAX_ACTIVE_POOL_SIZE && session.mainDeck.length > 0) {
+    return session.mainDeck[0];
+  }
 
-  return session.buffer[0];
+  // 3. If pool is full or mainDeck empty, fallback to the card in buffer closest to being due
+  if (session.buffer.length > 0) {
+    const sortedActive = [...session.buffer].sort((a, b) => (a.nextAppearanceIndex ?? 0) - (b.nextAppearanceIndex ?? 0));
+    return sortedActive[0];
+  }
+
+  // 4. Fallback to mainDeck
+  if (session.mainDeck.length > 0) {
+    return session.mainDeck[0];
+  }
+
+  return null;
 }
 
 export function handleResponse(
   session: Session,
   card: CardState,
   correct: boolean,
-  randomFn: () => number = Math.random,
+  _randomFn: () => number = Math.random,
 ): ResponseResult {
   const now = new Date();
+  const step = session.cardsSinceBuffer;
 
-  if (card.inBuffer) {
+  const wasInBuffer = card.inBuffer;
+
+  if (!wasInBuffer) {
+    // This is a brand new card being introduced from mainDeck
+    if (correct) {
+      // Correct on very first try! Graduates immediately.
+      const newConsecutiveCorrect = card.consecutiveCorrect + 1;
+      const newInterval = calculateNextInterval(card.interval, card.easeFactor, card.wrongCount, newConsecutiveCorrect);
+
+      return {
+        session: {
+          ...session,
+          mainDeck: session.mainDeck.filter(c => c.word.id !== card.word.id),
+          cardsSinceBuffer: step + 1,
+        },
+        srsUpdate: {
+          interval: newInterval,
+          easeFactor: card.easeFactor,
+          nextReviewAt: new Date(now.getTime() + newInterval * MS_PER_DAY),
+          wrongCount: card.wrongCount,
+          consecutiveCorrect: newConsecutiveCorrect,
+        },
+      };
+    } else {
+      // Incorrect on first try! Enters active pool (buffer)
+      const newEaseFactor = Math.max(1.3, card.easeFactor - 0.2);
+      const newWrongCount = card.wrongCount + 1;
+
+      const updatedCard: CardState = {
+        ...card,
+        inBuffer: true,
+        successCount: 0,
+        wrongCount: newWrongCount,
+        consecutiveCorrect: 0,
+        nextAppearanceIndex: step + 2, // Re-appear after a 1-card gap (step + 2)
+      };
+
+      return {
+        session: {
+          ...session,
+          mainDeck: session.mainDeck.filter(c => c.word.id !== card.word.id),
+          buffer: [...session.buffer, updatedCard],
+          cardsSinceBuffer: step + 1,
+        },
+        srsUpdate: {
+          interval: 0,
+          easeFactor: newEaseFactor,
+          nextReviewAt: now,
+          wrongCount: newWrongCount,
+          consecutiveCorrect: 0,
+        },
+      };
+    }
+  } else {
+    // This card was already in active play (buffer)
     if (correct) {
       const newSuccessCount = card.successCount + 1;
+
       if (newSuccessCount >= 2) {
-        // Graduate from buffer — counts as one correct session
+        // Correct twice consecutively! Graduates from buffer.
         const newConsecutiveCorrect = card.consecutiveCorrect + 1;
+
         return {
           session: {
             ...session,
             buffer: session.buffer.filter(c => c.word.id !== card.word.id),
-            cardsSinceBuffer: 0,
+            cardsSinceBuffer: step + 1,
           },
           srsUpdate: {
             interval: 1,
@@ -139,90 +224,61 @@ export function handleResponse(
             consecutiveCorrect: newConsecutiveCorrect,
           },
         };
+      } else {
+        // Correct once, needs one more correct response to graduate. Space it out.
+        const updatedCard: CardState = {
+          ...card,
+          successCount: newSuccessCount,
+          nextAppearanceIndex: step + 3, // Re-appear after a 2-card gap (step + 3)
+        };
+
+        return {
+          session: {
+            ...session,
+            buffer: session.buffer.map(c => c.word.id === card.word.id ? updatedCard : c),
+            cardsSinceBuffer: step + 1,
+          },
+          srsUpdate: {
+            interval: card.interval,
+            easeFactor: card.easeFactor,
+            nextReviewAt: new Date(now.getTime() + 60_000), // check again in 1 min
+            wrongCount: card.wrongCount,
+            consecutiveCorrect: card.consecutiveCorrect,
+          },
+        };
       }
-      // Still needs one more correct — keep in buffer, don't change cross-session counters yet
-      return {
-        session: {
-          ...session,
-          buffer: session.buffer.map(c =>
-            c.word.id === card.word.id ? { ...c, successCount: newSuccessCount } : c,
-          ),
-          cardsSinceBuffer: 0,
-        },
-        srsUpdate: {
-          interval: card.interval,
-          easeFactor: card.easeFactor,
-          nextReviewAt: new Date(now.getTime() + 60_000),
-          wrongCount: card.wrongCount,
-          consecutiveCorrect: card.consecutiveCorrect,
-        },
-      };
     } else {
-      // Incorrect buffer card — increment wrong count, reset streak, push further back
+      // Incorrect again! Reset streak, schedule to re-appear very soon.
       const newEaseFactor = Math.max(1.3, card.easeFactor - 0.2);
       const newWrongCount = card.wrongCount + 1;
-      // Push 2-4 positions deeper so other buffer cards appear first
-      const insertOffset = 2 + Math.floor(randomFn() * 3);
-      const insertAt = Math.min(insertOffset, session.buffer.length - 1);
-      const withoutCard = session.buffer.filter(c => c.word.id !== card.word.id);
-      const updatedCard: CardState = { ...card, easeFactor: newEaseFactor, successCount: 0, wrongCount: newWrongCount, consecutiveCorrect: 0 };
+
+      const updatedCard: CardState = {
+        ...card,
+        successCount: 0,
+        wrongCount: newWrongCount,
+        consecutiveCorrect: 0,
+        nextAppearanceIndex: step + 2, // Re-appear after a 1-card gap (step + 2)
+      };
+
       return {
         session: {
           ...session,
-          buffer: [...withoutCard.slice(0, insertAt), updatedCard, ...withoutCard.slice(insertAt)],
-          cardsSinceBuffer: 0,
+          buffer: session.buffer.map(c => c.word.id === card.word.id ? updatedCard : c),
+          cardsSinceBuffer: step + 1,
         },
-        srsUpdate: { interval: 0, easeFactor: newEaseFactor, nextReviewAt: now, wrongCount: newWrongCount, consecutiveCorrect: 0 },
+        srsUpdate: {
+          interval: 0,
+          easeFactor: newEaseFactor,
+          nextReviewAt: now,
+          wrongCount: newWrongCount,
+          consecutiveCorrect: 0,
+        },
       };
     }
-  }
-
-  // Main deck card
-  if (correct) {
-    const newConsecutiveCorrect = card.consecutiveCorrect + 1;
-    const newInterval = calculateNextInterval(card.interval, card.easeFactor, card.wrongCount, newConsecutiveCorrect);
-    return {
-      session: {
-        ...session,
-        mainDeck: session.mainDeck.filter(c => c.word.id !== card.word.id),
-        cardsSinceBuffer: session.cardsSinceBuffer + 1,
-      },
-      srsUpdate: {
-        interval: newInterval,
-        easeFactor: card.easeFactor,
-        nextReviewAt: new Date(now.getTime() + newInterval * MS_PER_DAY),
-        wrongCount: card.wrongCount,
-        consecutiveCorrect: newConsecutiveCorrect,
-      },
-    };
-  } else {
-    const newEaseFactor = Math.max(1.3, card.easeFactor - 0.2);
-    const newWrongCount = card.wrongCount + 1;
-    const bufferCard: CardState = {
-      ...card,
-      easeFactor: newEaseFactor,
-      interval: 0,
-      inBuffer: true,
-      successCount: 0,
-      wrongCount: newWrongCount,
-      consecutiveCorrect: 0,
-    };
-    // Insert 8-15 cards ahead by placing at position 2-4 in buffer
-    // (each buffer slot ≈ 3-5 main deck cards between buffer serves)
-    const insertOffset = 2 + Math.floor(randomFn() * 3);
-    const insertAt = Math.min(insertOffset, session.buffer.length);
-    return {
-      session: {
-        ...session,
-        mainDeck: session.mainDeck.filter(c => c.word.id !== card.word.id),
-        buffer: [...session.buffer.slice(0, insertAt), bufferCard, ...session.buffer.slice(insertAt)],
-        cardsSinceBuffer: 0,
-      },
-      srsUpdate: { interval: 0, easeFactor: newEaseFactor, nextReviewAt: now, wrongCount: newWrongCount, consecutiveCorrect: 0 },
-    };
   }
 }
 
 export function isSessionComplete(session: Session): boolean {
   return session.mainDeck.length === 0 && session.buffer.length === 0;
 }
+

@@ -1,4 +1,3 @@
-import { db } from '@/src/db/client';
 import { words, sessions, sessionResults } from '@/src/db/schema';
 
 const BACKEND_URL_KEY = 'recallx:backendUrl';
@@ -64,7 +63,8 @@ export function getCommonHeaders(): Record<string, string> {
 }
 
 export async function resetSRSProgress(): Promise<void> {
-  await db.transaction(async (tx) => {
+  const { db } = require('@/src/db/client');
+  await db.transaction(async (tx: any) => {
     await tx.delete(sessionResults);
     await tx.delete(sessions);
     await tx.update(words).set({

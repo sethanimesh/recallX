@@ -18,13 +18,6 @@ export interface ServerWordRecord {
   tags: ServerTagRecord[];
 }
 
-export interface PronunciationRecord {
-  word: string;
-  audio_url: string;
-  source: string;
-  accent: string | null;
-}
-
 export interface CreateWordPayload {
   id: string;
   word: string;
@@ -133,11 +126,4 @@ export function addTagToWord(wordId: string, tagId: string, baseUrl?: string) {
 
 export function removeTagFromWord(wordId: string, tagId: string, baseUrl?: string) {
   return request<void>(`${baseFor(baseUrl)}/words/${wordId}/tags/${tagId}`, { method: 'DELETE' });
-}
-
-export function getPronunciation(word: string, baseUrl?: string) {
-  return request<PronunciationRecord>(
-    `${baseFor(baseUrl)}/pronunciations/${encodeURIComponent(word)}`,
-    { method: 'GET' },
-  );
 }

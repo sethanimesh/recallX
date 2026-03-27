@@ -97,6 +97,12 @@ export default function SettingsScreen() {
           <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
         </TouchableOpacity>
 
+        <TouchableOpacity style={styles.row} onPress={() => router.push('/export-words')} activeOpacity={0.7}>
+          <Ionicons name="download-outline" size={22} color="#374151" style={styles.rowIcon} />
+          <Text style={styles.rowLabel}>Export Words</Text>
+          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.row} onPress={() => router.push('/llm-stats')} activeOpacity={0.7}>
           <Ionicons name="hardware-chip-outline" size={22} color="#374151" style={styles.rowIcon} />
           <Text style={styles.rowLabel}>AI Usage</Text>

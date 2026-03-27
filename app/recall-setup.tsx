@@ -14,7 +14,7 @@ import { fetchDueWords, fetchDueWordsFc } from '@/src/db/operations/srs';
 import { fetchTodayWordCount } from '@/src/db/operations/sessionHistory';
 
 type DeckOption = { id: string | null; name: string };
-export type Mode = 'adaptive' | 'classic' | 'flashcard';
+export type Mode = 'adaptive' | 'classic' | 'flashcard' | 'tutor';
 export type FcMode = 'passive' | 'self-rated';
 
 export default function RecallSetupScreen() {
@@ -26,6 +26,7 @@ export default function RecallSetupScreen() {
   const [wordCount, setWordCount] = useState(0);
   const [mode, setMode] = useState<Mode>('adaptive');
   const [fcMode, setFcMode] = useState<FcMode>('passive');
+  const [sortOrder, setSortOrder] = useState<'jumbled' | 'alphabetical'>('jumbled');
   const [todayCount, setTodayCount] = useState(0);
 
   useFocusEffect(
@@ -39,7 +40,7 @@ export default function RecallSetupScreen() {
     let cancelled = false;
     async function computeCount() {
       let count = 0;
-      if (mode === 'adaptive') {
+      if (mode === 'adaptive' || mode === 'tutor') {
         const rows = selectedTagId !== null
           ? await fetchDueWords(selectedTagId)
           : await fetchDueWords();
@@ -72,20 +73,25 @@ export default function RecallSetupScreen() {
   const handleStart = useCallback(() => {
     if (mode === 'flashcard') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      router.push({ pathname: '/flashcard' as any, params: { tagId: selectedTagId ?? '', fcMode } });
+      router.push({ pathname: '/flashcard' as any, params: { tagId: selectedTagId ?? '', fcMode, sortOrder } });
+    } else if (mode === 'tutor') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      router.push({ pathname: '/tutor' as any, params: { tagId: selectedTagId ?? '', sortOrder } });
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      router.push({ pathname: '/recall' as any, params: { tagId: selectedTagId ?? '', mode } });
+      router.push({ pathname: '/recall' as any, params: { tagId: selectedTagId ?? '', mode, sortOrder } });
     }
-  }, [router, selectedTagId, mode, fcMode]);
+  }, [router, selectedTagId, mode, fcMode, sortOrder]);
 
   const handleTodayWords = useCallback(() => {
     if (mode === 'flashcard') {
-      router.push({ pathname: '/flashcard' as any, params: { tagId: '', fcMode, todayOnly: 'true' } });
+      router.push({ pathname: '/flashcard' as any, params: { tagId: '', fcMode, todayOnly: 'true', sortOrder } });
+    } else if (mode === 'tutor') {
+      router.push({ pathname: '/tutor' as any, params: { tagId: '', todayOnly: 'true', sortOrder } });
     } else {
-      router.push({ pathname: '/recall' as any, params: { tagId: '', mode, todayOnly: 'true' } });
+      router.push({ pathname: '/recall' as any, params: { tagId: '', mode, todayOnly: 'true', sortOrder } });
     }
-  }, [router, mode, fcMode]);
+  }, [router, mode, fcMode, sortOrder]);
 
   const deckOptions: DeckOption[] = [{ id: null, name: 'All Words' }, ...tags];
 
@@ -106,11 +112,11 @@ export default function RecallSetupScreen() {
     [selectedTagId],
   );
 
-  const allCaughtUp = mode === 'adaptive' && wordCount === 0;
+  const allCaughtUp = (mode === 'adaptive' || mode === 'tutor') && wordCount === 0;
   const fcAllCaughtUp = mode === 'flashcard' && fcMode === 'self-rated' && wordCount === 0;
 
   const wordCountSuffix =
-    mode === 'adaptive' || (mode === 'flashcard' && fcMode === 'self-rated')
+    mode === 'adaptive' || mode === 'tutor' || (mode === 'flashcard' && fcMode === 'self-rated')
       ? ' due today'
       : '';
 
@@ -119,7 +125,7 @@ export default function RecallSetupScreen() {
       <Text style={styles.heading}>Choose a deck</Text>
 
       <View style={styles.modeToggle}>
-        {(['adaptive', 'classic', 'flashcard'] as Mode[]).map(m => (
+        {(['adaptive', 'classic', 'flashcard', 'tutor'] as Mode[]).map(m => (
           <TouchableOpacity
             key={m}
             style={[styles.modeButton, mode === m && styles.modeButtonActive]}
@@ -127,7 +133,7 @@ export default function RecallSetupScreen() {
             testID={`mode-${m}`}
           >
             <Text style={[styles.modeButtonText, mode === m && styles.modeButtonTextActive]}>
-              {m === 'adaptive' ? 'Adaptive' : m === 'classic' ? 'Classic' : 'Flashcard'}
+              {m === 'adaptive' ? 'Adaptive' : m === 'classic' ? 'Classic' : m === 'flashcard' ? 'Flashcard' : 'AI Tutor'}
             </Text>
           </TouchableOpacity>
         ))}
@@ -149,6 +155,22 @@ export default function RecallSetupScreen() {
           ))}
         </View>
       )}
+
+      <Text style={styles.subHeading}>Sort Order</Text>
+      <View style={styles.sortToggle}>
+        {(['jumbled', 'alphabetical'] as const).map(so => (
+          <TouchableOpacity
+            key={so}
+            style={[styles.modeButton, sortOrder === so && styles.modeButtonActive]}
+            onPress={() => setSortOrder(so)}
+            testID={`sort-${so}`}
+          >
+            <Text style={[styles.modeButtonText, sortOrder === so && styles.modeButtonTextActive]}>
+              {so === 'jumbled' ? 'Jumbled' : 'Alphabetical'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       <FlatList
         data={deckOptions}
@@ -211,6 +233,7 @@ export default function RecallSetupScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 20, paddingTop: 16 },
   heading: { fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 16 },
+  subHeading: { fontSize: 14, fontWeight: '600', color: '#6B7280', marginTop: 8, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   modeToggle: {
     flexDirection: 'row',
     backgroundColor: '#F3F4F6',
@@ -224,6 +247,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 3,
     marginBottom: 8,
+  },
+  sortToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
+    padding: 3,
+    marginBottom: 12,
   },
   modeButton: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8 },
   modeButtonActive: {

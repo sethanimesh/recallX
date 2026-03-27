@@ -311,4 +311,19 @@ describe('RecallScreen', () => {
     const texts = collectText(tree.toJSON());
     expect(texts).toContain('Incorrect ✗');
   });
+
+  it('sorts words alphabetically if sortOrder is alphabetical', async () => {
+    mockParams = { tagId: 'tag1', mode: 'classic', sortOrder: 'alphabetical' };
+    mockFetchWordsByTag.mockResolvedValue([WORD_B, WORD_A]); // B is tenacious, A is ephemeral
+
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<RecallScreen />);
+    });
+    await act(async () => { await Promise.resolve(); });
+
+    // Should sort alphabetically, so WORD_A (ephemeral) is first
+    const texts = collectText(tree.toJSON());
+    expect(texts).toContain('ephemeral');
+  });
 });

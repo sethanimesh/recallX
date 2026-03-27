@@ -71,6 +71,7 @@ export default function RootLayout() {
         <Stack.Screen name="recall-summary" options={{ title: 'Session Complete', headerShown: false }} />
         <Stack.Screen name="llm-stats" options={{ title: 'AI Usage', headerBackTitle: 'Settings' }} />
         <Stack.Screen name="settings-url" options={{ title: 'Backend URL', headerBackTitle: 'Settings' }} />
+        <Stack.Screen name="export-words" options={{ title: 'Export Words', headerBackTitle: 'Settings' }} />
       </Stack>
     </ThemeProvider>
   );

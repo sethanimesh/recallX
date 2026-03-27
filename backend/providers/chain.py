@@ -1,6 +1,6 @@
 import logging
 from openai import RateLimitError
-from providers.base import ExtractionRequest, ExtractedWord, GradeResult, LLMProvider
+from providers.base import ExtractionRequest, ExtractedWord, GradeResult, LLMProvider, TutorChatResponse
 from config import get_provider_order
 import database
 
@@ -167,6 +167,153 @@ class ProviderChain:
             except Exception as e:
                 msg = f"{provider.name}: {type(e).__name__}: {e}"
                 logger.error("Provider %s error during grading — %s", provider.name, e)
+                failures.append(msg)
+
+        raise ExtractionFailedError(failures)
+
+    async def tutor_chat(
+        self,
+        word: str,
+        stored_definition: str,
+        stored_example: str,
+        user_answer: str,
+        history: list[dict],
+        is_retry: bool = False,
+    ) -> TutorChatResponse:
+        """Perform a conversational AI tutor turn using the first available text provider."""
+        from openai import AsyncOpenAI
+        from config import get_provider_config
+
+        _TUTOR_RESPONSE_FORMAT = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "TutorChatResponse",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "response": {"type": "string"},
+                        "evaluation": {"type": "string", "enum": ["correct", "close", "incorrect"]},
+                        "hint_provided": {"type": "boolean"},
+                    },
+                    "required": ["response", "evaluation", "hint_provided"],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        }
+
+        system_prompt = (
+            f"You are a friendly, encouraging, and human-like AI vocabulary tutor.\n"
+            f"You are helping the user practice the target word: \"{word}\".\n"
+            f"Stored Definition: \"{stored_definition}\"\n"
+            f"Stored Example Sentence: \"{stored_example}\"\n\n"
+            f"Behavioral Guidelines:\n"
+            f"1. Evaluate the user's latest response:\n"
+            f"   - If they define the word correctly (synonyms, paraphrase, or general correct sense): Praise them warmly, motivate them, and confirm it's correct. Set evaluation='correct' and hint_provided=false.\n"
+            f"   - If they are close (partially correct or slightly off): Motivate them for being close, gently correct the nuance, and provide the exact stored definition. Set evaluation='close' and hint_provided=false.\n"
+            f"   - If they are incorrect or far away: Correct them gently, explain the correct meaning, and show them the example sentence. Set evaluation='incorrect' and hint_provided=false.\n"
+            f"   - If they cannot remember, say they don't know, ask for help, or type 'help'/'hint'/'skip': Help them remember by giving them a hint (like a fill-in-the-blank sentence where the target word is replaced by underscores, e.g. \"The customer remained ___ despite the salesman's efforts\", or a conceptual clue). Do NOT reveal the definition or the word itself yet. Encourage them to try again. Set evaluation='incorrect' and hint_provided=true.\n"
+            f"2. Keep your conversational response natural, concise (1-3 sentences), and human-like.\n"
+            f"3. If is_retry is True, this is a word the user struggled with earlier in this session. Greet them with encouragement and ask them if they remember it now.\n"
+        )
+
+        failures: list[str] = []
+        for provider in self._providers:
+            if provider.name == "gemini" and getattr(provider, "_client", None) is not None:
+                try:
+                    logger.info("Trying Gemini native SDK for tutoring")
+                    from google.genai import types as genai_types
+                    
+                    contents = []
+                    for msg in history:
+                        role = "user" if msg["role"] == "user" else "model"
+                        contents.append(
+                            genai_types.Content(
+                                role=role,
+                                parts=[genai_types.Part.from_text(text=msg["content"])]
+                            )
+                        )
+                    contents.append(
+                        genai_types.Content(
+                            role="user",
+                            parts=[genai_types.Part.from_text(text=user_answer)]
+                        )
+                    )
+
+                    response = await provider._client.aio.models.generate_content(
+                        model=provider._model,
+                        contents=contents,
+                        config=genai_types.GenerateContentConfig(
+                            system_instruction=system_prompt,
+                            response_mime_type="application/json",
+                            response_schema=TutorChatResponse,
+                            temperature=0.7,
+                        ),
+                    )
+                    raw = response.text or "{}"
+                    logger.info("LLM inference succeeded provider=gemini task=tutor")
+                    try:
+                        database.record_llm_call("gemini", provider._model, "tutor")
+                    except Exception:
+                        logger.warning("Failed to record LLM call for gemini", exc_info=True)
+                    return TutorChatResponse.model_validate_json(raw)
+                except Exception as e:
+                    msg = f"gemini: {type(e).__name__}: {e}"
+                    logger.error("Gemini native SDK error during tutoring — %s", e)
+                    failures.append(msg)
+                continue
+
+            # Standard OpenAI compatible path (groq, openrouter, ollama, mistral, huggingface)
+            cfg = {}
+            try:
+                cfg = get_provider_config(provider.name)
+            except Exception:
+                pass
+
+            text_model = cfg.get("text_model")
+            base_url = cfg.get("base_url")
+            api_key = cfg.get("api_key")
+
+            if not text_model:
+                logger.debug("Skipping %s for tutoring — no text_model", provider.name)
+                continue
+
+            try:
+                logger.info("Trying provider %s for tutoring", provider.name)
+                client = AsyncOpenAI(
+                    api_key=api_key or "missing",
+                    base_url=base_url,
+                )
+                
+                messages = [{"role": "system", "content": system_prompt}]
+                for msg in history:
+                    messages.append({"role": msg["role"], "content": msg["content"]})
+                messages.append({"role": "user", "content": user_answer})
+
+                response = await client.chat.completions.create(
+                    model=text_model,
+                    messages=messages,
+                    temperature=0.7,
+                    response_format=_TUTOR_RESPONSE_FORMAT,
+                )
+                raw = response.choices[0].message.content or "{}"
+                logger.info(
+                    "LLM inference succeeded provider=%s model=%s task=tutor",
+                    provider.name,
+                    text_model,
+                )
+                try:
+                    database.record_llm_call(provider.name, text_model, "tutor")
+                except Exception:
+                    logger.warning("Failed to record LLM call for provider=%s", provider.name, exc_info=True)
+                return TutorChatResponse.model_validate_json(raw)
+            except (RateLimitError, ValueError) as e:
+                msg = f"{provider.name}: {type(e).__name__}: {e}"
+                logger.warning("Provider %s skipped for tutoring — %s", provider.name, e)
+                failures.append(msg)
+            except Exception as e:
+                msg = f"{provider.name}: {type(e).__name__}: {e}"
+                logger.error("Provider %s error during tutoring — %s", provider.name, e)
                 failures.append(msg)
 
         raise ExtractionFailedError(failures)

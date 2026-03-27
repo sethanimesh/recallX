@@ -32,7 +32,7 @@ type FcMode = 'passive' | 'self-rated';
 
 export default function FlashcardScreen() {
   const router = useRouter();
-  const { tagId, fcMode: fcModeParam, todayOnly } = useLocalSearchParams<{ tagId: string; fcMode: string; todayOnly: string }>();
+  const { tagId, fcMode: fcModeParam, todayOnly, sortOrder } = useLocalSearchParams<{ tagId: string; fcMode: string; todayOnly: string; sortOrder?: string }>();
   const fcMode: FcMode = fcModeParam === 'self-rated' ? 'self-rated' : 'passive';
 
   // Passive mode state
@@ -70,6 +70,9 @@ export default function FlashcardScreen() {
         recentlyWrongIdsRef.current = wrongIds;
         preSeededIdsRef.current = new Set(wrongIds);
         const s = createSession(wordsPool, wrongIds, todayIds);
+        if (sortOrder === 'alphabetical') {
+          s.mainDeck.sort((a, b) => a.word.word.toLowerCase().localeCompare(b.word.word.toLowerCase()));
+        }
         await insertSession(sessionIdRef.current, 'flashcard', tagId && tagId.length > 0 ? tagId : undefined);
         setSession(s);
         setCard(getNextCard(s));
@@ -77,13 +80,24 @@ export default function FlashcardScreen() {
         const words = tagId && tagId.length > 0
           ? await fetchWordsByTag(tagId)
           : await fetchAllWords();
-        setDeck([...words].sort(() => Math.random() - 0.5));
+        if (sortOrder === 'alphabetical') {
+          setDeck([...words].sort((a, b) => a.word.toLowerCase().localeCompare(b.word.toLowerCase())));
+        } else {
+          setDeck([...words].sort(() => Math.random() - 0.5));
+        }
       }
       setDeckLoaded(true);
     }
     loadDeck().catch(() => setDeckLoaded(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function handleBack() {
+    if (currentIndex > 0) {
+      setCurrentIndex(i => i - 1);
+      setPhase('question');
+    }
+  }
 
   const currentWord: WordRow | WordSRSRow | null =
     fcMode === 'self-rated' ? (card?.word ?? null) : (deck[currentIndex] ?? null);
@@ -246,15 +260,52 @@ export default function FlashcardScreen() {
       </ScrollView>
 
       <View style={styles.actionFooter}>
-        {phase === 'question' ? (
+        {fcMode === 'passive' ? (
+          <View style={styles.passiveRow}>
+            {currentIndex > 0 && (
+              <TouchableOpacity
+                style={[styles.navButton, styles.backButtonInline]}
+                onPress={handleBack}
+                testID="prev-button"
+              >
+                <Text style={styles.backButtonInlineText}>← Back</Text>
+              </TouchableOpacity>
+            )}
+
+            {phase === 'question' ? (
+              <>
+                <TouchableOpacity
+                  style={[styles.navButton, styles.revealButtonInline]}
+                  onPress={handleReveal}
+                  testID="reveal-button"
+                >
+                  <Text style={styles.revealButtonInlineText}>Reveal Answer</Text>
+                </TouchableOpacity>
+                {currentIndex + 1 < deck.length && (
+                  <TouchableOpacity
+                    style={[styles.navButton, styles.skipButtonInline]}
+                    onPress={handleNext}
+                    testID="skip-button"
+                  >
+                    <Text style={styles.skipButtonInlineText}>Skip →</Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            ) : (
+              <TouchableOpacity
+                style={[styles.navButton, styles.nextButtonInline]}
+                onPress={handleNext}
+                testID="next-button"
+              >
+                <Text style={styles.nextButtonInlineText}>
+                  {isLastCard ? 'Next — See Results' : 'Next Word →'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : phase === 'question' ? (
           <TouchableOpacity style={styles.revealButton} onPress={handleReveal} testID="reveal-button">
             <Text style={styles.revealButtonText}>Reveal Answer</Text>
-          </TouchableOpacity>
-        ) : fcMode === 'passive' ? (
-          <TouchableOpacity style={styles.nextButton} onPress={handleNext} testID="next-button">
-            <Text style={styles.nextButtonText}>
-              {isLastCard ? 'Next — See Results' : 'Next →'}
-            </Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.ratingRow}>
@@ -298,4 +349,14 @@ const styles = StyleSheet.create({
   badgeAmber: { color: '#D97706' },
   badgeOrange: { color: '#EA580C' },
   badgeRed: { color: '#DC2626' },
+  passiveRow: { flexDirection: 'row', gap: 10, width: '100%' },
+  navButton: { borderRadius: 12, paddingVertical: 16, alignItems: 'center', justifyContent: 'center' },
+  backButtonInline: { flex: 1, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
+  backButtonInlineText: { fontSize: 15, fontWeight: '600', color: '#4B5563' },
+  revealButtonInline: { flex: 2, backgroundColor: '#3B82F6' },
+  revealButtonInlineText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  skipButtonInline: { flex: 1, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
+  skipButtonInlineText: { fontSize: 15, fontWeight: '600', color: '#4B5563' },
+  nextButtonInline: { flex: 2, backgroundColor: '#10B981' },
+  nextButtonInlineText: { fontSize: 15, fontWeight: '700', color: '#fff' },
 });

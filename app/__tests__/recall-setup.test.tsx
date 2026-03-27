@@ -209,4 +209,37 @@ describe('RecallSetupScreen', () => {
       })
     );
   });
+
+  it('renders sort order toggle and defaults to jumbled', async () => {
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<RecallSetupScreen />); });
+    await act(async () => { await Promise.resolve(); });
+
+    const texts = collectText(tree.toJSON());
+    expect(texts).toContain('Sort Order');
+    expect(texts).toContain('Jumbled');
+    expect(texts).toContain('Alphabetical');
+  });
+
+  it('passes sortOrder alphabetical parameter to router when toggled', async () => {
+    mockFetchDueWords.mockResolvedValue([{ id: 'w1' }]);
+
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<RecallSetupScreen />); });
+    await act(async () => { await Promise.resolve(); });
+
+    await act(async () => {
+      tree.root.findByProps({ testID: 'sort-alphabetical' }).props.onPress();
+    });
+
+    await act(async () => {
+      tree.root.findByProps({ testID: 'start-button' }).props.onPress();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        params: expect.objectContaining({ sortOrder: 'alphabetical' }),
+      })
+    );
+  });
 });

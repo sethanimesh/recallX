@@ -56,6 +56,9 @@ export default function RecallSummaryScreen() {
     if (mode === 'flashcard') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       router.replace({ pathname: '/flashcard' as any, params: { tagId: tagId ?? '', fcMode: fcMode ?? 'passive' } });
+    } else if (mode === 'tutor') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      router.replace({ pathname: '/tutor' as any, params: { tagId: tagId ?? '' } });
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       router.replace({ pathname: '/recall' as any, params: { tagId: tagId ?? '', mode: mode ?? 'adaptive' } });

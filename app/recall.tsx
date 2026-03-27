@@ -37,7 +37,7 @@ type Mode = 'adaptive' | 'classic';
 
 export default function RecallScreen() {
   const router = useRouter();
-  const { tagId, mode: modeParam, todayOnly } = useLocalSearchParams<{ tagId: string; mode: string; todayOnly: string }>();
+  const { tagId, mode: modeParam, todayOnly, sortOrder } = useLocalSearchParams<{ tagId: string; mode: string; todayOnly: string; sortOrder?: string }>();
   const mode: Mode = modeParam === 'classic' ? 'classic' : 'adaptive';
 
   // Classic mode
@@ -82,6 +82,9 @@ export default function RecallScreen() {
         recentlyWrongIdsRef.current = wrongIds;
         preSeededIdsRef.current = new Set(wrongIds);
         const session = createSession(wordsPool, wrongIds, todayIds);
+        if (sortOrder === 'alphabetical') {
+          session.mainDeck.sort((a, b) => a.word.word.toLowerCase().localeCompare(b.word.word.toLowerCase()));
+        }
         await insertSession(sessionIdRef.current, 'recall', tagId && tagId.length > 0 ? tagId : undefined);
         setAdaptiveSession(session);
         setAdaptiveCard(getNextCard(session));
@@ -89,7 +92,11 @@ export default function RecallScreen() {
         const words = tagId && tagId.length > 0
           ? await fetchWordsByTag(tagId)
           : await fetchAllWords();
-        setDeck([...words].sort(() => Math.random() - 0.5));
+        if (sortOrder === 'alphabetical') {
+          setDeck([...words].sort((a, b) => a.word.toLowerCase().localeCompare(b.word.toLowerCase())));
+        } else {
+          setDeck([...words].sort(() => Math.random() - 0.5));
+        }
       }
       setDeckLoaded(true);
     }

@@ -10,6 +10,7 @@ import {
   setPreferredProvider,
   resetSRSProgress,
 } from '@/src/config/settings';
+import { useThemeColors } from '@/src/utils/theme';
 
 type ProvidersStatus = 'loading' | 'loaded' | 'error';
 
@@ -82,74 +83,75 @@ export default function SettingsScreen() {
         ? 'Unavailable'
         : selectedProvider ?? 'None (auto)';
 
+  const colors = useThemeColors();
   const version = Constants.expoConfig?.version ?? '—';
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Text style={styles.title}>Settings</Text>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      <Text style={[styles.title, { color: colors.text, backgroundColor: colors.background }]}>Settings</Text>
 
       <View style={styles.section}>
-        <Text style={styles.sectionHeader}>LIBRARY</Text>
+        <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>LIBRARY</Text>
 
-        <TouchableOpacity style={styles.row} onPress={() => router.push('/manage-tags')} activeOpacity={0.7}>
-          <Ionicons name="pricetags-outline" size={22} color="#374151" style={styles.rowIcon} />
-          <Text style={styles.rowLabel}>Manage Tags</Text>
-          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+        <TouchableOpacity style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/manage-tags')} activeOpacity={0.7}>
+          <Ionicons name="pricetags-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
+          <Text style={[styles.rowLabel, { color: colors.text }]}>Manage Tags</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.row} onPress={() => router.push('/export-words')} activeOpacity={0.7}>
-          <Ionicons name="download-outline" size={22} color="#374151" style={styles.rowIcon} />
-          <Text style={styles.rowLabel}>Export Words</Text>
-          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+        <TouchableOpacity style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/export-words')} activeOpacity={0.7}>
+          <Ionicons name="download-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
+          <Text style={[styles.rowLabel, { color: colors.text }]}>Export Words</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.row} onPress={() => router.push('/llm-stats')} activeOpacity={0.7}>
-          <Ionicons name="hardware-chip-outline" size={22} color="#374151" style={styles.rowIcon} />
-          <Text style={styles.rowLabel}>AI Usage</Text>
-          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+        <TouchableOpacity style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/llm-stats')} activeOpacity={0.7}>
+          <Ionicons name="hardware-chip-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
+          <Text style={[styles.rowLabel, { color: colors.text }]}>AI Usage</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionHeader}>CONNECTION</Text>
+        <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>CONNECTION</Text>
 
-        <TouchableOpacity style={styles.row} onPress={() => router.push('/settings-url' as any)} activeOpacity={0.7}>
-          <Ionicons name="server-outline" size={22} color="#374151" style={styles.rowIcon} />
+        <TouchableOpacity style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/settings-url' as any)} activeOpacity={0.7}>
+          <Ionicons name="server-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
           <View style={styles.rowContent}>
-            <Text style={styles.rowLabel}>Backend URL</Text>
-            <Text style={styles.rowSubtitle} numberOfLines={1}>{currentUrl}</Text>
+            <Text style={[styles.rowLabel, { color: colors.text }]}>Backend URL</Text>
+            <Text style={[styles.rowSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>{currentUrl}</Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.row}
+          style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={providersStatus === 'loaded' ? openProviderPicker : undefined}
           activeOpacity={providersStatus === 'loaded' ? 0.7 : 1}
         >
-          <Ionicons name="sparkles-outline" size={22} color="#374151" style={styles.rowIcon} />
+          <Ionicons name="sparkles-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
           <View style={styles.rowContent}>
-            <Text style={styles.rowLabel}>AI Provider</Text>
-            <Text style={styles.rowSubtitle}>{providerSubtitle}</Text>
+            <Text style={[styles.rowLabel, { color: colors.text }]}>AI Provider</Text>
+            <Text style={[styles.rowSubtitle, { color: colors.textSecondary }]}>{providerSubtitle}</Text>
           </View>
-          {providersStatus === 'loaded' && <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />}
+          {providersStatus === 'loaded' && <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />}
         </TouchableOpacity>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionHeader}>APP</Text>
+        <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>APP</Text>
 
-        <View style={styles.row}>
-          <Ionicons name="information-circle-outline" size={22} color="#374151" style={styles.rowIcon} />
+        <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Ionicons name="information-circle-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
           <View style={styles.rowContent}>
-            <Text style={styles.rowLabel}>Version</Text>
-            <Text style={styles.rowSubtitle}>{version}</Text>
+            <Text style={[styles.rowLabel, { color: colors.text }]}>Version</Text>
+            <Text style={[styles.rowSubtitle, { color: colors.textSecondary }]}>{version}</Text>
           </View>
         </View>
 
-        <TouchableOpacity style={styles.row} onPress={handleResetSRS} activeOpacity={0.7}>
-          <Ionicons name="refresh-outline" size={22} color="#EF4444" style={styles.rowIcon} />
-          <Text style={[styles.rowLabel, styles.destructive]}>Reset SRS Progress</Text>
+        <TouchableOpacity style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handleResetSRS} activeOpacity={0.7}>
+          <Ionicons name="refresh-outline" size={22} color={colors.error} style={styles.rowIcon} />
+          <Text style={[styles.rowLabel, styles.destructive, { color: colors.error }]}>Reset SRS Progress</Text>
         </TouchableOpacity>
       </View>
     </View>

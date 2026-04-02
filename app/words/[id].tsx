@@ -14,6 +14,7 @@ import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Speech from 'expo-speech';
+import { useThemeColors } from '@/src/utils/theme';
 
 import {
   fetchWordWithSource,
@@ -61,6 +62,7 @@ interface EditableFieldProps {
 }
 
 function EditableField({ label, value, onSave, multiline = false, italic = false }: EditableFieldProps) {
+  const colors = useThemeColors();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<TextInput>(null);
@@ -96,10 +98,10 @@ function EditableField({ label, value, onSave, multiline = false, italic = false
   if (editing) {
     return (
       <View style={styles.fieldContainer}>
-        <Text style={styles.fieldLabel}>{label}</Text>
+        <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{label}</Text>
         <TextInput
           ref={inputRef}
-          style={[styles.fieldInput, italic && styles.fieldInputItalic, multiline && styles.fieldInputMultiline]}
+          style={[styles.fieldInput, italic && styles.fieldInputItalic, multiline && styles.fieldInputMultiline, { color: colors.text, borderColor: colors.primary, backgroundColor: colors.inputBackground }]}
           value={draft}
           onChangeText={setDraft}
           onBlur={handleBlur}
@@ -112,9 +114,9 @@ function EditableField({ label, value, onSave, multiline = false, italic = false
 
   return (
     <View style={styles.fieldContainer}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+      <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{label}</Text>
       <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
-        <Text style={[styles.fieldText, italic && styles.fieldTextItalic]}>{value}</Text>
+        <Text style={[styles.fieldText, italic && styles.fieldTextItalic, { color: italic ? colors.textSecondary : colors.text }]}>{value}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -125,6 +127,7 @@ function EditableField({ label, value, onSave, multiline = false, italic = false
 export default function WordDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
   const currentIdRef = useRef<string | undefined>(id);
   const currentWordRef = useRef<string | undefined>(undefined);
   const previousPronunciationWordRef = useRef<string | undefined>(undefined);
@@ -315,9 +318,9 @@ export default function WordDetailScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centeredContainer}>
+      <View style={[styles.centeredContainer, { backgroundColor: colors.background }]}>
         <Stack.Screen options={{ title: '', headerBackTitle: 'Library' }} />
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -326,11 +329,11 @@ export default function WordDetailScreen() {
 
   if (notFound || !wordData) {
     return (
-      <View style={styles.centeredContainer}>
+      <View style={[styles.centeredContainer, { backgroundColor: colors.background }]}>
         <Stack.Screen options={{ title: '', headerBackTitle: 'Library' }} />
-        <Text style={styles.notFoundText}>Word not found.</Text>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>Go Back</Text>
+        <Text style={[styles.notFoundText, { color: colors.textSecondary }]}>Word not found.</Text>
+        <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { backgroundColor: colors.primary }]}>
+          <Text style={[styles.backButtonText, { color: colors.card }]}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -344,7 +347,7 @@ export default function WordDetailScreen() {
 
   return (
     <View
-      style={styles.screenContainer}
+      style={[styles.screenContainer, { backgroundColor: colors.background }]}
       {...(panResponder?.panHandlers ?? {})}
     >
       <Stack.Screen
@@ -355,30 +358,30 @@ export default function WordDetailScreen() {
         }}
       />
       <ScrollView
-        style={styles.scrollView}
+        style={[styles.scrollView, { backgroundColor: colors.background }]}
         contentContainerStyle={[styles.content, { paddingBottom: 32 + insets.bottom }]}
         keyboardShouldPersistTaps="handled"
       >
         {/* Word heading */}
         <View style={styles.wordHeaderRow}>
-          <Text style={styles.wordHeading}>{wordData.word}</Text>
+          <Text style={[styles.wordHeading, { color: colors.text }]}>{wordData.word}</Text>
           <TouchableOpacity
             testID="pronunciation-button"
             accessibilityLabel={`Play pronunciation for ${wordData.word}`}
             accessibilityRole="button"
             onPress={handlePronunciationPress}
             hitSlop={10}
-            style={styles.pronunciationButton}
+            style={[styles.pronunciationButton, { backgroundColor: colors.accent }]}
           >
             <Ionicons
               name={pronunciationState === 'playing' ? 'volume-high-outline' : 'volume-medium-outline'}
               size={24}
-              color="#007AFF"
+              color={colors.primary}
             />
           </TouchableOpacity>
         </View>
         {pronunciationState === 'error' && (
-          <Text testID="pronunciation-status" style={styles.pronunciationStatus}>
+          <Text testID="pronunciation-status" style={[styles.pronunciationStatus, { color: colors.error }]}>
             Could not play pronunciation
           </Text>
         )}
@@ -393,10 +396,10 @@ export default function WordDetailScreen() {
             <Ionicons
               name={sourceIconName(wordData.source.type)}
               size={16}
-              color="#666"
+              color={colors.textSecondary}
               style={styles.sourceIcon}
             />
-            <Text style={styles.sourceLabel}>{formatSourceLabel(wordData.source)}</Text>
+            <Text style={[styles.sourceLabel, { color: colors.textSecondary }]}>{formatSourceLabel(wordData.source)}</Text>
           </TouchableOpacity>
         )}
 
@@ -419,11 +422,11 @@ export default function WordDetailScreen() {
 
         {/* Tags */}
         <View style={styles.fieldContainer}>
-          <Text style={styles.fieldLabel}>Tags</Text>
+          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Tags</Text>
           <View style={styles.chipsRow}>
             {tags.map((tag) => (
-              <View key={tag.id} style={styles.chip}>
-                <Text style={styles.chipText}>{tag.name}</Text>
+              <View key={tag.id} style={[styles.chip, { backgroundColor: colors.accent }]}>
+                <Text style={[styles.chipText, { color: colors.primary }]}>{tag.name}</Text>
                 <TouchableOpacity
                   onPress={async () => {
                     await removeTagFromWord(id!, tag.id);
@@ -432,32 +435,32 @@ export default function WordDetailScreen() {
                   hitSlop={6}
                   style={styles.chipDelete}
                 >
-                  <Ionicons name="close" size={14} color="#1D4ED8" />
+                  <Ionicons name="close" size={14} color={colors.primary} />
                 </TouchableOpacity>
               </View>
             ))}
-            <TouchableOpacity style={styles.chipAdd} onPress={() => setTagPickerVisible(true)}>
-              <Ionicons name="add" size={16} color="#007AFF" />
-              <Text style={styles.chipAddText}>Add tag</Text>
+            <TouchableOpacity style={[styles.chipAdd, { borderColor: colors.primary }]} onPress={() => setTagPickerVisible(true)}>
+              <Ionicons name="add" size={16} color={colors.primary} />
+              <Text style={[styles.chipAddText, { color: colors.primary }]}>Add tag</Text>
             </TouchableOpacity>
           </View>
           {tags.length === 0 && (
-            <Text style={styles.noTagsText}>No tags — tap + to add</Text>
+            <Text style={[styles.noTagsText, { color: colors.textSecondary }]}>No tags — tap + to add</Text>
           )}
         </View>
 
         {/* Review history */}
-        <View style={styles.historySection}>
-          <Text style={styles.historyLabel}>Review history</Text>
+        <View style={[styles.historySection, { borderTopColor: colors.border }]}>
+          <Text style={[styles.historyLabel, { color: colors.textSecondary }]}>Review history</Text>
           {history.length === 0 ? (
-            <Text style={styles.historyEmpty}>Not reviewed yet</Text>
+            <Text style={[styles.historyEmpty, { color: colors.textSecondary }]}>Not reviewed yet</Text>
           ) : (
             history.map((r, i) => (
               <View key={i} style={styles.historyRow}>
                 <Text style={r.correct === 1 ? styles.historyCheck : styles.historyCross}>
                   {r.correct === 1 ? '✓' : '✗'}
                 </Text>
-                <Text style={styles.historyDate}>
+                <Text style={[styles.historyDate, { color: colors.textSecondary }]}>
                   {new Date(r.answered_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </Text>
               </View>
@@ -469,7 +472,7 @@ export default function WordDetailScreen() {
       {navActive && (
         <View
           testID="word-detail-nav-bar"
-          style={[styles.navBar, { paddingBottom: insets.bottom + 8 }]}
+          style={[styles.navBar, { paddingBottom: insets.bottom + 8, borderTopColor: colors.border, backgroundColor: colors.card }]}
         >
           <TouchableOpacity
             testID="word-detail-nav-prev"
@@ -478,10 +481,10 @@ export default function WordDetailScreen() {
             hitSlop={12}
             style={[styles.navChevron, !canPrev && styles.navChevronDisabled]}
           >
-            <Ionicons name="chevron-back" size={28} color="#007AFF" />
+            <Ionicons name="chevron-back" size={28} color={colors.primary} />
           </TouchableOpacity>
 
-          <Text style={styles.navCounter}>{navIndex + 1} / {ids.length}</Text>
+          <Text style={[styles.navCounter, { color: colors.textSecondary }]}>{navIndex + 1} / {ids.length}</Text>
 
           <TouchableOpacity
             testID="word-detail-nav-next"
@@ -490,7 +493,7 @@ export default function WordDetailScreen() {
             hitSlop={12}
             style={[styles.navChevron, !canNext && styles.navChevronDisabled]}
           >
-            <Ionicons name="chevron-forward" size={28} color="#007AFF" />
+            <Ionicons name="chevron-forward" size={28} color={colors.primary} />
           </TouchableOpacity>
         </View>
       )}

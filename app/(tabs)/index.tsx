@@ -17,6 +17,7 @@ import { words as wordsTable } from '@/src/db/schema';
 import { filterWords } from '@/src/screens/libraryLogic';
 import { getAllTags, fetchWordsByTag, type Tag } from '@/src/db/operations/tags';
 import { setNav } from '@/src/store/libraryNav';
+import { useThemeColors } from '@/src/utils/theme';
 
 type WordRow = {
   id: string;
@@ -26,6 +27,7 @@ type WordRow = {
 
 export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
   const [allWords, setAllWords] = useState<WordRow[]>([]);
   const [query, setQuery] = useState('');
   const [filterTags, setFilterTags] = useState<Tag[]>([]);
@@ -78,7 +80,7 @@ export default function LibraryScreen() {
   const filteredIdsRef = useRef<string[]>([]);
   filteredIdsRef.current = filtered.map((w) => w.id);
 
-  const ItemSeparator = useCallback(() => <View style={styles.separator} />, []);
+  const ItemSeparator = useCallback(() => <View style={[styles.separator, { backgroundColor: colors.separator }]} />, [colors.separator]);
 
   const handleAddPress = useCallback(() => {
     if (activeTagId && activeTagName) {
@@ -102,13 +104,13 @@ export default function LibraryScreen() {
         }}
         activeOpacity={0.7}
       >
-        <Text style={styles.word}>{item.word}</Text>
-        <Text style={styles.definition} numberOfLines={1} ellipsizeMode="tail">
+        <Text style={[styles.word, { color: colors.text }]}>{item.word}</Text>
+        <Text style={[styles.definition, { color: colors.textSecondary }]} numberOfLines={1} ellipsizeMode="tail">
           {item.definition}
         </Text>
       </TouchableOpacity>
     ),
-    [],
+    [colors],
   );
 
   const renderEmpty = useCallback(() => {
@@ -116,33 +118,33 @@ export default function LibraryScreen() {
       if (activeTagName) {
         return (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No words tagged '{activeTagName}'</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No words tagged '{activeTagName}'</Text>
           </View>
         );
       }
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No words yet — tap + to add some</Text>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No words yet — tap + to add some</Text>
         </View>
       );
     }
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No matches for '{query}'</Text>
+        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No matches for '{query}'</Text>
       </View>
     );
-  }, [allWords.length, query, activeTagName]);
+  }, [allWords.length, query, activeTagName, colors.textSecondary]);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
       {/* Search bar */}
-      <View testID="library-search-row" style={styles.searchRow}>
-        <Ionicons name="search-outline" size={18} color="#999" style={styles.searchIcon} />
+      <View testID="library-search-row" style={[styles.searchRow, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}>
+        <Ionicons name="search-outline" size={18} color={colors.textSecondary} style={styles.searchIcon} />
         <TextInput
           testID="library-search-input"
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: colors.text }]}
           placeholder="Search words..."
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.textSecondary}
           value={query}
           onChangeText={setQuery}
           autoCorrect={false}
@@ -155,10 +157,18 @@ export default function LibraryScreen() {
         <View testID="library-tag-wrap" style={styles.tagWrap}>
           <TouchableOpacity
             testID="library-tag-chip-all"
-            style={[styles.tagChip, activeTagId === null && styles.tagChipActive]}
+            style={[
+              styles.tagChip,
+              { backgroundColor: colors.card, borderColor: colors.border },
+              activeTagId === null && { backgroundColor: colors.text, borderColor: colors.text }
+            ]}
             onPress={() => { setActiveTagId(null); setQuery(''); }}
           >
-            <Text style={[styles.tagChipText, activeTagId === null && styles.tagChipTextActive]}>
+            <Text style={[
+              styles.tagChipText,
+              { color: colors.textSecondary },
+              activeTagId === null && { color: colors.card }
+            ]}>
               All
             </Text>
           </TouchableOpacity>
@@ -166,10 +176,18 @@ export default function LibraryScreen() {
             <TouchableOpacity
               key={tag.id}
               testID={`library-tag-chip-${tag.id}`}
-              style={[styles.tagChip, activeTagId === tag.id && styles.tagChipActive]}
+              style={[
+                styles.tagChip,
+                { backgroundColor: colors.card, borderColor: colors.border },
+                activeTagId === tag.id && { backgroundColor: colors.text, borderColor: colors.text }
+              ]}
               onPress={() => handleTagPress(tag.id)}
             >
-              <Text style={[styles.tagChipText, activeTagId === tag.id && styles.tagChipTextActive]}>
+              <Text style={[
+                styles.tagChipText,
+                { color: colors.textSecondary },
+                activeTagId === tag.id && { color: colors.card }
+              ]}>
                 {tag.name}
               </Text>
             </TouchableOpacity>
@@ -188,10 +206,10 @@ export default function LibraryScreen() {
       />
       <TouchableOpacity
         testID="library-add-button"
-        style={[styles.fab, { bottom: 24 + insets.bottom }]}
+        style={[styles.fab, { bottom: 24 + insets.bottom, backgroundColor: colors.text }]}
         onPress={handleAddPress}
       >
-        <Ionicons name="add" size={28} color="white" />
+        <Ionicons name="add" size={28} color={colors.card} />
       </TouchableOpacity>
     </View>
   );

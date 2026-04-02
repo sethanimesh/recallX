@@ -8,8 +8,35 @@ import { runMigrations } from '@/src/db/client';
 import { syncFromServer } from '@/src/db/operations/sync';
 import { initSettings } from '@/src/config/settings';
 import { LoadingScreen } from '@/src/components/LoadingScreen';
+import { palette } from '@/src/utils/theme';
 
 export { ErrorBoundary } from 'expo-router';
+
+const CustomLightTheme = {
+  ...DefaultTheme,
+  dark: false,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: palette.light.primary,
+    background: palette.light.background,
+    card: palette.light.card,
+    text: palette.light.text,
+    border: palette.light.border,
+  },
+};
+
+const CustomDarkTheme = {
+  ...DarkTheme,
+  dark: true,
+  colors: {
+    ...DarkTheme.colors,
+    primary: palette.dark.primary,
+    background: palette.dark.background,
+    card: palette.dark.card,
+    text: palette.dark.text,
+    border: palette.dark.border,
+  },
+};
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',
@@ -45,17 +72,19 @@ export default function RootLayout() {
     init();
   }, []);
 
+  const isDark = colorScheme === 'dark';
+
   if (!ready) {
     return <LoadingScreen />;
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={isDark ? CustomDarkTheme : CustomLightTheme}>
       {syncError && (
-        <View style={styles.banner}>
-          <Text style={styles.bannerText}>Could not sync — showing cached data</Text>
+        <View style={[styles.banner, isDark && { backgroundColor: '#78350F' }]}>
+          <Text style={[styles.bannerText, isDark && { color: '#FDE68A' }]}>Could not sync — showing cached data</Text>
           <TouchableOpacity onPress={() => setSyncError(false)}>
-            <Text style={styles.bannerDismiss}>✕</Text>
+            <Text style={[styles.bannerDismiss, isDark && { color: '#FDE68A' }]}>✕</Text>
           </TouchableOpacity>
         </View>
       )}

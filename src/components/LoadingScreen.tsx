@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Platform, StyleSheet, Text, View } from 'react-native';
+import { Animated, Platform, StyleSheet, Text, View, useColorScheme } from 'react-native';
 
 const RING_DURATION = 2400;
 const RING_STAGGER = 600;
@@ -88,8 +88,21 @@ export function LoadingScreen() {
 
   const RING_SIZE = 24;
 
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+
+  const colors = {
+    rootBg: isDark ? '#12100e' : '#fdfbf8',
+    ringBorder: isDark ? '#dca87a' : '#c4956a',
+    coreBg: isDark ? '#dca87a' : '#c4956a',
+    titleText: isDark ? '#f5e6d3' : '#2d2a24',
+    subText: isDark ? '#9a8b75' : '#a89880',
+    barTrackBg: isDark ? '#2e2924' : '#ede8e0',
+    barFillBg: isDark ? '#dca87a' : '#c4956a',
+  };
+
   return (
-    <Animated.View style={[styles.root, { opacity: containerOpacity }]}>
+    <Animated.View style={[styles.root, { opacity: containerOpacity, backgroundColor: colors.rootBg }]}>
       {/* Ripple */}
       <View style={styles.rippleWrap}>
         {[
@@ -101,20 +114,20 @@ export function LoadingScreen() {
             key={i}
             style={[
               styles.ring,
-              { width: RING_SIZE, height: RING_SIZE, borderRadius: RING_SIZE / 2 },
+              { width: RING_SIZE, height: RING_SIZE, borderRadius: RING_SIZE / 2, borderColor: colors.ringBorder },
               { opacity: opacity as Animated.Value, transform: [{ scale: scale as Animated.Value }] },
             ]}
           />
         ))}
-        <Animated.View style={[styles.core, { transform: [{ scale: coreScale }] }]} />
+        <Animated.View style={[styles.core, { transform: [{ scale: coreScale }], backgroundColor: colors.coreBg }]} />
       </View>
 
       {/* Text */}
       <View style={styles.textBlock}>
-        <Text style={styles.title}>Just a moment</Text>
-        <Text style={styles.sub}>Fetching your memories…</Text>
-        <View style={styles.barTrack}>
-          <Animated.View style={[styles.barFill, { width: barWidth }]} />
+        <Text style={[styles.title, { color: colors.titleText }]}>Just a moment</Text>
+        <Text style={[styles.sub, { color: colors.subText }]}>Fetching your memories…</Text>
+        <View style={[styles.barTrack, { backgroundColor: colors.barTrackBg }]}>
+          <Animated.View style={[styles.barFill, { width: barWidth, backgroundColor: colors.barFillBg }]} />
         </View>
       </View>
     </Animated.View>

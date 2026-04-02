@@ -1,18 +1,20 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useThemeColors } from '@/src/utils/theme';
 
 export default function PracticeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Recall Practice</Text>
-        <Text style={styles.cardBody}>Test yourself on your saved words</Text>
+    <View style={[styles.container, { paddingBottom: insets.bottom + 16, backgroundColor: colors.background }]}>
+      <View style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
+        <Text style={[styles.cardTitle, { color: colors.text }]}>Recall Practice</Text>
+        <Text style={[styles.cardBody, { color: colors.textSecondary }]}>Test yourself on your saved words</Text>
         <TouchableOpacity
-          style={styles.button}
+          style={[styles.button, { backgroundColor: colors.primary }]}
           // '/recall-setup' is a registered stack screen; cast needed until expo-router types regenerate
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onPress={() => router.push('/recall-setup' as any)}

@@ -114,6 +114,19 @@ describe('updateWordField', () => {
     expect(setCall.example_sentence).toBe('She spoke lucidly.');
     expect(setCall.updated_at).toBeInstanceOf(Date);
   });
+
+  it('calls UPDATE with new word value and a timestamp', async () => {
+    const chain = makeUpdateChain();
+    await updateWordField('word-3', 'word', 'lucid');
+
+    expect(db.update).toHaveBeenCalledTimes(1);
+    const setCall = chain.set.mock.calls[0][0] as {
+      word: string;
+      updated_at: Date;
+    };
+    expect(setCall.word).toBe('Lucid');
+    expect(setCall.updated_at).toBeInstanceOf(Date);
+  });
 });
 
 // ── softDeleteWord ────────────────────────────────────────────────────────────

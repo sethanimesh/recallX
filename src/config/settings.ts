@@ -2,11 +2,13 @@ import { words, sessions, sessionResults } from '@/src/db/schema';
 
 const BACKEND_URL_KEY = 'recallx:backendUrl';
 const PREFERRED_PROVIDER_KEY = 'recallx:preferredProvider';
+const PRONUNCIATION_VOICE_KEY = 'recallx:pronunciationVoice';
 
 export const DEFAULT_BACKEND_URL = 'http://192.168.68.104:8000';
 
 let _backendUrl: string = DEFAULT_BACKEND_URL;
 let _preferredProvider: string | null = null;
+let _pronunciationVoice: string | null = null;
 
 /** Lazy accessor so Jest mocks are fully initialised before first call. */
 function getStorage() {
@@ -19,16 +21,19 @@ function getStorage() {
 export async function initSettings(): Promise<void> {
   try {
     const storage = getStorage();
-    const [url, provider] = await Promise.all([
+    const [url, provider, voice] = await Promise.all([
       storage.getItem(BACKEND_URL_KEY),
       storage.getItem(PREFERRED_PROVIDER_KEY),
+      storage.getItem(PRONUNCIATION_VOICE_KEY),
     ]);
     _backendUrl = url ?? DEFAULT_BACKEND_URL;
     _preferredProvider = provider ?? null;
+    _pronunciationVoice = voice ?? null;
   } catch (err) {
     console.warn('[Settings] initSettings failed, using defaults:', err);
     _backendUrl = DEFAULT_BACKEND_URL;
     _preferredProvider = null;
+    _pronunciationVoice = null;
   }
 }
 
@@ -52,6 +57,20 @@ export async function setPreferredProvider(provider: string | null): Promise<voi
     await storage.removeItem(PREFERRED_PROVIDER_KEY);
   } else {
     await storage.setItem(PREFERRED_PROVIDER_KEY, provider);
+  }
+}
+
+export function getPronunciationVoice(): string | null {
+  return _pronunciationVoice;
+}
+
+export async function setPronunciationVoice(voice: string | null): Promise<void> {
+  _pronunciationVoice = voice;
+  const storage = getStorage();
+  if (voice === null) {
+    await storage.removeItem(PRONUNCIATION_VOICE_KEY);
+  } else {
+    await storage.setItem(PRONUNCIATION_VOICE_KEY, voice);
   }
 }
 

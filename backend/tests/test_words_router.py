@@ -90,6 +90,35 @@ def test_get_words_excludes_soft_deleted():
 
 # --- PATCH /words/{id} ---
 
+def test_patch_word_updates_word():
+    client.post("/words", json=_word_payload())
+    resp = client.patch("/words/w1", json={"word": "fleeting"})
+    assert resp.status_code == 200
+    assert resp.json()["word"] == "Fleeting"
+
+
+def test_patch_word_duplicate_word_returns_409():
+    client.post("/words", json=_word_payload(id="w1", word="first"))
+    client.post("/words", json=_word_payload(id="w2", word="second"))
+    resp = client.patch("/words/w2", json={"word": "first"})
+    assert resp.status_code == 409
+
+
+def test_patch_word_duplicate_soft_deleted_word_hard_deletes_and_updates():
+    client.post("/words", json=_word_payload(id="w1", word="first"))
+    client.delete("/words/w1")  # soft-delete w1
+    client.post("/words", json=_word_payload(id="w2", word="second"))
+
+    resp = client.patch("/words/w2", json={"word": "first"})
+    assert resp.status_code == 200
+    assert resp.json()["word"] == "First"
+
+    # Check that w1 was hard deleted
+    with sqlite3.connect(database._DEFAULT_DB_PATH) as conn:
+        rows = conn.execute("SELECT id FROM words WHERE id = ?", ("w1",)).fetchall()
+    assert len(rows) == 0
+
+
 def test_patch_word_updates_definition():
     client.post("/words", json=_word_payload())
     resp = client.patch("/words/w1", json={"definition": "Short-lived."})
@@ -111,10 +140,10 @@ def test_patch_word_not_found_returns_404():
 
 # --- DELETE /words/{id} ---
 
-def test_delete_word_returns_204():
+def test_delete_word_returns_200():
     client.post("/words", json=_word_payload())
     resp = client.delete("/words/w1")
-    assert resp.status_code == 204
+    assert resp.status_code == 200
 
 
 def test_delete_word_sets_deleted_at():

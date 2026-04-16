@@ -69,6 +69,7 @@ const mockStop = jest.fn();
 jest.mock('expo-speech', () => ({
   speak: (text: string, options: any) => mockSpeak(text, options),
   stop: () => mockStop(),
+  getAvailableVoicesAsync: jest.fn().mockResolvedValue([]),
 }));
 
 import WordDetailScreen from '../words/[id]';

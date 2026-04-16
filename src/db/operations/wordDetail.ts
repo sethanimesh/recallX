@@ -64,15 +64,21 @@ export async function fetchWordTags(wordId: string): Promise<string[]> {
 
 export async function updateWordField(
   id: string,
-  field: 'definition' | 'example_sentence',
+  field: 'word' | 'definition' | 'example_sentence',
   value: string,
 ): Promise<void> {
-  await patchWord(id, { [field]: value });
+  let updatedValue = value.trim();
+  if (field === 'word') {
+    updatedValue = updatedValue.replace(/^\w/, (c) => c.toUpperCase());
+  }
+  await patchWord(id, { [field]: updatedValue });
   const now = new Date();
-  if (field === 'definition') {
-    await db.update(words).set({ definition: value, updated_at: now }).where(eq(words.id, id));
+  if (field === 'word') {
+    await db.update(words).set({ word: updatedValue, updated_at: now }).where(eq(words.id, id));
+  } else if (field === 'definition') {
+    await db.update(words).set({ definition: updatedValue, updated_at: now }).where(eq(words.id, id));
   } else {
-    await db.update(words).set({ example_sentence: value, updated_at: now }).where(eq(words.id, id));
+    await db.update(words).set({ example_sentence: updatedValue, updated_at: now }).where(eq(words.id, id));
   }
 }
 

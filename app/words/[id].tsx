@@ -15,6 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Speech from 'expo-speech';
 import { useThemeColors } from '@/src/utils/theme';
+import { getPronunciationVoice } from '@/src/config/settings';
+import { getSmartDefaultVoice } from '@/src/utils/speech';
 
 import {
   fetchWordWithSource,
@@ -139,6 +141,48 @@ export default function WordDetailScreen() {
   const [notFound, setNotFound] = useState(false);
   const [pronunciationState, setPronunciationState] = useState<PronunciationState>('idle');
   const [history, setHistory] = useState<SessionResultRow[]>([]);
+
+  const [editingWord, setEditingWord] = useState(false);
+  const [draftWord, setDraftWord] = useState('');
+  const wordInputRef = useRef<TextInput>(null);
+
+  // Keep draftWord in sync if wordData changes externally
+  useEffect(() => {
+    if (!editingWord && wordData) {
+      setDraftWord(wordData.word);
+    }
+  }, [wordData?.word, editingWord]);
+
+  const handleWordPress = useCallback(() => {
+    if (wordData) {
+      setDraftWord(wordData.word);
+      setEditingWord(true);
+      setTimeout(() => wordInputRef.current?.focus(), 0);
+    }
+  }, [wordData]);
+
+  const handleWordBlur = useCallback(async () => {
+    setEditingWord(false);
+    const trimmed = draftWord.trim();
+    if (trimmed && trimmed !== wordData?.word) {
+      const capitalized = trimmed.replace(/^\w/, (c) => c.toUpperCase());
+      try {
+        await updateWordField(id!, 'word', trimmed);
+        setWordData((prev) => (prev ? { ...prev, word: capitalized } : prev));
+      } catch (err: any) {
+        setDraftWord(wordData?.word ?? ''); // revert to original value
+        const errMsg = err?.message || '';
+        if (errMsg.includes('already exists') || err?.statusCode === 409) {
+          Alert.alert('Save failed', 'This word already exists.');
+        } else {
+          Alert.alert('Save failed', 'Could not save your change. Please try again.');
+        }
+      }
+    } else {
+      // Revert if empty or unchanged
+      setDraftWord(wordData?.word ?? '');
+    }
+  }, [draftWord, wordData?.word, id]);
 
   const load = useCallback(async () => {
     if (!id) {
@@ -266,7 +310,14 @@ export default function WordDetailScreen() {
     setPronunciationState('playing');
     try {
       await Speech.stop();
-      Speech.speak(wordData.word, {
+
+      // Retrieve the preferred voice from settings or detect a smart default female voice
+      let selectedVoice = getPronunciationVoice();
+      if (!selectedVoice) {
+        selectedVoice = await getSmartDefaultVoice();
+      }
+
+      const speakOptions: Speech.SpeechOptions = {
         language: 'en',
         onDone: () => setPronunciationState('idle'),
         onStopped: () => setPronunciationState('idle'),
@@ -274,7 +325,13 @@ export default function WordDetailScreen() {
           if (__DEV__) console.warn('[WordDetail] speech speak callback error', err);
           setPronunciationState('error');
         },
-      });
+      };
+
+      if (selectedVoice) {
+        speakOptions.voice = selectedVoice;
+      }
+
+      Speech.speak(wordData.word, speakOptions);
     } catch (err) {
       if (__DEV__) console.warn('[WordDetail] speech speak catch error', err);
       setPronunciationState('error');
@@ -364,7 +421,33 @@ export default function WordDetailScreen() {
       >
         {/* Word heading */}
         <View style={styles.wordHeaderRow}>
-          <Text style={[styles.wordHeading, { color: colors.text }]}>{wordData.word}</Text>
+          {editingWord ? (
+            <TextInput
+              ref={wordInputRef}
+              style={[
+                styles.wordInput,
+                {
+                  color: colors.text,
+                  borderColor: colors.primary,
+                  backgroundColor: colors.inputBackground,
+                },
+              ]}
+              value={draftWord}
+              onChangeText={setDraftWord}
+              onBlur={handleWordBlur}
+              autoFocus
+              selectTextOnFocus
+            />
+          ) : (
+            <TouchableOpacity
+              onPress={handleWordPress}
+              activeOpacity={0.7}
+              style={{ flexShrink: 1 }}
+            >
+              <Text style={[styles.wordHeading, { color: colors.text }]}>{wordData.word}</Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity
             testID="pronunciation-button"
             accessibilityLabel={`Play pronunciation for ${wordData.word}`}
@@ -540,6 +623,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     marginBottom: 12,
+  },
+  wordInput: {
+    fontSize: 32,
+    fontWeight: '800',
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 6,
   },
   pronunciationButton: {
     width: 40,

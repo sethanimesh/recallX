@@ -31,13 +31,19 @@ const mockGetBackendUrl = jest.fn(() => 'http://localhost:8000');
 const mockGetPreferredProvider = jest.fn(() => null);
 const mockSetPreferredProvider = jest.fn().mockResolvedValue(undefined);
 const mockResetSRSProgress = jest.fn().mockResolvedValue(undefined);
+const mockGetPronunciationVoice = jest.fn(() => null);
+const mockSetPronunciationVoice = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('@/src/config/settings', () => ({
   getBackendUrl: () => mockGetBackendUrl(),
   getPreferredProvider: () => mockGetPreferredProvider(),
   setPreferredProvider: (...args: unknown[]) => mockSetPreferredProvider(...args),
   resetSRSProgress: (...args: unknown[]) => mockResetSRSProgress(...args),
+  getPronunciationVoice: () => mockGetPronunciationVoice(),
+  setPronunciationVoice: (...args: unknown[]) => mockSetPronunciationVoice(...args),
 }));
+
+jest.mock('@/src/components/VoicePickerSheet', () => () => null);
 
 global.fetch = jest.fn().mockResolvedValue({
   ok: true,

@@ -9,8 +9,12 @@ import {
   getPreferredProvider,
   setPreferredProvider,
   resetSRSProgress,
+  getPronunciationVoice,
+  setPronunciationVoice,
 } from '@/src/config/settings';
 import { useThemeColors } from '@/src/utils/theme';
+import * as Speech from 'expo-speech';
+import VoicePickerSheet from '@/src/components/VoicePickerSheet';
 
 type ProvidersStatus = 'loading' | 'loaded' | 'error';
 
@@ -20,6 +24,9 @@ export default function SettingsScreen() {
   const [providers, setProviders] = useState<string[]>([]);
   const [providersStatus, setProvidersStatus] = useState<ProvidersStatus>('loading');
   const [selectedProvider, setSelectedProvider] = useState<string | null>(getPreferredProvider());
+  const [selectedVoice, setSelectedVoice] = useState<string | null>(getPronunciationVoice());
+  const [voiceSheetVisible, setVoiceSheetVisible] = useState(false);
+  const [displayVoiceName, setDisplayVoiceName] = useState('System Default');
 
   useFocusEffect(
     useCallback(() => {
@@ -37,7 +44,23 @@ export default function SettingsScreen() {
           setProvidersStatus('error');
         }
       }
+      async function updateVoiceDisplayName() {
+        const activeVoiceId = getPronunciationVoice();
+        setSelectedVoice(activeVoiceId);
+        if (!activeVoiceId) {
+          setDisplayVoiceName('System Default');
+          return;
+        }
+        try {
+          const list = await Speech.getAvailableVoicesAsync();
+          const found = list.find((v) => v.identifier === activeVoiceId);
+          setDisplayVoiceName(found ? found.name : 'Custom Voice');
+        } catch {
+          setDisplayVoiceName('Custom Voice');
+        }
+      }
       loadProviders();
+      void updateVoiceDisplayName();
     }, []),
   );
 
@@ -53,6 +76,22 @@ export default function SettingsScreen() {
       },
     );
   }
+
+  const handleSelectVoice = async (voiceId: string | null) => {
+    setSelectedVoice(voiceId);
+    await setPronunciationVoice(voiceId);
+    if (!voiceId) {
+      setDisplayVoiceName('System Default');
+      return;
+    }
+    try {
+      const list = await Speech.getAvailableVoicesAsync();
+      const found = list.find((v) => v.identifier === voiceId);
+      setDisplayVoiceName(found ? found.name : 'Custom Voice');
+    } catch {
+      setDisplayVoiceName('Custom Voice');
+    }
+  };
 
   function handleResetSRS() {
     Alert.alert(
@@ -141,6 +180,15 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>APP</Text>
 
+        <TouchableOpacity style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => setVoiceSheetVisible(true)} activeOpacity={0.7}>
+          <Ionicons name="volume-high-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
+          <View style={styles.rowContent}>
+            <Text style={[styles.rowLabel, { color: colors.text }]}>Pronunciation Voice</Text>
+            <Text style={[styles.rowSubtitle, { color: colors.textSecondary }]}>{displayVoiceName}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+        </TouchableOpacity>
+
         <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name="information-circle-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
           <View style={styles.rowContent}>
@@ -154,6 +202,13 @@ export default function SettingsScreen() {
           <Text style={[styles.rowLabel, styles.destructive, { color: colors.error }]}>Reset SRS Progress</Text>
         </TouchableOpacity>
       </View>
+
+      <VoicePickerSheet
+        visible={voiceSheetVisible}
+        onClose={() => setVoiceSheetVisible(false)}
+        selectedVoiceId={selectedVoice}
+        onSelectVoice={handleSelectVoice}
+      />
     </View>
   );
 }

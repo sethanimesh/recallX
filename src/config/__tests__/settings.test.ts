@@ -33,6 +33,8 @@ import {
   setBackendUrl,
   getPreferredProvider,
   setPreferredProvider,
+  getPronunciationVoice,
+  setPronunciationVoice,
   getCommonHeaders,
   resetSRSProgress,
   DEFAULT_BACKEND_URL,
@@ -52,13 +54,15 @@ beforeEach(async () => {
 });
 
 describe('initSettings', () => {
-  it('loads backendUrl and preferredProvider from AsyncStorage', async () => {
+  it('loads backendUrl, preferredProvider and pronunciationVoice from AsyncStorage', async () => {
     mockGetItem
       .mockResolvedValueOnce('http://192.168.1.50:8000')
-      .mockResolvedValueOnce('gemini');
+      .mockResolvedValueOnce('gemini')
+      .mockResolvedValueOnce('com.apple.ttsbundle.Samantha-compact');
     await initSettings();
     expect(getBackendUrl()).toBe('http://192.168.1.50:8000');
     expect(getPreferredProvider()).toBe('gemini');
+    expect(getPronunciationVoice()).toBe('com.apple.ttsbundle.Samantha-compact');
   });
 
   it('falls back to defaults when AsyncStorage returns null', async () => {
@@ -66,6 +70,7 @@ describe('initSettings', () => {
     await initSettings();
     expect(getBackendUrl()).toBe(DEFAULT_BACKEND_URL);
     expect(getPreferredProvider()).toBeNull();
+    expect(getPronunciationVoice()).toBeNull();
   });
 
   it('falls back to defaults when AsyncStorage throws', async () => {
@@ -73,6 +78,7 @@ describe('initSettings', () => {
     await initSettings();
     expect(getBackendUrl()).toBe(DEFAULT_BACKEND_URL);
     expect(getPreferredProvider()).toBeNull();
+    expect(getPronunciationVoice()).toBeNull();
   });
 });
 
@@ -96,6 +102,21 @@ describe('setPreferredProvider / getPreferredProvider', () => {
     await setPreferredProvider(null);
     expect(getPreferredProvider()).toBeNull();
     expect(mockRemoveItem).toHaveBeenCalledWith('recallx:preferredProvider');
+  });
+});
+
+describe('setPronunciationVoice / getPronunciationVoice', () => {
+  it('stores a voice and persists it', async () => {
+    await setPronunciationVoice('com.apple.ttsbundle.Samantha-premium');
+    expect(getPronunciationVoice()).toBe('com.apple.ttsbundle.Samantha-premium');
+    expect(mockSetItem).toHaveBeenCalledWith('recallx:pronunciationVoice', 'com.apple.ttsbundle.Samantha-premium');
+  });
+
+  it('clears the voice when set to null and removes from AsyncStorage', async () => {
+    await setPronunciationVoice('com.apple.ttsbundle.Samantha-premium');
+    await setPronunciationVoice(null);
+    expect(getPronunciationVoice()).toBeNull();
+    expect(mockRemoveItem).toHaveBeenCalledWith('recallx:pronunciationVoice');
   });
 });
 

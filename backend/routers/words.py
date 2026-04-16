@@ -43,6 +43,7 @@ class CreateWordRequest(BaseModel):
 
 
 class UpdateWordRequest(BaseModel):
+    word: Optional[str] = None
     definition: Optional[str] = None
     example_sentence: Optional[str] = None
 
@@ -130,6 +131,10 @@ def update_word(word_id: str, req: UpdateWordRequest) -> WordRecord:
     now_ms = int(time.time() * 1000)
     updates: list[str] = ["updated_at = ?"]
     params: list = [now_ms]
+    if req.word is not None:
+        normalized = _normalize_stored_word(req.word)
+        updates.append("word = ?")
+        params.append(normalized)
     if req.definition is not None:
         updates.append("definition = ?")
         params.append(req.definition)
@@ -138,11 +143,39 @@ def update_word(word_id: str, req: UpdateWordRequest) -> WordRecord:
         params.append(req.example_sentence)
     params.append(word_id)
     with sqlite3.connect(database._DEFAULT_DB_PATH) as conn:
-        cursor = conn.execute(
-            f"UPDATE words SET {', '.join(updates)} WHERE id = ? AND deleted_at IS NULL",
-            params,
-        )
-        conn.commit()
+        try:
+            cursor = conn.execute(
+                f"UPDATE words SET {', '.join(updates)} WHERE id = ? AND deleted_at IS NULL",
+                params,
+            )
+            conn.commit()
+        except sqlite3.IntegrityError:
+            if req.word is not None:
+                normalized = _normalize_stored_word(req.word)
+                # Check if a deleted version of the target word exists
+                deleted_row = conn.execute(
+                    "SELECT id FROM words WHERE word = ? COLLATE NOCASE AND deleted_at IS NOT NULL",
+                    (normalized,)
+                ).fetchone()
+                if deleted_row:
+                    # Hard-delete the old soft-deleted row and its tags
+                    conn.execute("DELETE FROM word_tags WHERE word_id = ?", (deleted_row[0],))
+                    conn.execute("DELETE FROM words WHERE id = ?", (deleted_row[0],))
+                    conn.commit()
+                    # Retry the update
+                    try:
+                        cursor = conn.execute(
+                            f"UPDATE words SET {', '.join(updates)} WHERE id = ? AND deleted_at IS NULL",
+                            params,
+                        )
+                        conn.commit()
+                    except sqlite3.IntegrityError:
+                        raise HTTPException(status_code=409, detail="Word already exists")
+                else:
+                    raise HTTPException(status_code=409, detail="Word already exists")
+            else:
+                raise HTTPException(status_code=409, detail="Word already exists")
+
         if cursor.rowcount == 0:
             raise HTTPException(status_code=404, detail="Word not found")
         row = conn.execute(

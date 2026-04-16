@@ -78,7 +78,7 @@ export function getWords(baseUrl?: string) {
 
 export function patchWord(
   id: string,
-  updates: { definition?: string; example_sentence?: string },
+  updates: { word?: string; definition?: string; example_sentence?: string },
   baseUrl?: string,
 ) {
   return request<ServerWordRecord>(`${baseFor(baseUrl)}/words/${id}`, {

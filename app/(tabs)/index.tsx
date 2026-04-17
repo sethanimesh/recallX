@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ListRenderItemInfo,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
@@ -23,6 +24,7 @@ type WordRow = {
   id: string;
   word: string;
   definition: string;
+  created_at: Date;
 };
 
 export default function LibraryScreen() {
@@ -32,14 +34,15 @@ export default function LibraryScreen() {
   const [query, setQuery] = useState('');
   const [filterTags, setFilterTags] = useState<Tag[]>([]);
   const [activeTagId, setActiveTagId] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<'alphabetical' | 'newest' | 'oldest'>('alphabetical');
 
   const fetchWords = useCallback(async (tagId: string | null) => {
     if (tagId) {
       const rows = await fetchWordsByTag(tagId);
-      setAllWords(rows.map((r) => ({ id: r.id, word: r.word, definition: r.definition })));
+      setAllWords(rows.map((r) => ({ id: r.id, word: r.word, definition: r.definition, created_at: r.created_at })));
     } else {
       const rows = await db
-        .select({ id: wordsTable.id, word: wordsTable.word, definition: wordsTable.definition })
+        .select({ id: wordsTable.id, word: wordsTable.word, definition: wordsTable.definition, created_at: wordsTable.created_at })
         .from(wordsTable)
         .where(isNull(wordsTable.deleted_at))
         .orderBy(asc(wordsTable.word));
@@ -75,10 +78,52 @@ export default function LibraryScreen() {
 
   const activeTagName = filterTags.find((t) => t.id === activeTagId)?.name ?? null;
 
+  const handleSortPress = useCallback(() => {
+    Alert.alert(
+      'Sort Order',
+      'Choose how you want to order your library:',
+      [
+        {
+          text: 'Alphabetical (A-Z)',
+          onPress: () => setSortOrder('alphabetical'),
+        },
+        {
+          text: 'Newest First',
+          onPress: () => setSortOrder('newest'),
+        },
+        {
+          text: 'Oldest First',
+          onPress: () => setSortOrder('oldest'),
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ],
+      { cancelable: true }
+    );
+  }, []);
+
+  const getSortIcon = useCallback(() => {
+    if (sortOrder === 'newest') return 'time';
+    if (sortOrder === 'oldest') return 'time-outline';
+    return 'swap-vertical-outline';
+  }, [sortOrder]);
+
   const filtered = filterWords(allWords, query);
 
+  const sortedAndFiltered = [...filtered].sort((a, b) => {
+    if (sortOrder === 'newest') {
+      return b.created_at.getTime() - a.created_at.getTime();
+    }
+    if (sortOrder === 'oldest') {
+      return a.created_at.getTime() - b.created_at.getTime();
+    }
+    return a.word.localeCompare(b.word);
+  });
+
   const filteredIdsRef = useRef<string[]>([]);
-  filteredIdsRef.current = filtered.map((w) => w.id);
+  filteredIdsRef.current = sortedAndFiltered.map((w) => w.id);
 
   const ItemSeparator = useCallback(() => <View style={[styles.separator, { backgroundColor: colors.separator }]} />, [colors.separator]);
 
@@ -150,6 +195,15 @@ export default function LibraryScreen() {
           autoCorrect={false}
           clearButtonMode="while-editing"
         />
+        <TouchableOpacity
+          testID="library-sort-button"
+          style={styles.sortButton}
+          onPress={handleSortPress}
+          activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name={getSortIcon()} size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
       </View>
 
       {/* Tag filter strip */}
@@ -196,12 +250,12 @@ export default function LibraryScreen() {
       )}
 
       <FlatList
-        data={filtered}
+        data={sortedAndFiltered}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         ListEmptyComponent={renderEmpty}
         ItemSeparatorComponent={ItemSeparator}
-        contentContainerStyle={filtered.length === 0 ? styles.listEmpty : undefined}
+        contentContainerStyle={sortedAndFiltered.length === 0 ? styles.listEmpty : undefined}
         keyboardShouldPersistTaps="handled"
       />
       <TouchableOpacity
@@ -240,6 +294,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 20,
     color: '#000',
+  },
+  sortButton: {
+    paddingLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   tagWrap: {
     flexDirection: 'row',

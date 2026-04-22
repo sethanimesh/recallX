@@ -56,25 +56,6 @@ jest.mock('@/src/screens/srsAlgorithm', () => ({
     s.mainDeck.length === 0 && s.buffer.length === 0),
 }));
 
-// Mock voice input dependencies to keep tests isolated from native modules.
-const mockVoiceInput = {
-  state: 'idle',
-  transcript: '',
-  start: jest.fn(),
-  reset: jest.fn(),
-};
-jest.mock('@/src/audio/useVoiceInput', () => ({
-  useVoiceInput: () => mockVoiceInput,
-}));
-jest.mock('@/src/components/VoiceInputButton', () => {
-  const React = require('react');
-  const { View } = require('react-native');
-  return {
-    VoiceInputButton: ({ onPress }: { onPress: () => void }) =>
-      React.createElement(View, { testID: 'voice-input-button', onTouchEnd: onPress }),
-  };
-});
-
 // Mock router
 const mockPush = jest.fn();
 const mockBack = jest.fn();

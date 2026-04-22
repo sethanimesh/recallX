@@ -5,7 +5,7 @@ from providers.base import ExtractedWord, ExtractionRequest, LLMProvider
 
 def test_default_provider_order():
     order = get_provider_order()
-    assert order == ["groq", "openrouter", "ollama", "gemini", "mistral", "huggingface"]
+    assert order == ["groq", "ollama", "gemini", "mistral", "openrouter", "huggingface"]
 
 
 def test_custom_provider_order(monkeypatch):

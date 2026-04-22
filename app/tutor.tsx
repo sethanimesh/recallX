@@ -27,8 +27,6 @@ import {
   fetchTodayWordIds,
   fetchWordsCreatedTodayForRecall,
 } from '@/src/db/operations/sessionHistory';
-import { useVoiceInput } from '@/src/audio/useVoiceInput';
-import { VoiceInputButton } from '@/src/components/VoiceInputButton';
 import { tutorChat, type ChatMessage } from '@/src/api/tutorClient';
 import {
   createSession,
@@ -77,7 +75,7 @@ export default function TutorScreen() {
   const [wordHistory, setWordHistory] = useState<ChatMessage[]>([]);
   const flatListRef = useRef<FlatList>(null);
 
-  const voiceInput = useVoiceInput();
+
 
   // Load words pool and initialize session
   useEffect(() => {
@@ -117,13 +115,7 @@ export default function TutorScreen() {
     loadDeck().catch(() => setDeckLoaded(true));
   }, []);
 
-  // Handle STT input completion
-  useEffect(() => {
-    if (voiceInput.state === 'done' && voiceInput.transcript) {
-      setUserText(voiceInput.transcript);
-      handleSubmit(voiceInput.transcript);
-    }
-  }, [voiceInput.state]);
+
 
   const soundRef = useRef<Audio.Sound | null>(null);
 
@@ -141,7 +133,7 @@ export default function TutorScreen() {
     if (!isSoundEnabled) return;
     
     try {
-      voiceInput.reset();
+
       await stopAndUnloadSound();
       
       const backendUrl = getBackendUrl();
@@ -157,10 +149,6 @@ export default function TutorScreen() {
       sound.setOnPlaybackStatusUpdate(async (status) => {
         if (status.isLoaded && status.didJustFinish) {
           await stopAndUnloadSound();
-          // Automatically trigger hands-free Voice Input (VAD) when tutor finishes speaking
-          if (voiceInput.state === 'idle' || voiceInput.state === 'done' || voiceInput.state === 'error') {
-            voiceInput.start();
-          }
         }
       });
       
@@ -258,7 +246,7 @@ export default function TutorScreen() {
     appendUserMessage(answer);
     setUserText('');
     setLoading(true);
-    voiceInput.reset();
+
 
     const isRetry = currentCard.inBuffer;
 
@@ -459,11 +447,8 @@ export default function TutorScreen() {
             style={styles.textInput}
             placeholder="Define the word or ask for a hint..."
             value={userText}
-            onChangeText={text => {
-              setUserText(text);
-              if (voiceInput.state === 'done') voiceInput.reset();
-            }}
-            editable={!loading && voiceInput.state !== 'listening' && voiceInput.state !== 'speech_detected'}
+            onChangeText={setUserText}
+            editable={!loading}
             onSubmitEditing={() => handleSubmit()}
             returnKeyType="send"
           />
@@ -480,20 +465,7 @@ export default function TutorScreen() {
           )}
         </View>
 
-        <View style={styles.voiceInputRow}>
-          <VoiceInputButton state={voiceInput.state} onPress={voiceInput.start} />
-          {voiceInput.state === 'listening' && <Text style={styles.voiceLabel}>Listening…</Text>}
-          {voiceInput.state === 'speech_detected' && <Text style={styles.voiceLabel}>Got it, keep talking…</Text>}
-          {voiceInput.state === 'transcribing' && <Text style={styles.voiceLabel}>Typing it out…</Text>}
-          {voiceInput.state === 'error' && (
-            <View style={styles.voiceErrorRow}>
-              <Text style={styles.voiceError}>Sorry, couldn't catch that</Text>
-              <TouchableOpacity onPress={voiceInput.start} style={styles.voiceRetryBtn}>
-                <Text style={styles.voiceRetryText}>Retry</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
+
       </View>
     </KeyboardAvoidingView>
   );
@@ -611,21 +583,5 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: { backgroundColor: '#9CA3AF' },
   sendIcon: { width: 38, height: 38, justifyContent: 'center', alignItems: 'center' },
-  voiceInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 6,
-    gap: 12,
-  },
-  voiceLabel: { fontSize: 13, color: '#3B82F6', fontWeight: '500' },
-  voiceErrorRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  voiceError: { fontSize: 13, color: '#EF4444' },
-  voiceRetryBtn: {
-    backgroundColor: '#FEE2E2',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  voiceRetryText: { fontSize: 12, fontWeight: '600', color: '#EF4444' },
+
 });

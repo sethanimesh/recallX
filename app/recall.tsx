@@ -21,8 +21,6 @@ import {
   fetchTodayWordIds,
   fetchWordsCreatedTodayForRecall,
 } from '@/src/db/operations/sessionHistory';
-import { useVoiceInput } from '@/src/audio/useVoiceInput';
-import { VoiceInputButton } from '@/src/components/VoiceInputButton';
 import {
   createSession,
   getNextCard,
@@ -66,7 +64,7 @@ export default function RecallScreen() {
   const [total, setTotal] = useState(0);
   const [countdown, setCountdown] = useState<number | null>(null);
 
-  const voiceInput = useVoiceInput();
+
 
   useEffect(() => {
     async function loadDeck() {
@@ -104,13 +102,7 @@ export default function RecallScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (voiceInput.state === 'done' && voiceInput.transcript) {
-      setUserAnswer(voiceInput.transcript);
-      handleSubmit(voiceInput.transcript);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voiceInput.state]);
+
 
   useEffect(() => {
     if (phase !== 'result' || !gradeResult?.correct) {
@@ -179,7 +171,7 @@ export default function RecallScreen() {
   }
 
   function handleNext() {
-    voiceInput.reset();
+
 
     if (mode === 'adaptive') {
       if (pendingSRSUpdate.current) {
@@ -277,43 +269,20 @@ export default function RecallScreen() {
             style={styles.textInput}
             placeholder="Type the meaning…"
             value={userAnswer}
-            onChangeText={text => {
-              setUserAnswer(text);
-              if (voiceInput.state === 'done') voiceInput.reset();
-            }}
+            onChangeText={setUserAnswer}
             autoFocus
             returnKeyType="done"
             onSubmitEditing={() => handleSubmit()}
-            editable={
-              !loading &&
-              (voiceInput.state === 'idle' || voiceInput.state === 'done' || voiceInput.state === 'error')
-            }
+            editable={!loading}
             testID="answer-input"
           />
-          {loading && <ActivityIndicator style={styles.spinner} size="small" color="#3B82F6" testID="loading-indicator" />}
-          <VoiceInputButton state={voiceInput.state} onPress={voiceInput.start} />
-          {voiceInput.state === 'listening' && <Text style={styles.voiceLabel}>Listening…</Text>}
-          {voiceInput.state === 'speech_detected' && <Text style={styles.voiceLabel}>Got it, keep going…</Text>}
-          {voiceInput.state === 'error' && (
-            <View style={styles.voiceErrorRow}>
-              <Text style={styles.voiceError}>Couldn't understand, try again</Text>
-              <TouchableOpacity onPress={voiceInput.start} style={styles.retryButton}>
-                <Text style={styles.retryButtonText}>Retry</Text>
-              </TouchableOpacity>
-            </View>
-          )}
           <TouchableOpacity
             style={[
               styles.submitButton,
-              (loading || voiceInput.state === 'connecting' || voiceInput.state === 'transcribing' ||
-                voiceInput.state === 'listening' || voiceInput.state === 'speech_detected') &&
-                styles.submitButtonDisabled,
+              loading && styles.submitButtonDisabled,
             ]}
             onPress={() => handleSubmit()}
-            disabled={
-              loading || voiceInput.state === 'connecting' || voiceInput.state === 'transcribing' ||
-              voiceInput.state === 'listening' || voiceInput.state === 'speech_detected'
-            }
+            disabled={loading}
             testID="submit-button"
           >
             <Text style={styles.submitButtonText}>Submit</Text>
@@ -386,11 +355,7 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 18, color: '#6B7280', marginBottom: 24, textAlign: 'center' },
   backButton: { backgroundColor: '#3B82F6', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 32 },
   backButtonText: { fontSize: 16, fontWeight: '600', color: '#fff' },
-  voiceLabel: { fontSize: 13, color: '#3B82F6', textAlign: 'center' },
-  voiceErrorRow: { alignItems: 'center', gap: 8 },
-  voiceError: { fontSize: 13, color: '#ef4444', textAlign: 'center' },
-  retryButton: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#FEE2E2', borderRadius: 8 },
-  retryButtonText: { fontSize: 13, fontWeight: '600', color: '#ef4444' },
+
   difficultyBadge: { fontSize: 12, fontWeight: '600', textAlign: 'center', marginTop: 4, marginBottom: 8 },
   badgeAmber: { color: '#D97706' },
   badgeOrange: { color: '#EA580C' },

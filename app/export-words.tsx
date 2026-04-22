@@ -18,6 +18,7 @@ import {
   type ExportWordRecord,
 } from '@/src/db/operations/exportWords';
 import { getAllTags, getTagWordCounts, type Tag } from '@/src/db/operations/tags';
+import { useThemeColors } from '@/src/utils/theme';
 
 interface TagWithCount extends Tag {
   count: number;
@@ -35,10 +36,12 @@ function isCancelledError(error: unknown): boolean {
 
 export default function ExportWordsScreen() {
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
   const [allTags, setAllTags] = useState<TagWithCount[]>([]);
   const [allWords, setAllWords] = useState<ExportWordRecord[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [selectedDirectory, setSelectedDirectory] = useState<Directory | null>(null);
+  const [sortOrder, setSortOrder] = useState<'alphabetical' | 'newest' | 'oldest'>('alphabetical');
   const [loading, setLoading] = useState(true);
   const [exportingFormat, setExportingFormat] = useState<ExportFormat | null>(null);
   const [choosingFolder, setChoosingFolder] = useState(false);
@@ -75,9 +78,18 @@ export default function ExportWordsScreen() {
   }, [allTags, selectedTagIds]);
 
   const filteredWords = useMemo(() => {
-    if (selectedTagNames.length === 0) return allWords;
-    return allWords.filter((word) => word.tags.some((tagName) => selectedTagNames.includes(tagName)));
-  }, [allWords, selectedTagNames]);
+    const result = selectedTagNames.length === 0
+      ? allWords
+      : allWords.filter((word) => word.tags.some((tagName) => selectedTagNames.includes(tagName)));
+
+    if (sortOrder === 'newest') {
+      return [...result].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+    if (sortOrder === 'oldest') {
+      return [...result].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    }
+    return [...result].sort((a, b) => a.word.localeCompare(b.word));
+  }, [allWords, selectedTagNames, sortOrder]);
 
   const toggleTag = useCallback((tagId: string) => {
     setSelectedTagIds((current) =>
@@ -107,7 +119,7 @@ export default function ExportWordsScreen() {
     }
     setExportingFormat(format);
     try {
-      const result = await saveWordsExport(format, selectedTagIds, selectedDirectory);
+      const result = await saveWordsExport(format, selectedTagIds, selectedDirectory, sortOrder);
       Alert.alert(
         'Export Saved',
         `${result.filename} saved with ${result.count} ${result.count === 1 ? 'word' : 'words'}.\n\nLocation:\n${result.uri}`,
@@ -118,7 +130,7 @@ export default function ExportWordsScreen() {
     } finally {
       setExportingFormat(null);
     }
-  }, [selectedDirectory, selectedTagIds]);
+  }, [selectedDirectory, selectedTagIds, sortOrder]);
 
   const isEmpty = filteredWords.length === 0;
 
@@ -126,43 +138,43 @@ export default function ExportWordsScreen() {
     <>
       <Stack.Screen options={{ title: 'Export Words' }} />
       <ScrollView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: colors.background }]}
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
       >
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Save To</Text>
-          <Text style={styles.helperText}>
+        <View style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Save To</Text>
+          <Text style={[styles.helperText, { color: colors.textSecondary }]}>
             Choose a folder in the Files app. Exported files will be written there directly.
           </Text>
-          <View style={styles.destinationBox}>
-            <Text style={styles.destinationLabel}>Selected Folder</Text>
-            <Text testID="export-folder-label" style={styles.destinationValue}>
+          <View style={[styles.destinationBox, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}>
+            <Text style={[styles.destinationLabel, { color: colors.textSecondary }]}>Selected Folder</Text>
+            <Text testID="export-folder-label" style={[styles.destinationValue, { color: colors.text }]}>
               {getFolderLabel(selectedDirectory)}
             </Text>
           </View>
           <TouchableOpacity
             testID="choose-export-folder-button"
-            style={styles.buttonSecondary}
+            style={[styles.buttonSecondary, { backgroundColor: colors.border }]}
             onPress={handleChooseFolder}
             activeOpacity={0.8}
             disabled={choosingFolder || exportingFormat !== null}
           >
-            <Text style={styles.buttonSecondaryText}>
+            <Text style={[styles.buttonSecondaryText, { color: colors.text }]}>
               {choosingFolder ? 'Opening Files…' : selectedDirectory ? 'Change Folder' : 'Choose Folder in Files'}
             </Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Filter</Text>
-          <Text style={styles.helperText}>
+        <View style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Filter</Text>
+          <Text style={[styles.helperText, { color: colors.textSecondary }]}>
             {selectedTagIds.length === 0
               ? 'All Words selected'
               : `${selectedTagIds.length} ${selectedTagIds.length === 1 ? 'tag' : 'tags'} selected`}
           </Text>
 
           {allTags.length === 0 && !loading ? (
-            <Text style={styles.emptyText}>No tags yet. Export will include all words.</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No tags yet. Export will include all words.</Text>
           ) : (
             <View style={styles.chips}>
               {allTags.map((tag) => {
@@ -171,11 +183,19 @@ export default function ExportWordsScreen() {
                   <TouchableOpacity
                     key={tag.id}
                     testID={`export-tag-${tag.id}`}
-                    style={[styles.chip, selected && styles.chipSelected]}
+                    style={[
+                      styles.chip,
+                      { backgroundColor: colors.border },
+                      selected && [styles.chipSelected, { backgroundColor: colors.text }]
+                    ]}
                     onPress={() => toggleTag(tag.id)}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                    <Text style={[
+                      styles.chipText,
+                      { color: colors.textSecondary },
+                      selected && [styles.chipTextSelected, { color: colors.card }]
+                    ]}>
                       {tag.name} ({tag.count})
                     </Text>
                   </TouchableOpacity>
@@ -185,42 +205,87 @@ export default function ExportWordsScreen() {
           )}
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Preview</Text>
-          <Text testID="export-word-count" style={styles.previewCount}>
+        <View style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Sort Order</Text>
+          <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+            Choose how you want to order your exported words. Defaults to alphabetical.
+          </Text>
+          <View style={styles.chips}>
+            {[
+              { id: 'alphabetical', label: 'Alphabetical' },
+              { id: 'newest', label: 'Newest First' },
+              { id: 'oldest', label: 'Oldest First' },
+            ].map((option) => {
+              const selected = sortOrder === option.id;
+              return (
+                <TouchableOpacity
+                  key={option.id}
+                  testID={`export-sort-${option.id}`}
+                  style={[
+                    styles.chip,
+                    { backgroundColor: colors.border },
+                    selected && [styles.chipSelected, { backgroundColor: colors.text }]
+                  ]}
+                  onPress={() => setSortOrder(option.id as 'alphabetical' | 'newest' | 'oldest')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[
+                    styles.chipText,
+                    { color: colors.textSecondary },
+                    selected && [styles.chipTextSelected, { color: colors.card }]
+                  ]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Preview</Text>
+          <Text testID="export-word-count" style={[styles.previewCount, { color: colors.text }]}>
             {loading ? 'Loading words…' : `${filteredWords.length} ${filteredWords.length === 1 ? 'word' : 'words'} ready`}
           </Text>
-          <Text style={styles.helperText}>
+          <Text style={[styles.helperText, { color: colors.textSecondary }]}>
             JSON preserves full structure. CSV is better for spreadsheets.
           </Text>
           {isEmpty && !loading && (
-            <Text style={styles.emptyText}>No words match the selected tags.</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No words match the selected tags.</Text>
           )}
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Export</Text>
+        <View style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Export</Text>
 
           <TouchableOpacity
             testID="export-json-button"
-            style={[styles.button, (loading || isEmpty || exportingFormat !== null || !selectedDirectory) && styles.buttonDisabled]}
+            style={[
+              styles.button,
+              { backgroundColor: colors.text },
+              (loading || isEmpty || exportingFormat !== null || !selectedDirectory) && styles.buttonDisabled,
+            ]}
             onPress={() => handleExport('json')}
             activeOpacity={0.8}
             disabled={loading || isEmpty || exportingFormat !== null || !selectedDirectory}
           >
-            <Text style={styles.buttonText}>
+            <Text style={[styles.buttonText, { color: colors.card }]}>
               {exportingFormat === 'json' ? 'Saving JSON…' : 'Export JSON'}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             testID="export-csv-button"
-            style={[styles.buttonSecondary, (loading || isEmpty || exportingFormat !== null || !selectedDirectory) && styles.buttonDisabled]}
+            style={[
+              styles.buttonSecondary,
+              { backgroundColor: colors.border },
+              (loading || isEmpty || exportingFormat !== null || !selectedDirectory) && styles.buttonDisabled,
+            ]}
             onPress={() => handleExport('csv')}
             activeOpacity={0.8}
             disabled={loading || isEmpty || exportingFormat !== null || !selectedDirectory}
           >
-            <Text style={styles.buttonSecondaryText}>
+            <Text style={[styles.buttonSecondaryText, { color: colors.text }]}>
               {exportingFormat === 'csv' ? 'Saving CSV…' : 'Export CSV'}
             </Text>
           </TouchableOpacity>
@@ -229,6 +294,7 @@ export default function ExportWordsScreen() {
     </>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

@@ -1,10 +1,10 @@
-import { words, sessions, sessionResults } from '@/src/db/schema';
+import { sessionResults, sessions, words } from '@/src/db/schema';
 
 const BACKEND_URL_KEY = 'recallx:backendUrl';
 const PREFERRED_PROVIDER_KEY = 'recallx:preferredProvider';
 const PRONUNCIATION_VOICE_KEY = 'recallx:pronunciationVoice';
 
-export const DEFAULT_BACKEND_URL = 'http://192.168.68.104:8000';
+export const DEFAULT_BACKEND_URL = 'http://100.82.134.121:8000';
 
 let _backendUrl: string = DEFAULT_BACKEND_URL;
 let _preferredProvider: string | null = null;

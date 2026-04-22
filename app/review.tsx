@@ -28,6 +28,7 @@ export default function ReviewScreen() {
   const [tagPickerVisible, setTagPickerVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [initialTagId, setInitialTagId] = useState<string | null>(null);
 
   useEffect(() => {
     const pending = takePendingExtraction();
@@ -41,6 +42,7 @@ export default function ReviewScreen() {
     setDecisions(new Array(pending.words.length).fill(false));
     if (pending.defaultTags && pending.defaultTags.length > 0) {
       setTagsByIndex(new Map(pending.words.map((_, index) => [index, pending.defaultTags!])));
+      setInitialTagId(pending.defaultTags[0].id);
     }
     setInitialized(true);
   }, []);
@@ -59,7 +61,11 @@ export default function ReviewScreen() {
     async (finalDecisions: boolean[], wordList: ExtractedWord[], uri: string, type: 'image' | 'pdf', tags: Map<number, Tag[]>) => {
       const accepted = buildReviewResult(wordList, finalDecisions);
       if (accepted.length === 0) {
-        router.replace('/(tabs)');
+        if (initialTagId) {
+          router.replace({ pathname: '/(tabs)', params: { tagId: initialTagId } });
+        } else {
+          router.replace('/(tabs)');
+        }
         return;
       }
       setSaving(true);
@@ -93,7 +99,11 @@ export default function ReviewScreen() {
         });
         await Promise.all(tagOps);
 
-        router.replace('/(tabs)');
+        if (initialTagId) {
+          router.replace({ pathname: '/(tabs)', params: { tagId: initialTagId } });
+        } else {
+          router.replace('/(tabs)');
+        }
       } catch (err) {
         setSaving(false);
         const message = err instanceof Error ? err.message : String(err);
@@ -108,13 +118,19 @@ export default function ReviewScreen() {
             {
               text: 'Skip to Library',
               style: 'cancel',
-              onPress: () => router.replace('/(tabs)'),
+              onPress: () => {
+                if (initialTagId) {
+                  router.replace({ pathname: '/(tabs)', params: { tagId: initialTagId } });
+                } else {
+                  router.replace('/(tabs)');
+                }
+              },
             },
           ],
         );
       }
     },
-    [setSaving],
+    [setSaving, initialTagId],
   );
 
   const handleDecision = useCallback(

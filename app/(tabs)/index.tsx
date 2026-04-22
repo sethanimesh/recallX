@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isNull, asc } from 'drizzle-orm';
 import { db } from '@/src/db/client';
@@ -33,7 +33,15 @@ export default function LibraryScreen() {
   const [allWords, setAllWords] = useState<WordRow[]>([]);
   const [query, setQuery] = useState('');
   const [filterTags, setFilterTags] = useState<Tag[]>([]);
+  const params = useLocalSearchParams<{ tagId?: string }>();
   const [activeTagId, setActiveTagId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (params.tagId) {
+      setActiveTagId(params.tagId);
+      router.setParams({ tagId: undefined });
+    }
+  }, [params.tagId]);
   const [sortOrder, setSortOrder] = useState<'alphabetical' | 'newest' | 'oldest'>('alphabetical');
 
   const fetchWords = useCallback(async (tagId: string | null) => {

@@ -61,7 +61,8 @@ export default function AddWordScreen() {
       if (selectedTags.length > 0) {
         await Promise.all(selectedTags.map((t) => addTagToWord(newId, t.id)));
       }
-      router.replace(`/words/${newId}`);
+      router.dismissAll();
+      router.push(`/words/${newId}`);
     } catch (err) {
       setSaving(false);
       Alert.alert('Error', err instanceof Error ? err.message : 'Could not save word. Please try again.');

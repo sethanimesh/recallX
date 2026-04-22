@@ -12,13 +12,19 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 const mockPush = jest.fn();
+const mockSetParams = jest.fn();
 const mockUseFocusEffect = jest.fn((callback: () => void | (() => void)) => {
   callback();
 });
+const mockUseLocalSearchParams = jest.fn(() => ({}));
 
 jest.mock('expo-router', () => ({
-  router: { push: (...args: unknown[]) => mockPush(...args) },
+  router: {
+    push: (...args: unknown[]) => mockPush(...args),
+    setParams: (...args: unknown[]) => mockSetParams(...args),
+  },
   useFocusEffect: (callback: () => void | (() => void)) => mockUseFocusEffect(callback),
+  useLocalSearchParams: () => mockUseLocalSearchParams(),
 }));
 
 const mockGetAllTags = jest.fn();

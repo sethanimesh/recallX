@@ -148,11 +148,27 @@ describe('ExportWordsScreen', () => {
     fireEvent.press(getByTestId('export-json-button'));
 
     await waitFor(() =>
-      expect(mockSaveWordsExport).toHaveBeenCalledWith('json', ['tag-gre'], { uri: 'file:///local-folder' }),
+      expect(mockSaveWordsExport).toHaveBeenCalledWith('json', ['tag-gre'], { uri: 'file:///local-folder' }, 'alphabetical'),
     );
     expect(Alert.alert).toHaveBeenCalledWith(
       'Export Saved',
       'words.json saved with 1 word.\n\nLocation:\nfile:///local-folder/words.json',
     );
   });
+
+  it('exports JSON using selected tag ids and selected sort order and shows a success alert', async () => {
+    const { getByTestId } = render(<ExportWordsScreen />);
+
+    await waitFor(() => expect(mockFetchWordsForExport).toHaveBeenCalled());
+    fireEvent.press(getByTestId('choose-export-folder-button'));
+    await waitFor(() => expect(mockPickExportDirectory).toHaveBeenCalled());
+    fireEvent.press(getByTestId('export-tag-tag-gre'));
+    fireEvent.press(getByTestId('export-sort-newest'));
+    fireEvent.press(getByTestId('export-json-button'));
+
+    await waitFor(() =>
+      expect(mockSaveWordsExport).toHaveBeenCalledWith('json', ['tag-gre'], { uri: 'file:///local-folder' }, 'newest'),
+    );
+  });
 });
+

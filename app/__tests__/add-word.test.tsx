@@ -17,11 +17,15 @@ jest.mock('react-native-safe-area-context', () => {
 
 const mockReplace = jest.fn();
 const mockBack = jest.fn();
+const mockDismissAll = jest.fn();
+const mockPush = jest.fn();
 const mockUseLocalSearchParams = jest.fn(() => ({}));
 jest.mock('expo-router', () => ({
   router: {
     replace: (...args: unknown[]) => mockReplace(...args),
     back: (...args: unknown[]) => mockBack(...args),
+    dismissAll: (...args: unknown[]) => mockDismissAll(...args),
+    push: (...args: unknown[]) => mockPush(...args),
   },
   useLocalSearchParams: () => mockUseLocalSearchParams(),
 }));
@@ -172,6 +176,7 @@ describe('AddWordScreen autofill', () => {
 
     expect(mockInsertManualWord).toHaveBeenCalledWith('pellucid', 'Translucently clear.', '');
     expect(mockAddTagToWord).toHaveBeenCalledWith('word-1', 'tag-gre');
-    expect(mockReplace).toHaveBeenCalledWith('/words/word-1');
+    expect(mockDismissAll).toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith('/words/word-1');
   });
 });

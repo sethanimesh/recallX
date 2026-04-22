@@ -40,14 +40,23 @@ function baseFor(override?: string): string {
 }
 
 async function request<T>(url: string, options: RequestInit): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+
   let response: Response;
   try {
     response = await fetch(url, {
       ...options,
+      signal: controller.signal,
       headers: { 'Content-Type': 'application/json', ...getCommonHeaders(), ...(options.headers ?? {}) },
     });
-  } catch {
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      throw new WordServerError('Connection timed out', 0);
+    }
     throw new WordServerError('Network error', 0);
+  } finally {
+    clearTimeout(timeoutId);
   }
   if (!response.ok) {
     let detail = `HTTP ${response.status}`;

@@ -142,22 +142,36 @@ async function fetchAllExportWordRows(): Promise<ExportWordRow[]> {
     .orderBy(asc(words.word), asc(tags.name));
 }
 
-export async function fetchWordsForExport(tagIds?: string[]): Promise<ExportWordRecord[]> {
+export async function fetchWordsForExport(
+  tagIds?: string[],
+  sortOrder?: 'alphabetical' | 'newest' | 'oldest',
+): Promise<ExportWordRecord[]> {
   const rows = await fetchAllExportWordRows();
-  const exportWords = buildExportWords(rows);
+  let exportWords = buildExportWords(rows);
 
-  if (!tagIds || tagIds.length === 0) return exportWords;
+  if (tagIds && tagIds.length > 0) {
+    const tagNameById = new Map(
+      (await db.select({ id: tags.id, name: tags.name }).from(tags)).map((tag) => [tag.id, tag.name]),
+    );
+    const selectedTagNames = normalizeTagIds(tagIds)
+      .map((tagId) => tagNameById.get(tagId))
+      .filter((tagName): tagName is string => Boolean(tagName));
 
-  const tagNameById = new Map(
-    (await db.select({ id: tags.id, name: tags.name }).from(tags)).map((tag) => [tag.id, tag.name]),
-  );
-  const selectedTagNames = normalizeTagIds(tagIds)
-    .map((tagId) => tagNameById.get(tagId))
-    .filter((tagName): tagName is string => Boolean(tagName));
+    exportWords = exportWords.filter((wordRecord) =>
+      wordRecord.tags.some((tagName) => selectedTagNames.includes(tagName)),
+    );
+  }
 
-  return exportWords.filter((wordRecord) =>
-    wordRecord.tags.some((tagName) => selectedTagNames.includes(tagName)),
-  );
+  if (sortOrder === 'newest') {
+    exportWords.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  } else if (sortOrder === 'oldest') {
+    exportWords.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  } else {
+    // default to alphabetical
+    exportWords.sort((a, b) => a.word.localeCompare(b.word));
+  }
+
+  return exportWords;
 }
 
 export async function pickExportDirectory(): Promise<Directory> {
@@ -168,8 +182,9 @@ export async function saveWordsExport(
   format: ExportFormat,
   tagIds: string[] | undefined,
   directory: Directory,
+  sortOrder?: 'alphabetical' | 'newest' | 'oldest',
 ): Promise<ExportResult> {
-  const exportWords = await fetchWordsForExport(tagIds);
+  const exportWords = await fetchWordsForExport(tagIds, sortOrder);
   const filename = buildFilename(format);
   const file = new File(directory, filename);
   const content = format === 'json' ? serializeWordsToJson(exportWords) : serializeWordsToCsv(exportWords);
@@ -184,3 +199,4 @@ export async function saveWordsExport(
     format,
   };
 }
+

@@ -6,10 +6,10 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform,
 } from 'react-native';
 import { Stack, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Directory } from 'expo-file-system';
 import {
   fetchWordsForExport,
   pickExportDirectory,
@@ -24,8 +24,13 @@ interface TagWithCount extends Tag {
   count: number;
 }
 
-function getFolderLabel(directory: Directory | null): string {
+interface ExportDirectory {
+  uri: string;
+}
+
+function getFolderLabel(directory: ExportDirectory | null): string {
   if (!directory) return 'No folder selected';
+  if (Platform.OS === 'web') return 'Browser Downloads';
   const parts = directory.uri.split('/').filter(Boolean);
   return decodeURIComponent(parts[parts.length - 1] ?? directory.uri);
 }
@@ -40,7 +45,9 @@ export default function ExportWordsScreen() {
   const [allTags, setAllTags] = useState<TagWithCount[]>([]);
   const [allWords, setAllWords] = useState<ExportWordRecord[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [selectedDirectory, setSelectedDirectory] = useState<Directory | null>(null);
+  const [selectedDirectory, setSelectedDirectory] = useState<ExportDirectory | null>(
+    Platform.OS === 'web' ? { uri: 'downloads' } : null
+  );
   const [sortOrder, setSortOrder] = useState<'alphabetical' | 'newest' | 'oldest'>('alphabetical');
   const [loading, setLoading] = useState(true);
   const [exportingFormat, setExportingFormat] = useState<ExportFormat | null>(null);
@@ -141,29 +148,31 @@ export default function ExportWordsScreen() {
         style={[styles.container, { backgroundColor: colors.background }]}
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
       >
-        <View style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Save To</Text>
-          <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-            Choose a folder in the Files app. Exported files will be written there directly.
-          </Text>
-          <View style={[styles.destinationBox, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}>
-            <Text style={[styles.destinationLabel, { color: colors.textSecondary }]}>Selected Folder</Text>
-            <Text testID="export-folder-label" style={[styles.destinationValue, { color: colors.text }]}>
-              {getFolderLabel(selectedDirectory)}
+        {Platform.OS !== 'web' && (
+          <View style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Save To</Text>
+            <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+              Choose a folder in the Files app. Exported files will be written there directly.
             </Text>
+            <View style={[styles.destinationBox, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}>
+              <Text style={[styles.destinationLabel, { color: colors.textSecondary }]}>Selected Folder</Text>
+              <Text testID="export-folder-label" style={[styles.destinationValue, { color: colors.text }]}>
+                {getFolderLabel(selectedDirectory)}
+              </Text>
+            </View>
+            <TouchableOpacity
+              testID="choose-export-folder-button"
+              style={[styles.buttonSecondary, { backgroundColor: colors.border }]}
+              onPress={handleChooseFolder}
+              activeOpacity={0.8}
+              disabled={choosingFolder || exportingFormat !== null}
+            >
+              <Text style={[styles.buttonSecondaryText, { color: colors.text }]}>
+                {choosingFolder ? 'Opening Files…' : selectedDirectory ? 'Change Folder' : 'Choose Folder in Files'}
+              </Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            testID="choose-export-folder-button"
-            style={[styles.buttonSecondary, { backgroundColor: colors.border }]}
-            onPress={handleChooseFolder}
-            activeOpacity={0.8}
-            disabled={choosingFolder || exportingFormat !== null}
-          >
-            <Text style={[styles.buttonSecondaryText, { color: colors.text }]}>
-              {choosingFolder ? 'Opening Files…' : selectedDirectory ? 'Change Folder' : 'Choose Folder in Files'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        )}
 
         <View style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Filter</Text>

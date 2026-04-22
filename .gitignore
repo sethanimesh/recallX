@@ -50,5 +50,6 @@ yarn-error.*
 /android
 
 # tests
-app/__tests__/
+**/__tests__/
+
 

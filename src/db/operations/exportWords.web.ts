@@ -1,4 +1,3 @@
-import { Directory, File } from 'expo-file-system';
 import {
   buildFilename,
   fetchWordsForExport,
@@ -16,26 +15,35 @@ export {
   buildFilename,
 } from './exportWords.shared';
 
-export async function pickExportDirectory(): Promise<Directory> {
-  return Directory.pickDirectoryAsync();
+// On the web, users don't need to select directories. We return a mock object.
+export async function pickExportDirectory(): Promise<any> {
+  return { uri: 'downloads' };
 }
 
 export async function saveWordsExport(
   format: ExportFormat,
   tagIds: string[] | undefined,
-  directory: Directory,
+  directory: any, // Ignored on Web
   sortOrder?: 'alphabetical' | 'newest' | 'oldest',
 ): Promise<ExportResult> {
   const exportWords = await fetchWordsForExport(tagIds, sortOrder);
-  const filename = buildFilename(format);
-  const file = new File(directory, filename);
   const content = format === 'json' ? serializeWordsToJson(exportWords) : serializeWordsToCsv(exportWords);
+  const filename = buildFilename(format);
 
-  file.create({ overwrite: true, intermediates: true });
-  file.write(content);
+  // Create standard browser blob and download link
+  const blob = new Blob([content], { type: format === 'json' ? 'application/json' : 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 
   return {
-    uri: file.uri,
+    uri: 'Browser Downloads',
     filename,
     count: exportWords.length,
     format,

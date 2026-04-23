@@ -95,6 +95,8 @@ export default function TutorScreen() {
       const newSession = createSession(wordsPool, wrongIds, todayIds);
       if (sortOrder === 'alphabetical') {
         newSession.mainDeck.sort((a, b) => a.word.word.localeCompare(b.word.word));
+      } else if (sortOrder === 'newest') {
+        newSession.mainDeck.sort((a, b) => new Date(b.word.created_at).getTime() - new Date(a.word.created_at).getTime());
       }
 
       await insertSession(sessionIdRef.current, 'recall', tagId && tagId.length > 0 ? tagId : undefined);

@@ -82,6 +82,8 @@ export default function RecallScreen() {
         const session = createSession(wordsPool, wrongIds, todayIds);
         if (sortOrder === 'alphabetical') {
           session.mainDeck.sort((a, b) => a.word.word.toLowerCase().localeCompare(b.word.word.toLowerCase()));
+        } else if (sortOrder === 'newest') {
+          session.mainDeck.sort((a, b) => new Date(b.word.created_at).getTime() - new Date(a.word.created_at).getTime());
         }
         await insertSession(sessionIdRef.current, 'recall', tagId && tagId.length > 0 ? tagId : undefined);
         setAdaptiveSession(session);
@@ -92,6 +94,8 @@ export default function RecallScreen() {
           : await fetchAllWords();
         if (sortOrder === 'alphabetical') {
           setDeck([...words].sort((a, b) => a.word.toLowerCase().localeCompare(b.word.toLowerCase())));
+        } else if (sortOrder === 'newest') {
+          setDeck([...words].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
         } else {
           setDeck([...words].sort(() => Math.random() - 0.5));
         }

@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { getAllTags, fetchAllWords, fetchWordsByTag, type Tag } from '@/src/db/operations/tags';
 import { fetchDueWords, fetchDueWordsFc } from '@/src/db/operations/srs';
 import { fetchTodayWordCount } from '@/src/db/operations/sessionHistory';
@@ -26,7 +27,7 @@ export default function RecallSetupScreen() {
   const [wordCount, setWordCount] = useState(0);
   const [mode, setMode] = useState<Mode>('adaptive');
   const [fcMode, setFcMode] = useState<FcMode>('passive');
-  const [sortOrder, setSortOrder] = useState<'jumbled' | 'alphabetical'>('jumbled');
+  const [sortOrder, setSortOrder] = useState<'jumbled' | 'alphabetical' | 'newest'>('jumbled');
   const [todayCount, setTodayCount] = useState(0);
 
   useFocusEffect(
@@ -124,19 +125,42 @@ export default function RecallSetupScreen() {
     <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
       <Text style={styles.heading}>Choose a deck</Text>
 
-      <View style={styles.modeToggle}>
-        {(['adaptive', 'classic', 'flashcard', 'tutor'] as Mode[]).map(m => (
-          <TouchableOpacity
-            key={m}
-            style={[styles.modeButton, mode === m && styles.modeButtonActive]}
-            onPress={() => setMode(m)}
-            testID={`mode-${m}`}
-          >
-            <Text style={[styles.modeButtonText, mode === m && styles.modeButtonTextActive]}>
-              {m === 'adaptive' ? 'Adaptive' : m === 'classic' ? 'Classic' : m === 'flashcard' ? 'Flashcard' : 'AI Tutor'}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      <Text style={styles.subHeading}>Review Mode</Text>
+      <View style={styles.modeGrid}>
+        {(['adaptive', 'classic', 'flashcard', 'tutor'] as Mode[]).map(m => {
+          const isActive = mode === m;
+          let iconName: keyof typeof Ionicons.glyphMap = 'sparkles-outline';
+          let label = 'Adaptive';
+          if (m === 'classic') {
+            iconName = 'book-outline';
+            label = 'Classic';
+          } else if (m === 'flashcard') {
+            iconName = 'albums-outline';
+            label = 'Flashcard';
+          } else if (m === 'tutor') {
+            iconName = 'chatbubble-ellipses-outline';
+            label = 'AI Tutor';
+          }
+
+          return (
+            <TouchableOpacity
+              key={m}
+              style={[styles.modeCard, isActive && styles.modeCardActive]}
+              onPress={() => setMode(m)}
+              testID={`mode-${m}`}
+            >
+              <Ionicons
+                name={iconName}
+                size={18}
+                color={isActive ? '#3B82F6' : '#6B7280'}
+                style={styles.modeIcon}
+              />
+              <Text style={[styles.modeCardText, isActive && styles.modeCardTextActive]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {mode === 'flashcard' && (
@@ -158,7 +182,7 @@ export default function RecallSetupScreen() {
 
       <Text style={styles.subHeading}>Sort Order</Text>
       <View style={styles.sortToggle}>
-        {(['jumbled', 'alphabetical'] as const).map(so => (
+        {(['jumbled', 'alphabetical', 'newest'] as const).map(so => (
           <TouchableOpacity
             key={so}
             style={[styles.modeButton, sortOrder === so && styles.modeButtonActive]}
@@ -166,7 +190,7 @@ export default function RecallSetupScreen() {
             testID={`sort-${so}`}
           >
             <Text style={[styles.modeButtonText, sortOrder === so && styles.modeButtonTextActive]}>
-              {so === 'jumbled' ? 'Jumbled' : 'Alphabetical'}
+              {so === 'jumbled' ? 'Jumbled' : so === 'alphabetical' ? 'Alphabetical' : 'Newest'}
             </Text>
           </TouchableOpacity>
         ))}
@@ -233,20 +257,46 @@ export default function RecallSetupScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 20, paddingTop: 16 },
   heading: { fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 16 },
-  subHeading: { fontSize: 14, fontWeight: '600', color: '#6B7280', marginTop: 8, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-  modeToggle: {
+  subHeading: { fontSize: 13, fontWeight: '600', color: '#6B7280', marginTop: 8, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  modeGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  modeCard: {
+    width: '48%',
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#F3F4F6',
     borderRadius: 10,
-    padding: 3,
-    marginBottom: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  modeCardActive: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#3B82F6',
+  },
+  modeIcon: {
+    marginRight: 6,
+  },
+  modeCardText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#4B5563',
+  },
+  modeCardTextActive: {
+    color: '#1E40AF',
+    fontWeight: '700',
   },
   fcModeToggle: {
     flexDirection: 'row',
     backgroundColor: '#F3F4F6',
     borderRadius: 10,
     padding: 3,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   sortToggle: {
     flexDirection: 'row',

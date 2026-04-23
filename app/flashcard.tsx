@@ -72,6 +72,8 @@ export default function FlashcardScreen() {
         const s = createSession(wordsPool, wrongIds, todayIds);
         if (sortOrder === 'alphabetical') {
           s.mainDeck.sort((a, b) => a.word.word.toLowerCase().localeCompare(b.word.word.toLowerCase()));
+        } else if (sortOrder === 'newest') {
+          s.mainDeck.sort((a, b) => new Date(b.word.created_at).getTime() - new Date(a.word.created_at).getTime());
         }
         await insertSession(sessionIdRef.current, 'flashcard', tagId && tagId.length > 0 ? tagId : undefined);
         setSession(s);
@@ -82,6 +84,8 @@ export default function FlashcardScreen() {
           : await fetchAllWords();
         if (sortOrder === 'alphabetical') {
           setDeck([...words].sort((a, b) => a.word.toLowerCase().localeCompare(b.word.toLowerCase())));
+        } else if (sortOrder === 'newest') {
+          setDeck([...words].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
         } else {
           setDeck([...words].sort(() => Math.random() - 0.5));
         }

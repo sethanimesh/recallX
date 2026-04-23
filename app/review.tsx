@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -174,73 +175,77 @@ export default function ReviewScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Review Extracted Words</Text>
-      <Text style={styles.progress}>{progressLabel}</Text>
+    <SafeAreaView style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <Text style={styles.title}>Review Extracted Words</Text>
+        <Text style={styles.progress}>{progressLabel}</Text>
 
-      <View style={styles.card}>
-        <Text style={styles.word}>{currentWord.word}</Text>
-        <Text style={styles.definition}>{currentWord.definition}</Text>
-        <Text style={styles.example}>&ldquo;{currentWord.example_sentence}&rdquo;</Text>
+        <View style={styles.card}>
+          <Text style={styles.word}>{currentWord.word}</Text>
+          <Text style={styles.definition}>{currentWord.definition}</Text>
+          <Text style={styles.example}>&ldquo;{currentWord.example_sentence}&rdquo;</Text>
 
-        <View style={styles.tagSection}>
-          <View style={styles.tagSectionHeader}>
-            <View>
-              <Text style={styles.tagLabel}>Tags</Text>
-              <Text style={styles.tagSubtext}>
-                {currentCardTags.length === 0 ? 'Add tags before saving this word' : 'Selected for this review card'}
-              </Text>
-            </View>
-            <TouchableOpacity
-              testID="review-tag-trigger"
-              style={[styles.tagActionButton, currentCardTags.length > 0 && styles.tagActionButtonActive]}
-              onPress={() => setTagPickerVisible(true)}
-            >
-              <Ionicons
-                name={currentCardTags.length === 0 ? 'add' : 'create-outline'}
-                size={15}
-                color={currentCardTags.length === 0 ? '#2563EB' : '#1D4ED8'}
-              />
-              <Text style={[styles.tagActionText, currentCardTags.length > 0 && styles.tagActionTextActive]}>
-                {currentCardTags.length === 0 ? 'Add tags' : 'Edit tags'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.tagRow}>
-            {currentCardTags.map((tag) => (
-              <View key={tag.id} style={styles.chip}>
-                <Text style={styles.chipText}>{tag.name}</Text>
+          <View style={styles.tagSection}>
+            <View style={styles.tagSectionHeader}>
+              <View>
+                <Text style={styles.tagLabel}>Tags</Text>
+                <Text style={styles.tagSubtext}>
+                  {currentCardTags.length === 0 ? 'Add tags before saving this word' : 'Selected for this review card'}
+                </Text>
               </View>
-            ))}
-          </View>
-          {currentCardTags.length === 0 && (
-            <View style={styles.emptyTagState}>
-              <Ionicons name="pricetag-outline" size={16} color="#9CA3AF" />
-              <Text style={styles.emptyTagStateText}>No tags yet</Text>
+              <TouchableOpacity
+                testID="review-tag-trigger"
+                style={[styles.tagActionButton, currentCardTags.length > 0 && styles.tagActionButtonActive]}
+                onPress={() => setTagPickerVisible(true)}
+              >
+                <Ionicons
+                  name={currentCardTags.length === 0 ? 'add' : 'create-outline'}
+                  size={15}
+                  color={currentCardTags.length === 0 ? '#2563EB' : '#1D4ED8'}
+                />
+                <Text style={[styles.tagActionText, currentCardTags.length > 0 && styles.tagActionTextActive]}>
+                  {currentCardTags.length === 0 ? 'Add tags' : 'Edit tags'}
+                </Text>
+              </TouchableOpacity>
             </View>
-          )}
+
+            <View style={styles.tagRow}>
+              {currentCardTags.map((tag) => (
+                <View key={tag.id} style={styles.chip}>
+                  <Text style={styles.chipText}>{tag.name}</Text>
+                </View>
+              ))}
+            </View>
+            {currentCardTags.length === 0 && (
+              <View style={styles.emptyTagState}>
+                <Ionicons name="pricetag-outline" size={16} color="#9CA3AF" />
+                <Text style={styles.emptyTagStateText}>No tags yet</Text>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
+      </ScrollView>
 
-      <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={[styles.button, styles.rejectButton]}
-          onPress={() => handleDecision(false)}
-          accessibilityLabel="Reject word"
-        >
-          <Ionicons name="close" size={22} color="#fff" />
-          <Text style={styles.buttonText}>Reject</Text>
-        </TouchableOpacity>
+      <View style={styles.actionFooter}>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={[styles.button, styles.rejectButton]}
+            onPress={() => handleDecision(false)}
+            accessibilityLabel="Reject word"
+          >
+            <Ionicons name="close" size={22} color="#fff" />
+            <Text style={styles.buttonText}>Reject</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, styles.acceptButton]}
-          onPress={() => handleDecision(true)}
-          accessibilityLabel="Accept word"
-        >
-          <Ionicons name="checkmark" size={22} color="#fff" />
-          <Text style={styles.buttonText}>Accept</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, styles.acceptButton]}
+            onPress={() => handleDecision(true)}
+            accessibilityLabel="Accept word"
+          >
+            <Ionicons name="checkmark" size={22} color="#fff" />
+            <Text style={styles.buttonText}>Accept</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <TagPickerSheet
@@ -260,6 +265,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
+  },
+  screen: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 24,
   },
   title: {
     fontSize: 20,
@@ -283,7 +299,14 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
-    marginBottom: 36,
+    marginBottom: 16,
+  },
+  actionFooter: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    backgroundColor: '#F9FAFB',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
   },
   word: {
     fontSize: 28,

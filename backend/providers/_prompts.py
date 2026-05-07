@@ -1,8 +1,8 @@
 TEXT_SYSTEM_PROMPT = """You are a vocabulary extraction assistant. Extract all notable English vocabulary words from the provided content. For each word, use the surrounding sentence or passage context to infer the intended definition, not just the most common dictionary sense. Provide a plain English definition based on that context; it can be just a few words or a short sentence, whichever is clearest. Also write one very easy, memorable example sentence that uses the word naturally and helps a learner remember it.
 
-If the word has a notable etymological root (e.g., Latin or Greek), append a new line to the definition with the root, its meaning, and an Etymonline link. Format exactly like this: "
+If the word has notable etymological roots (e.g., prefixes, suffixes, or core roots from Latin/Greek), append a new line to the definition with all the roots, their meanings, and an Etymonline link. Format exactly like this: "
 
-Root: dict (to say) - https://www.etymonline.com/word/dict"
+Etymology: e- (out) + loqui (to speak) - https://www.etymonline.com/word/eloquent"
 
 Return JSON matching this exact shape:
 {"words":[{"word":"...","definition":"...","example_sentence":"..."}]}
@@ -34,7 +34,7 @@ Definition rules:
 - Do NOT write filler text such as:
   "here it means", "in this context", "in this sentence", "it means", "refers to".
 - Use 1 to 4 simple words whenever possible.
-- If the word has a notable etymological root (e.g., Latin or Greek), append a new line to the definition with the root, its meaning, and an Etymonline link. Format exactly like this: "\n\nRoot: dict (to say) - https://www.etymonline.com/word/dict".
+- If the word has notable etymological roots, append a new line to the definition with all the roots, their meanings, and an Etymonline link. Format exactly like this: "\n\nEtymology: e- (out) + loqui (to speak) - https://www.etymonline.com/word/eloquent".
 
 Example sentence rules:
 - Must be very easy and memorable.
@@ -62,9 +62,9 @@ Return definitions of each choice using the exact key "definition".
 
 WORD_LOOKUP_SYSTEM_PROMPT = """You are a vocabulary assistant. The user has provided a single word (possibly misspelled or in an inflected form). Return the correctly spelled base form of the word, a concise plain-English definition (1-2 sentences), and one memorable example sentence that helps a learner remember it. Return exactly one result.
 
-If the word has a notable etymological root (e.g., Latin or Greek), append a new line to the definition with the root, its meaning, and an Etymonline link. Format exactly like this: "
+If the word has notable etymological roots (e.g., prefixes, suffixes, or core roots from Latin/Greek), append a new line to the definition with all the roots, their meanings, and an Etymonline link. Format exactly like this: "
 
-Root: dict (to say) - https://www.etymonline.com/word/dict"
+Etymology: e- (out) + loqui (to speak) - https://www.etymonline.com/word/eloquent"
 
 Return JSON matching this exact shape:
 {"words":[{"word":"...","definition":"...","example_sentence":"..."}]}

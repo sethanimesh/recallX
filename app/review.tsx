@@ -9,7 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { takePendingExtraction } from '@/src/store/pendingWords';
@@ -17,9 +17,11 @@ import { insertExtraction } from '@/src/db/operations/insertExtraction';
 import { addTagToWord, type Tag } from '@/src/db/operations/tags';
 import { buildReviewResult } from '@/src/screens/reviewLogic';
 import TagPickerSheet from '@/src/components/TagPickerSheet';
+import TextWithLinks from '@/src/components/TextWithLinks';
 import type { ExtractedWord } from '@/src/api/types';
 
 export default function ReviewScreen() {
+  const insets = useSafeAreaInsets();
   const [words, setWords] = useState<ExtractedWord[]>([]);
   const [sourceUri, setSourceUri] = useState('');
   const [sourceType, setSourceType] = useState<'image' | 'pdf'>('image');
@@ -175,15 +177,15 @@ export default function ReviewScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Review Extracted Words</Text>
         <Text style={styles.progress}>{progressLabel}</Text>
 
         <View style={styles.card}>
           <Text style={styles.word}>{currentWord.word}</Text>
-          <Text style={styles.definition}>{currentWord.definition}</Text>
-          <Text style={styles.example}>&ldquo;{currentWord.example_sentence}&rdquo;</Text>
+          <TextWithLinks text={currentWord.definition} style={styles.definition} />
+          <TextWithLinks text={`"${currentWord.example_sentence}"`} style={styles.example} italic />
 
           <View style={styles.tagSection}>
             <View style={styles.tagSectionHeader}>
@@ -226,7 +228,7 @@ export default function ReviewScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.actionFooter}>
+      <View style={[styles.actionFooter, { paddingBottom: insets.bottom + 24 }]}>
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={[styles.button, styles.rejectButton]}

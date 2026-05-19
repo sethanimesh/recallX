@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,10 @@ import {
   ActivityIndicator,
   StyleSheet,
   ScrollView,
+  PanResponder,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchAllWords, fetchWordsByTag, type WordRow } from '@/src/db/operations/tags';
 import { fetchDueWordsFc, updateWordFCSRS, type WordSRSRow } from '@/src/db/operations/srs';
 import {
@@ -26,12 +28,14 @@ import {
   type CardState,
   type SRSUpdate,
 } from '@/src/screens/srsAlgorithm';
+import TextWithLinks from '@/src/components/TextWithLinks';
 
 type Phase = 'question' | 'revealed';
 type FcMode = 'passive' | 'self-rated';
 
 export default function FlashcardScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { tagId, fcMode: fcModeParam, todayOnly, sortOrder } = useLocalSearchParams<{ tagId: string; fcMode: string; todayOnly: string; sortOrder?: string }>();
   const fcMode: FcMode = fcModeParam === 'self-rated' ? 'self-rated' : 'passive';
 
@@ -55,6 +59,38 @@ export default function FlashcardScreen() {
   const [phase, setPhase] = useState<Phase>('question');
   const [score, setScore] = useState(0);
   const [total, setTotal] = useState(0);
+
+  const handlersRef = useRef({ handleNext, handleReveal, handleBack, phase, fcMode });
+  handlersRef.current = { handleNext, handleReveal, handleBack, phase, fcMode };
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gs) => {
+          const { fcMode, phase } = handlersRef.current;
+          if (fcMode !== 'passive') return false;
+          const isLeftSwipe = gs.dx < -30 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5;
+          const isRightSwipe = gs.dx > 30 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5;
+          const isSwipeUp = phase === 'question' && gs.dy < -30 && Math.abs(gs.dy) > Math.abs(gs.dx) * 1.5;
+          return isLeftSwipe || isRightSwipe || isSwipeUp;
+        },
+        onPanResponderRelease: (_, gs) => {
+          const { fcMode, phase, handleNext, handleReveal, handleBack } = handlersRef.current;
+          if (fcMode !== 'passive') return;
+          const isLeftSwipe = gs.dx < -50 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5;
+          const isRightSwipe = gs.dx > 50 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5;
+          const isSwipeUp = phase === 'question' && gs.dy < -50 && Math.abs(gs.dy) > Math.abs(gs.dx) * 1.5;
+          if (isLeftSwipe) {
+            handleNext();
+          } else if (isRightSwipe) {
+            handleBack();
+          } else if (isSwipeUp) {
+            handleReveal();
+          }
+        },
+      }),
+    [],
+  );
 
   useEffect(() => {
     async function loadDeck() {
@@ -232,8 +268,12 @@ export default function FlashcardScreen() {
       : `${currentIndex + 1} / ${deck.length}`;
 
   return (
-    <View style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <View style={styles.screen} {...panResponder.panHandlers}>
+      <ScrollView
+        scrollEnabled={fcMode !== 'passive' || phase === 'revealed'}
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.progress}>{progressText}</Text>
 
         <Text style={styles.wordText}>{currentWord!.word}</Text>
@@ -253,17 +293,17 @@ export default function FlashcardScreen() {
           <View style={styles.revealedSection}>
             <View style={styles.infoBlock}>
               <Text style={styles.infoLabel}>Definition</Text>
-              <Text style={styles.infoText}>{currentWord!.definition}</Text>
+              <TextWithLinks text={currentWord!.definition} style={styles.infoText} />
             </View>
             <View style={styles.infoBlock}>
               <Text style={styles.infoLabel}>Example</Text>
-              <Text style={styles.infoText}>{currentWord!.example_sentence}</Text>
+              <TextWithLinks text={currentWord!.example_sentence} style={styles.infoText} italic />
             </View>
           </View>
         )}
       </ScrollView>
 
-      <View style={styles.actionFooter}>
+      <View style={[styles.actionFooter, { paddingBottom: insets.bottom + 24 }]}>
         {fcMode === 'passive' ? (
           <View style={styles.passiveRow}>
             {currentIndex > 0 && (
@@ -338,7 +378,13 @@ const styles = StyleSheet.create({
   infoBlock: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 16, gap: 4 },
   infoLabel: { fontSize: 12, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 },
   infoText: { fontSize: 15, color: '#111827', lineHeight: 22 },
-  actionFooter: { borderTopWidth: 1, borderTopColor: '#E5E7EB', padding: 24, backgroundColor: '#fff' },
+  actionFooter: {
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingTop: 24,
+    paddingHorizontal: 24,
+    backgroundColor: '#fff',
+  },
   nextButton: { backgroundColor: '#3B82F6', borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
   nextButtonText: { fontSize: 17, fontWeight: '700', color: '#fff' },
   ratingRow: { flexDirection: 'row', gap: 12 },

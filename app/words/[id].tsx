@@ -27,6 +27,7 @@ import {
 import { getTagsForWord, removeTagFromWord, type Tag } from '@/src/db/operations/tags';
 import { fetchWordHistory, type SessionResultRow } from '@/src/db/operations/sessionHistory';
 import TagPickerSheet from '@/src/components/TagPickerSheet';
+import TextWithLinks from '@/src/components/TextWithLinks';
 import { getNav, navigate, clearNav } from '@/src/store/libraryNav';
 
 type PronunciationState = 'idle' | 'playing' | 'error';
@@ -118,7 +119,11 @@ function EditableField({ label, value, onSave, multiline = false, italic = false
     <View style={styles.fieldContainer}>
       <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{label}</Text>
       <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
-        <Text style={[styles.fieldText, italic && styles.fieldTextItalic, { color: italic ? colors.textSecondary : colors.text }]}>{value}</Text>
+        <TextWithLinks 
+          text={value} 
+          style={[styles.fieldText, { color: italic ? colors.textSecondary : colors.text }]} 
+          italic={italic} 
+        />
       </TouchableOpacity>
     </View>
   );
@@ -361,7 +366,7 @@ export default function WordDetailScreen() {
       navState.active
         ? PanResponder.create({
             onMoveShouldSetPanResponder: (_, gs) =>
-              Math.abs(gs.dx) > Math.abs(gs.dy) && Math.abs(gs.dx) > 10,
+              Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5 && Math.abs(gs.dx) > 40,
             onPanResponderRelease: (_, gs) => {
               if (Math.abs(gs.dx) < 60) return;
               goToAdjacentWord(gs.dx < 0 ? 1 : -1);

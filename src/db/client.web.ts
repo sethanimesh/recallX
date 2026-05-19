@@ -24,6 +24,12 @@ export async function runMigrations(): Promise<void> {
   sqljsDb = new SQL.Database();
   drizzleDb = drizzle({ client: sqljsDb, schema });
 
+  // Patch transaction support to bypass BEGIN/COMMIT/ROLLBACK on web (sql.js limitation)
+  drizzleDb.transaction = async function (callback: any) {
+    return callback(drizzleDb);
+  };
+
+
   // Execute schema definitions on in-memory SQLite database
   sqljsDb.run('PRAGMA journal_mode=WAL;');
   sqljsDb.run(`

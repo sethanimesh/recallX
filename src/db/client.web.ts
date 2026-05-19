@@ -22,7 +22,7 @@ export async function runMigrations(): Promise<void> {
   });
   
   sqljsDb = new SQL.Database();
-  drizzleDb = drizzle({ client: sqljsDb, schema });
+  drizzleDb = drizzle(sqljsDb, { schema });
 
   // Patch transaction support to bypass BEGIN/COMMIT/ROLLBACK on web (sql.js limitation)
   drizzleDb.transaction = async function (callback: any) {

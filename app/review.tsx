@@ -19,9 +19,11 @@ import { buildReviewResult } from '@/src/screens/reviewLogic';
 import TagPickerSheet from '@/src/components/TagPickerSheet';
 import TextWithLinks from '@/src/components/TextWithLinks';
 import type { ExtractedWord } from '@/src/api/types';
+import { useThemeColors } from '@/src/utils/theme';
 
 export default function ReviewScreen() {
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
   const [words, setWords] = useState<ExtractedWord[]>([]);
   const [sourceUri, setSourceUri] = useState('');
   const [sourceType, setSourceType] = useState<'image' | 'pdf'>('image');
@@ -155,8 +157,8 @@ export default function ReviewScreen() {
 
   if (!initialized) {
     return (
-      <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color="#4F46E5" />
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -166,46 +168,50 @@ export default function ReviewScreen() {
 
   if (saving) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Review Extracted Words</Text>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Review Extracted Words</Text>
         <View style={styles.savingContainer}>
-          <ActivityIndicator size="large" color="#4F46E5" />
-          <Text style={styles.savingText}>Saving words…</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.savingText, { color: colors.textSecondary }]}>Saving words…</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Review Extracted Words</Text>
-        <Text style={styles.progress}>{progressLabel}</Text>
+    <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { backgroundColor: colors.background }]} keyboardShouldPersistTaps="handled">
+        <Text style={[styles.title, { color: colors.text }]}>Review Extracted Words</Text>
+        <Text style={[styles.progress, { color: colors.textSecondary }]}>{progressLabel}</Text>
 
-        <View style={styles.card}>
-          <Text style={styles.word}>{currentWord.word}</Text>
-          <TextWithLinks text={currentWord.definition} style={styles.definition} />
-          <TextWithLinks text={`"${currentWord.example_sentence}"`} style={styles.example} italic />
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
+          <Text style={[styles.word, { color: colors.text }]}>{currentWord.word}</Text>
+          <TextWithLinks text={currentWord.definition} style={[styles.definition, { color: colors.text }]} />
+          <TextWithLinks text={`"${currentWord.example_sentence}"`} style={[styles.example, { color: colors.textSecondary }]} italic />
 
-          <View style={styles.tagSection}>
+          <View style={[styles.tagSection, { borderTopColor: colors.border }]}>
             <View style={styles.tagSectionHeader}>
               <View>
-                <Text style={styles.tagLabel}>Tags</Text>
-                <Text style={styles.tagSubtext}>
+                <Text style={[styles.tagLabel, { color: colors.text }]}>Tags</Text>
+                <Text style={[styles.tagSubtext, { color: colors.textSecondary }]}>
                   {currentCardTags.length === 0 ? 'Add tags before saving this word' : 'Selected for this review card'}
                 </Text>
               </View>
               <TouchableOpacity
                 testID="review-tag-trigger"
-                style={[styles.tagActionButton, currentCardTags.length > 0 && styles.tagActionButtonActive]}
+                style={[
+                  styles.tagActionButton,
+                  { backgroundColor: colors.inputBackground, borderColor: colors.border },
+                  currentCardTags.length > 0 && { backgroundColor: colors.accent, borderColor: colors.primary, borderStyle: 'solid' }
+                ]}
                 onPress={() => setTagPickerVisible(true)}
               >
                 <Ionicons
                   name={currentCardTags.length === 0 ? 'add' : 'create-outline'}
                   size={15}
-                  color={currentCardTags.length === 0 ? '#2563EB' : '#1D4ED8'}
+                  color={currentCardTags.length === 0 ? colors.textSecondary : colors.primary}
                 />
-                <Text style={[styles.tagActionText, currentCardTags.length > 0 && styles.tagActionTextActive]}>
+                <Text style={[styles.tagActionText, { color: colors.textSecondary }, currentCardTags.length > 0 && { color: colors.primary }]}>
                   {currentCardTags.length === 0 ? 'Add tags' : 'Edit tags'}
                 </Text>
               </TouchableOpacity>
@@ -213,25 +219,25 @@ export default function ReviewScreen() {
 
             <View style={styles.tagRow}>
               {currentCardTags.map((tag) => (
-                <View key={tag.id} style={styles.chip}>
-                  <Text style={styles.chipText}>{tag.name}</Text>
+                <View key={tag.id} style={[styles.chip, { backgroundColor: colors.accent, borderColor: colors.border }]}>
+                  <Text style={[styles.chipText, { color: colors.primary }]}>{tag.name}</Text>
                 </View>
               ))}
             </View>
             {currentCardTags.length === 0 && (
               <View style={styles.emptyTagState}>
-                <Ionicons name="pricetag-outline" size={16} color="#9CA3AF" />
-                <Text style={styles.emptyTagStateText}>No tags yet</Text>
+                <Ionicons name="pricetag-outline" size={16} color={colors.textSecondary} />
+                <Text style={[styles.emptyTagStateText, { color: colors.textSecondary }]}>No tags yet</Text>
               </View>
             )}
           </View>
         </View>
       </ScrollView>
 
-      <View style={[styles.actionFooter, { paddingBottom: insets.bottom + 24 }]}>
+      <View style={[styles.actionFooter, { paddingBottom: insets.bottom + 24, backgroundColor: colors.card, borderTopColor: colors.border }]}>
         <View style={styles.buttonRow}>
           <TouchableOpacity
-            style={[styles.button, styles.rejectButton]}
+            style={[styles.button, { backgroundColor: colors.error }]}
             onPress={() => handleDecision(false)}
             accessibilityLabel="Reject word"
           >
@@ -240,7 +246,7 @@ export default function ReviewScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, styles.acceptButton]}
+            style={[styles.button, { backgroundColor: colors.success }]}
             onPress={() => handleDecision(true)}
             accessibilityLabel="Accept word"
           >

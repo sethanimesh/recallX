@@ -249,7 +249,6 @@ export default function TutorScreen() {
     setUserText('');
     setLoading(true);
 
-
     const isRetry = currentCard.inBuffer;
 
     try {
@@ -356,12 +355,20 @@ export default function TutorScreen() {
     return (
       <View style={[styles.messageRow, isUser ? styles.userRow : styles.tutorRow]}>
         {!isUser && (
-          <View style={styles.avatar}>
+          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
             <Ionicons name="school-outline" size={16} color="#fff" />
           </View>
         )}
-        <View style={[styles.bubble, isUser ? styles.userBubble : styles.tutorBubble]}>
-          <Text style={[styles.messageText, isUser ? styles.userMessageText : styles.tutorMessageText]}>
+        <View style={[
+          styles.bubble,
+          isUser ? styles.userBubble : styles.tutorBubble,
+          isUser ? { backgroundColor: colors.primary } : { backgroundColor: colors.card, borderColor: colors.border }
+        ]}>
+          <Text style={[
+            styles.messageText,
+            isUser ? styles.userMessageText : styles.tutorMessageText,
+            !isUser && { color: colors.text }
+          ]}>
             {item.text}
           </Text>
         </View>
@@ -371,17 +378,17 @@ export default function TutorScreen() {
 
   if (!deckLoaded) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   if (isDone) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.emptyText}>No words to review</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No words to review</Text>
+        <TouchableOpacity style={[styles.backButton, { backgroundColor: colors.primary }]} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
@@ -394,40 +401,44 @@ export default function TutorScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.keyboardContainer}
+      style={[styles.keyboardContainer, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backChevron}>
-          <Ionicons name="chevron-back" size={24} color="#111827" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>AI Vocabulary Tutor</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>AI Vocabulary Tutor</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
             {mainDeckCount} pending · {activeBufferCount} active retries
           </Text>
         </View>
         <TouchableOpacity
           onPress={() => setIsSoundEnabled(!isSoundEnabled)}
-          style={[styles.soundButton, !isSoundEnabled && styles.soundButtonMuted]}
+          style={[
+            styles.soundButton,
+            { backgroundColor: colors.accent },
+            !isSoundEnabled && { backgroundColor: colors.inputBackground }
+          ]}
         >
           <Ionicons
             name={isSoundEnabled ? 'volume-high' : 'volume-mute'}
             size={20}
-            color={isSoundEnabled ? '#3B82F6' : '#9CA3AF'}
+            color={isSoundEnabled ? colors.primary : colors.textSecondary}
           />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.progressBarContainer}>
-        <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
+      <View style={[styles.progressBarContainer, { backgroundColor: colors.border }]}>
+        <View style={[styles.progressBarFill, { backgroundColor: colors.primary, width: `${progressPercent}%` }]} />
       </View>
 
-      <View style={styles.scoreHeader}>
-        <Text style={styles.scoreText}>Score: {score} / {total}</Text>
+      <View style={[styles.scoreHeader, { backgroundColor: colors.inputBackground, borderBottomColor: colors.border }]}>
+        <Text style={[styles.scoreText, { color: colors.textSecondary }]}>Score: {score} / {total}</Text>
         {currentCard && (
-          <View style={styles.currentWordBadge}>
+          <View style={[styles.currentWordBadge, { backgroundColor: colors.primary }]}>
             <Text style={styles.currentWordText}>{currentCard.word.word}</Text>
           </View>
         )}
@@ -443,11 +454,12 @@ export default function TutorScreen() {
         onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 
-      <View style={[styles.inputSection, { paddingBottom: insets.bottom + 12 }]}>
+      <View style={[styles.inputSection, { paddingBottom: insets.bottom + 12, backgroundColor: colors.card, borderTopColor: colors.border }]}>
         <View style={styles.inputRow}>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.inputBackground }]}
             placeholder="Define the word or ask for a hint..."
+            placeholderTextColor={colors.textSecondary}
             value={userText}
             onChangeText={setUserText}
             editable={!loading}
@@ -455,19 +467,21 @@ export default function TutorScreen() {
             returnKeyType="send"
           />
           {loading ? (
-            <ActivityIndicator style={styles.sendIcon} size="small" color="#3B82F6" />
+            <ActivityIndicator style={styles.sendIcon} size="small" color={colors.primary} />
           ) : (
             <TouchableOpacity
               onPress={() => handleSubmit()}
-              style={[styles.sendButton, !userText.trim() && styles.sendButtonDisabled]}
+              style={[
+                styles.sendButton,
+                { backgroundColor: colors.primary },
+                !userText.trim() && { backgroundColor: colors.inputBackground }
+              ]}
               disabled={!userText.trim()}
             >
-              <Ionicons name="send" size={18} color="#fff" />
+              <Ionicons name="send" size={18} color={userText.trim() ? '#fff' : colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
-
-
       </View>
     </KeyboardAvoidingView>
   );

@@ -21,6 +21,7 @@ import {
   removeTagFromWord,
   type Tag,
 } from '@/src/db/operations/tags';
+import { useThemeColors } from '@/src/utils/theme';
 
 interface Props {
   /** When provided, addTagToWord / removeTagFromWord are called on Done.
@@ -104,6 +105,8 @@ export default function TagPickerSheet({ wordId, currentTags, visible, onClose, 
     onClose();
   }, [wordId, currentTags, selected, allTags, onTagsChanged, onClose]);
 
+  const colors = useThemeColors();
+
   return (
     <Modal visible={visible} animationType="slide" transparent presentationStyle="overFullScreen">
       <View style={styles.overlay}>
@@ -112,23 +115,23 @@ export default function TagPickerSheet({ wordId, currentTags, visible, onClose, 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.sheetWrapper}
         >
-          <View testID="tag-picker-sheet" style={[styles.sheet, { paddingBottom: footerBottomPadding }]}>
-            <View style={styles.handle} />
+          <View testID="tag-picker-sheet" style={[styles.sheet, { paddingBottom: footerBottomPadding, backgroundColor: colors.card }]}>
+            <View style={[styles.handle, { backgroundColor: colors.border }]} />
 
             <View style={styles.headerRow}>
-              <Text style={styles.title}>Tags</Text>
-              <Text style={styles.subtitle}>
+              <Text style={[styles.title, { color: colors.text }]}>Tags</Text>
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
                 {selected.size === 0 ? 'Choose or create tags' : `${selected.size} selected`}
               </Text>
             </View>
 
-            <View style={styles.searchRow}>
-              <Ionicons name="search-outline" size={18} color="#9CA3AF" style={styles.searchIcon} />
+            <View style={[styles.searchRow, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}>
+              <Ionicons name="search-outline" size={18} color={colors.textSecondary} style={styles.searchIcon} />
               <TextInput
                 testID="tag-picker-search-input"
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: colors.text }]}
                 placeholder="Search or create tag…"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textSecondary}
                 value={query}
                 onChangeText={setQuery}
                 autoCapitalize="none"
@@ -137,7 +140,7 @@ export default function TagPickerSheet({ wordId, currentTags, visible, onClose, 
               />
               {query.length > 0 && (
                 <TouchableOpacity onPress={() => setQuery('')} hitSlop={8} testID="tag-picker-clear-query">
-                  <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+                  <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
                 </TouchableOpacity>
               )}
             </View>
@@ -153,7 +156,7 @@ export default function TagPickerSheet({ wordId, currentTags, visible, onClose, 
                 <View testID="tag-picker-list-header" style={styles.listHeader}>
                   {selectedTags.length > 0 && (
                     <View testID="tag-picker-selected-section" style={styles.selectedSection}>
-                      <Text style={styles.sectionLabel}>Selected tags</Text>
+                      <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Selected tags</Text>
                       <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
@@ -163,12 +166,12 @@ export default function TagPickerSheet({ wordId, currentTags, visible, onClose, 
                           <TouchableOpacity
                             key={tag.id}
                             testID={`selected-chip-${tag.id}`}
-                            style={styles.selectedChip}
+                            style={[styles.selectedChip, { backgroundColor: colors.accent, borderColor: colors.border }]}
                             onPress={() => toggleTag(tag.id)}
                             activeOpacity={0.8}
                           >
-                            <Text style={styles.selectedChipText}>{tag.name}</Text>
-                            <Ionicons name="close" size={14} color="#1D4ED8" />
+                            <Text style={[styles.selectedChipText, { color: colors.primary }]}>{tag.name}</Text>
+                            <Ionicons name="close" size={14} color={colors.primary} />
                           </TouchableOpacity>
                         ))}
                       </ScrollView>
@@ -176,31 +179,31 @@ export default function TagPickerSheet({ wordId, currentTags, visible, onClose, 
                   )}
 
                   {showCreate && (
-                    <TouchableOpacity testID="tag-picker-create" style={styles.createRow} onPress={handleCreate}>
-                      <View style={styles.createIconWrap}>
-                        <Ionicons name="add" size={16} color="#007AFF" />
+                    <TouchableOpacity testID="tag-picker-create" style={[styles.createRow, { backgroundColor: colors.inputBackground, borderColor: colors.border }]} onPress={handleCreate}>
+                      <View style={[styles.createIconWrap, { backgroundColor: colors.accent }]}>
+                        <Ionicons name="add" size={16} color={colors.primary} />
                       </View>
                       <View style={styles.createCopy}>
-                        <Text style={styles.createText}>Create "{trimmedQuery}"</Text>
-                        <Text style={styles.createHint}>Add a new tag and select it right away</Text>
+                        <Text style={[styles.createText, { color: colors.primary }]}>Create "{trimmedQuery}"</Text>
+                        <Text style={[styles.createHint, { color: colors.textSecondary }]}>Add a new tag and select it right away</Text>
                       </View>
                     </TouchableOpacity>
                   )}
 
-                  <Text testID="tag-picker-all-tags-label" style={styles.sectionLabel}>
+                  <Text testID="tag-picker-all-tags-label" style={[styles.sectionLabel, { color: colors.textSecondary }]}>
                     {filteredTags.length > 0 ? 'All tags' : 'Results'}
                   </Text>
                 </View>
               }
               ListEmptyComponent={
                 <View style={styles.emptyState}>
-                  <Ionicons name="pricetags-outline" size={26} color="#9CA3AF" />
-                  <Text style={styles.emptyTitle}>
+                  <Ionicons name="pricetags-outline" size={26} color={colors.textSecondary} />
+                  <Text style={[styles.emptyTitle, { color: colors.text }]}>
                     {trimmedQuery.length > 0
                       ? `No matching tags. Create "${trimmedQuery}".`
                       : 'No tags yet. Create your first one.'}
                   </Text>
-                  <Text style={styles.emptyText}>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                     {trimmedQuery.length > 0
                       ? 'Try a different search or create a new tag above.'
                       : 'Tags help group words for review and discovery.'}
@@ -212,21 +215,37 @@ export default function TagPickerSheet({ wordId, currentTags, visible, onClose, 
                 return (
                   <TouchableOpacity
                     testID={`tag-row-${item.id}`}
-                    style={[styles.tagRow, isSelected && styles.tagRowSelected]}
+                    style={[
+                      styles.tagRow,
+                      { backgroundColor: colors.inputBackground, borderColor: colors.border },
+                      isSelected && { backgroundColor: colors.accent, borderColor: colors.primary }
+                    ]}
                     onPress={() => toggleTag(item.id)}
                     activeOpacity={0.8}
                   >
                     <View style={styles.tagRowCopy}>
-                      <Text style={[styles.tagName, isSelected && styles.tagNameSelected]}>{item.name}</Text>
-                      <Text style={styles.tagHint}>
+                      <Text style={[
+                        styles.tagName,
+                        { color: colors.text },
+                        isSelected && { color: colors.primary }
+                      ]}>{item.name}</Text>
+                      <Text style={[
+                        styles.tagHint,
+                        { color: colors.textSecondary },
+                        isSelected && { color: colors.primary }
+                      ]}>
                         {isSelected ? 'Selected for this word' : 'Tap to add this tag'}
                       </Text>
                     </View>
-                    <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                    <View style={[
+                      styles.checkbox,
+                      { backgroundColor: colors.border },
+                      isSelected && { backgroundColor: colors.primary }
+                    ]}>
                       <Ionicons
                         name={isSelected ? 'checkmark' : 'add'}
                         size={16}
-                        color={isSelected ? '#FFFFFF' : '#6B7280'}
+                        color={isSelected ? '#FFFFFF' : colors.textSecondary}
                       />
                     </View>
                   </TouchableOpacity>
@@ -235,7 +254,7 @@ export default function TagPickerSheet({ wordId, currentTags, visible, onClose, 
             />
 
             <View style={styles.footer}>
-              <TouchableOpacity testID="tag-picker-done" style={styles.doneButton} onPress={handleDone}>
+              <TouchableOpacity testID="tag-picker-done" style={[styles.doneButton, { backgroundColor: colors.primary }]} onPress={handleDone}>
                 <Text style={styles.doneText}>Done</Text>
               </TouchableOpacity>
             </View>

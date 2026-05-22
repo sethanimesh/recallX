@@ -29,12 +29,14 @@ import {
   type CardState,
   type SRSUpdate,
 } from '@/src/screens/srsAlgorithm';
+import { useThemeColors } from '@/src/utils/theme';
 
 type Phase = 'input' | 'result';
 type Mode = 'adaptive' | 'classic';
 
 export default function RecallScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const { tagId, mode: modeParam, todayOnly, sortOrder } = useLocalSearchParams<{ tagId: string; mode: string; todayOnly: string; sortOrder?: string }>();
   const mode: Mode = modeParam === 'classic' ? 'classic' : 'adaptive';
 
@@ -223,8 +225,8 @@ export default function RecallScreen() {
 
   if (!deckLoaded) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -232,9 +234,9 @@ export default function RecallScreen() {
   const isEmpty = mode === 'adaptive' ? adaptiveCard === null : deck.length === 0;
   if (isEmpty) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.emptyText}>No words to review</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No words to review</Text>
+        <TouchableOpacity style={[styles.backButton, { backgroundColor: colors.primary }]} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
@@ -250,11 +252,11 @@ export default function RecallScreen() {
       : `${currentIndex + 1} / ${deck.length}`;
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <Text style={styles.progress}>{progressText}</Text>
-      <Text style={styles.scoreText}>Score: {score} / {total}</Text>
+    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]} keyboardShouldPersistTaps="handled">
+      <Text style={[styles.progress, { color: colors.textSecondary }]}>{progressText}</Text>
+      <Text style={[styles.scoreText, { color: colors.textSecondary }]}>Score: {score} / {total}</Text>
 
-      <Text style={styles.wordText} testID="word-display">{currentWord!.word}</Text>
+      <Text style={[styles.wordText, { color: colors.text }]} testID="word-display">{currentWord!.word}</Text>
 
       {adaptiveCard && adaptiveCard.wrongCount > 0 && (
         <Text style={[
@@ -270,8 +272,9 @@ export default function RecallScreen() {
       {phase === 'input' && (
         <View style={styles.inputSection}>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.inputBackground }]}
             placeholder="Type the meaning…"
+            placeholderTextColor={colors.textSecondary}
             value={userAnswer}
             onChangeText={setUserAnswer}
             autoFocus
@@ -283,6 +286,7 @@ export default function RecallScreen() {
           <TouchableOpacity
             style={[
               styles.submitButton,
+              { backgroundColor: colors.primary },
               loading && styles.submitButtonDisabled,
             ]}
             onPress={() => handleSubmit()}
@@ -297,24 +301,34 @@ export default function RecallScreen() {
       {phase === 'result' && gradeResult && (
         <View style={styles.resultSection}>
           <View
-            style={[styles.banner, gradeResult.correct ? styles.bannerCorrect : styles.bannerIncorrect]}
+            style={[
+              styles.banner,
+              gradeResult.correct
+                ? { backgroundColor: colors.dark ? colors.success + '22' : '#DCFCE7' }
+                : { backgroundColor: colors.dark ? colors.error + '22' : '#FEE2E2' }
+            ]}
             testID="result-banner"
           >
-            <Text style={[styles.bannerText, gradeResult.correct ? styles.bannerTextCorrect : styles.bannerTextIncorrect]}>
+            <Text style={[
+              styles.bannerText,
+              gradeResult.correct
+                ? { color: colors.dark ? colors.success : '#22c55e' }
+                : { color: colors.dark ? colors.error : '#ef4444' }
+            ]}>
               {gradeResult.correct ? 'Correct ✓' : 'Incorrect ✗'}
             </Text>
           </View>
-          <Text style={styles.feedbackText} testID="feedback-text">{gradeResult.feedback}</Text>
-          <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>Definition:</Text>
-            <Text style={styles.infoText}>{currentWord!.definition}</Text>
+          <Text style={[styles.feedbackText, { color: colors.textSecondary }]} testID="feedback-text">{gradeResult.feedback}</Text>
+          <View style={[styles.infoBlock, { backgroundColor: colors.inputBackground }]}>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Definition:</Text>
+            <Text style={[styles.infoText, { color: colors.text }]}>{currentWord!.definition}</Text>
           </View>
-          <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>Example:</Text>
-            <Text style={styles.infoText}>{currentWord!.example_sentence}</Text>
+          <View style={[styles.infoBlock, { backgroundColor: colors.inputBackground }]}>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Example:</Text>
+            <Text style={[styles.infoText, { color: colors.text }]}>{currentWord!.example_sentence}</Text>
           </View>
           <TouchableOpacity
-            style={styles.nextButton}
+            style={[styles.nextButton, { backgroundColor: colors.primary }]}
             onPress={() => { setCountdown(null); handleNext(); }}
             testID="next-button"
           >

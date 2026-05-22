@@ -15,11 +15,13 @@ import { takePendingCropUri } from '@/src/store/pendingCropUri';
 import { setPendingCropResult } from '@/src/store/pendingCropResult';
 import { computeDisplayMetrics, screenToCropRect } from '@/src/utils/cropCoordinates';
 import type { DisplayMetrics } from '@/src/utils/cropCoordinates';
+import { useThemeColors } from '@/src/utils/theme';
 
 const MIN_CROP_PX = 50;
 
 export default function CropScreen() {
   const uri = useRef(takePendingCropUri()).current;
+  const colors = useThemeColors();
 
   const [containerSize, setContainerSize] = useState<{ w: number; h: number } | null>(null);
   const [imageSize, setImageSize] = useState<{ w: number; h: number } | null>(null);
@@ -269,7 +271,7 @@ export default function CropScreen() {
         <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
+        <TouchableOpacity style={[styles.doneButton, { backgroundColor: colors.primary }]} onPress={handleDone}>
           <Text style={styles.doneText}>Done</Text>
         </TouchableOpacity>
       </View>

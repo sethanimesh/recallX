@@ -11,9 +11,11 @@ import {
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBackendUrl, setBackendUrl } from '@/src/config/settings';
+import { useThemeColors } from '@/src/utils/theme';
 
 export default function SettingsUrlScreen() {
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
   const [url, setUrl] = useState(getBackendUrl());
   const [error, setError] = useState<string | null>(null);
 
@@ -37,22 +39,22 @@ export default function SettingsUrlScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { paddingBottom: insets.bottom }]}
+      style={[styles.container, { paddingBottom: insets.bottom, backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Text style={styles.label}>Backend URL</Text>
+      <Text style={[styles.label, { color: colors.textSecondary }]}>Backend URL</Text>
       <TextInput
-        style={[styles.input, error ? styles.inputError : null]}
+        style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.inputBackground }, error ? { borderColor: colors.error } : null]}
         value={url}
         onChangeText={(t) => { setUrl(t); setError(null); }}
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="url"
         placeholder="http://192.168.x.x:8000"
-        placeholderTextColor="#9CA3AF"
+        placeholderTextColor={colors.textSecondary}
       />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <TouchableOpacity style={styles.button} onPress={handleSave} activeOpacity={0.8}>
+      {error ? <Text style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
+      <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleSave} activeOpacity={0.8}>
         <Text style={styles.buttonText}>Save</Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>

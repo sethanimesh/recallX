@@ -12,6 +12,7 @@ import type { ImageInput, TextInput } from '@/src/api/types';
 import ExtractionProgress from '@/src/components/ExtractionProgress';
 import { setPendingExtraction } from '@/src/store/pendingWords';
 import type { Tag } from '@/src/db/operations/tags';
+import { useThemeColors } from '@/src/utils/theme';
 
 const DONE_DISPLAY_MS = 600;
 
@@ -29,6 +30,7 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 
 export default function IngestScreen() {
   const params = useLocalSearchParams<{ tagId?: string | string[]; tagName?: string | string[] }>();
+  const colors = useThemeColors();
   const tagId = firstParam(params.tagId)?.trim();
   const tagName = firstParam(params.tagName)?.trim();
   const defaultTags: Tag[] = tagId && tagName ? [{ id: tagId, name: tagName }] : [];
@@ -110,12 +112,12 @@ export default function IngestScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
-        <Ionicons name="close" size={24} color="#333" />
+        <Ionicons name="close" size={24} color={colors.text} />
       </TouchableOpacity>
 
-      <Text style={styles.title}>Add Words</Text>
+      <Text style={[styles.title, { color: colors.text }]}>Add Words</Text>
 
       {modalState.phase !== 'idle' ? (
         <ExtractionProgress
@@ -127,31 +129,31 @@ export default function IngestScreen() {
       ) : (
         <View style={styles.buttonGroup}>
           <TouchableOpacity
-            style={styles.sourceButton}
+            style={[styles.sourceButton, { backgroundColor: colors.inputBackground }]}
             onPress={handleCamera}
           >
-            <Ionicons name="camera-outline" size={24} color="#007AFF" style={styles.icon} />
-            <Text style={styles.buttonLabel}>Camera</Text>
+            <Ionicons name="camera-outline" size={24} color={colors.primary} style={styles.icon} />
+            <Text style={[styles.buttonLabel, { color: colors.text }]}>Camera</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.sourceButton}
+            style={[styles.sourceButton, { backgroundColor: colors.inputBackground }]}
             onPress={handleLibrary}
           >
-            <Ionicons name="image-outline" size={24} color="#007AFF" style={styles.icon} />
-            <Text style={styles.buttonLabel}>Photo Library</Text>
+            <Ionicons name="image-outline" size={24} color={colors.primary} style={styles.icon} />
+            <Text style={[styles.buttonLabel, { color: colors.text }]}>Photo Library</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.sourceButton}
+            style={[styles.sourceButton, { backgroundColor: colors.inputBackground }]}
             onPress={handleDocument}
           >
-            <Ionicons name="document-outline" size={24} color="#007AFF" style={styles.icon} />
-            <Text style={styles.buttonLabel}>PDF / Document</Text>
+            <Ionicons name="document-outline" size={24} color={colors.primary} style={styles.icon} />
+            <Text style={[styles.buttonLabel, { color: colors.text }]}>PDF / Document</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.sourceButton}
+            style={[styles.sourceButton, { backgroundColor: colors.inputBackground }]}
             onPress={() => {
               if (tagId && tagName) {
                 router.push({ pathname: '/add-word', params: { tagId, tagName } });
@@ -160,8 +162,8 @@ export default function IngestScreen() {
               router.push('/add-word');
             }}
           >
-            <Ionicons name="pencil-outline" size={24} color="#007AFF" style={styles.icon} />
-            <Text style={styles.buttonLabel}>Add Manually</Text>
+            <Ionicons name="pencil-outline" size={24} color={colors.primary} style={styles.icon} />
+            <Text style={[styles.buttonLabel, { color: colors.text }]}>Add Manually</Text>
           </TouchableOpacity>
         </View>
       )}

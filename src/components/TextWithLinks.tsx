@@ -1,8 +1,10 @@
 import { Text, Linking, StyleProp, TextStyle, View, StyleSheet } from 'react-native';
 import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { useThemeColors } from '@/src/utils/theme';
 
 export default function TextWithLinks({ text, style, italic }: { text: string; style?: StyleProp<TextStyle>; italic?: boolean }) {
+  const colors = useThemeColors();
   if (!text) return null;
 
   // Split out the Etymology or Root part if it exists
@@ -20,17 +22,17 @@ export default function TextWithLinks({ text, style, italic }: { text: string; s
   const renderLinks = (content: string, isEtymology = false) => {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     if (!content.match(urlRegex)) {
-      return <Text style={[style, italic && { fontStyle: 'italic' }, isEtymology && styles.etymologyText]}>{content}</Text>;
+      return <Text style={[style, { color: colors.text }, italic && { fontStyle: 'italic' }, isEtymology && [styles.etymologyText, { color: colors.text }]]}>{content}</Text>;
     }
     const parts = content.split(urlRegex);
     return (
-      <Text style={[style, italic && { fontStyle: 'italic' }, isEtymology && styles.etymologyText]}>
+      <Text style={[style, { color: colors.text }, italic && { fontStyle: 'italic' }, isEtymology && [styles.etymologyText, { color: colors.text }]]}>
         {parts.map((part, i) => {
           if (part.match(urlRegex)) {
             return (
               <Text
                 key={i}
-                style={[styles.link, isEtymology && styles.etymologyLink]}
+                style={[styles.link, { color: colors.primary }, isEtymology && [styles.etymologyLink, { color: colors.primary }]]}
                 onPress={(e) => {
                   e.stopPropagation();
                   Linking.openURL(part).catch(() => {});
@@ -52,10 +54,10 @@ export default function TextWithLinks({ text, style, italic }: { text: string; s
     <View style={styles.container}>
       {renderLinks(mainText)}
       {etymologyText && (
-        <View style={styles.etymologyContainer}>
+        <View style={[styles.etymologyContainer, { backgroundColor: colors.inputBackground, borderLeftColor: colors.border }]}>
           <View style={styles.etymologyHeader}>
-            <Ionicons name="git-network-outline" size={14} color="#6B7280" />
-            <Text style={styles.etymologyLabel}>Roots</Text>
+            <Ionicons name="git-network-outline" size={14} color={colors.textSecondary} />
+            <Text style={[styles.etymologyLabel, { color: colors.textSecondary }]}>Roots</Text>
           </View>
           {renderLinks(etymologyText, true)}
         </View>

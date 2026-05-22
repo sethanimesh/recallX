@@ -21,6 +21,7 @@ import {
   type Tag,
 } from '@/src/db/operations/tags';
 import { WordServerError } from '@/src/api/wordServerClient';
+import { useThemeColors } from '@/src/utils/theme';
 
 interface TagWithCount extends Tag {
   count: number;
@@ -85,6 +86,7 @@ export async function submitTagRename(tag: Tag, newName: string | undefined, loa
 
 export default function ManageTagsScreen() {
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
   const [tags, setTags] = useState<TagWithCount[]>([]);
 
   const load = useCallback(async () => {
@@ -134,10 +136,10 @@ export default function ManageTagsScreen() {
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<TagWithCount>) => (
-      <View style={styles.row}>
+      <View style={[styles.row, { backgroundColor: colors.card }]}>
         <View style={styles.rowLeft}>
-          <Text style={styles.tagName}>{item.name}</Text>
-          <Text style={styles.tagCount}>{item.count} {item.count === 1 ? 'word' : 'words'}</Text>
+          <Text style={[styles.tagName, { color: colors.text }]}>{item.name}</Text>
+          <Text style={[styles.tagCount, { color: colors.textSecondary }]}>{item.count} {item.count === 1 ? 'word' : 'words'}</Text>
         </View>
         <View style={styles.rowActions}>
           <TouchableOpacity
@@ -146,32 +148,32 @@ export default function ManageTagsScreen() {
             hitSlop={8}
             style={styles.actionBtn}
           >
-            <Ionicons name="pencil-outline" size={20} color="#007AFF" />
+            <Ionicons name="pencil-outline" size={20} color={colors.primary} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleDelete(item)} hitSlop={8} style={styles.actionBtn}>
-            <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+            <Ionicons name="trash-outline" size={20} color={colors.error} />
           </TouchableOpacity>
         </View>
       </View>
     ),
-    [handleRename, handleDelete],
+    [handleRename, handleDelete, colors],
   );
 
   return (
     <>
       <Stack.Screen options={{ title: 'Manage Tags' }} />
-      <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+      <View style={[styles.container, { paddingBottom: insets.bottom, backgroundColor: colors.background }]}>
         <FlatList
           data={tags}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No tags yet — tag words to create them</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No tags yet — tag words to create them</Text>
             </View>
           }
           contentContainerStyle={tags.length === 0 ? styles.listEmpty : undefined}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: colors.border }]} />}
         />
       </View>
     </>

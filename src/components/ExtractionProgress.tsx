@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Animated, { useAnimatedStyle, withTiming, useSharedValue } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { useThemeColors } from '@/src/utils/theme';
 
 type Phase = 'uploading' | 'analyzing' | 'done' | 'error';
 
@@ -15,6 +16,7 @@ interface Props {
 const STEPS = ['Uploading', 'Analyzing', 'Done'] as const;
 
 export default function ExtractionProgress({ phase, errorMessage, onRetry, failedAtPhase }: Props) {
+  const colors = useThemeColors();
   const scale0 = useSharedValue(0.5);
   const scale1 = useSharedValue(0.5);
   const scale2 = useSharedValue(0.5);
@@ -101,15 +103,28 @@ export default function ExtractionProgress({ phase, errorMessage, onRetry, faile
       <View style={styles.stepsRow}>
         {STEPS.map((label, index) => {
           const status = getStepStatus(index);
+          const lineStyle = index > 0 ? getLineStyle(index - 1) : null;
           return (
             <View key={label} style={styles.stepWrapper}>
               {/* Connecting line before (except first) */}
               {index > 0 && (
-                <View style={[styles.line, getLineStyle(index - 1)]} />
+                <View style={[
+                  styles.line,
+                  lineStyle,
+                  lineStyle === styles.lineCompleted ? { backgroundColor: colors.success } : { backgroundColor: colors.border }
+                ]} />
               )}
 
               <View style={styles.stepColumn}>
-                <Animated.View style={[styles.circle, getCircleStyle(status), animStyles[index]]}>
+                <Animated.View style={[
+                  styles.circle,
+                  getCircleStyle(status),
+                  status === 'active' && { backgroundColor: colors.primary },
+                  status === 'completed' && { backgroundColor: colors.success },
+                  status === 'error' && { backgroundColor: colors.error },
+                  status === 'inactive' && { backgroundColor: colors.border },
+                  animStyles[index]
+                ]}>
                   {status === 'completed' && (
                     <Ionicons name="checkmark" size={16} color="white" />
                   )}
@@ -120,7 +135,14 @@ export default function ExtractionProgress({ phase, errorMessage, onRetry, faile
                     <View style={styles.activeDot} />
                   )}
                 </Animated.View>
-                <Text style={[styles.label, getLabelStyle(status)]}>{label}</Text>
+                <Text style={[
+                  styles.label,
+                  getLabelStyle(status),
+                  status === 'active' && { color: colors.primary },
+                  status === 'completed' && { color: colors.success },
+                  status === 'error' && { color: colors.error },
+                  status === 'inactive' && { color: colors.textSecondary }
+                ]}>{label}</Text>
               </View>
             </View>
           );
@@ -129,8 +151,8 @@ export default function ExtractionProgress({ phase, errorMessage, onRetry, faile
 
       {phase === 'error' && (
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{errorMessage}</Text>
-          <TouchableOpacity testID="retry-button" style={styles.retryButton} onPress={() => onRetry?.()}>
+          <Text style={[styles.errorText, { color: colors.error }]}>{errorMessage}</Text>
+          <TouchableOpacity testID="retry-button" style={[styles.retryButton, { backgroundColor: colors.primary }]} onPress={() => onRetry?.()}>
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>

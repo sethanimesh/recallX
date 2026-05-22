@@ -10,9 +10,11 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { fetchAllWords, type WordRow } from '@/src/db/operations/tags';
+import { useThemeColors } from '@/src/utils/theme';
 
 export default function RecallSummaryScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const { score: scoreStr, total: totalStr, tagId, mode, fcMode, missedIds, recentlyWrongIds, clearedFromBuffer } = useLocalSearchParams<{
     score: string;
     total: string;
@@ -72,34 +74,34 @@ export default function RecallSummaryScreen() {
 
   const renderMissedItem = useCallback(({ item }: ListRenderItemInfo<WordRow>) => (
     <View style={styles.missedRow} testID={`missed-row-${item.id}`}>
-      <Text style={styles.missedWord}>{item.word}</Text>
-      <Text style={styles.missedDefinition}>{item.definition}</Text>
+      <Text style={[styles.missedWord, { color: colors.text }]}>{item.word}</Text>
+      <Text style={[styles.missedDefinition, { color: colors.textSecondary }]}>{item.definition}</Text>
     </View>
-  ), []);
+  ), [colors]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.heading}>Session Complete</Text>
+        <Text style={[styles.heading, { color: colors.text }]}>Session Complete</Text>
 
-        <Text style={styles.fraction} testID="score-fraction">{score} / {total}</Text>
+        <Text style={[styles.fraction, { color: colors.text }]} testID="score-fraction">{score} / {total}</Text>
 
-        <View style={styles.barTrack} testID="progress-bar">
-          <View style={[styles.barFill, { width: `${Math.round(pct * 100)}%` as any }]} />
+        <View style={[styles.barTrack, { backgroundColor: colors.border }]} testID="progress-bar">
+          <View style={[styles.barFill, { backgroundColor: colors.success, width: `${Math.round(pct * 100)}%` as any }]} />
         </View>
 
-        <Text style={styles.pctText}>{total > 0 ? `${Math.round(pct * 100)}%` : '—'}</Text>
+        <Text style={[styles.pctText, { color: colors.textSecondary }]}>{total > 0 ? `${Math.round(pct * 100)}%` : '—'}</Text>
 
         {missedWords.length > 0 && (
           <View style={styles.missedSection}>
-            <Text style={styles.missedHeading} testID="missed-heading">
+            <Text style={[styles.missedHeading, { color: colors.text }]} testID="missed-heading">
               Missed Words ({missedWords.length})
             </Text>
             <FlatList
               data={missedWords}
               keyExtractor={item => item.id}
               renderItem={renderMissedItem}
-              ItemSeparatorComponent={() => <View style={styles.missedSeparator} />}
+              ItemSeparatorComponent={() => <View style={[styles.missedSeparator, { backgroundColor: colors.border }]} />}
               scrollEnabled={false}
             />
           </View>
@@ -107,17 +109,17 @@ export default function RecallSummaryScreen() {
 
         {(clearedWords.length > 0 || stillStrugglingWords.length > 0) && (
           <View style={styles.lastSessionSection}>
-            <Text style={styles.lastSessionHeading}>From last session</Text>
+            <Text style={[styles.lastSessionHeading, { color: colors.text }]}>From last session</Text>
             {clearedWords.map(w => (
               <View key={w.id} style={styles.lastSessionRow} testID={`cleared-row-${w.id}`}>
-                <Text style={styles.lastSessionCheck}>✓</Text>
-                <Text style={styles.lastSessionWord}>{w.word}</Text>
+                <Text style={[styles.lastSessionCheck, { color: colors.success }]}>✓</Text>
+                <Text style={[styles.lastSessionWord, { color: colors.text }]}>{w.word}</Text>
               </View>
             ))}
             {stillStrugglingWords.map(w => (
               <View key={w.id} style={styles.lastSessionRow} testID={`struggling-row-${w.id}`}>
-                <Text style={styles.lastSessionCross}>✗</Text>
-                <Text style={styles.lastSessionWord}>{w.word}</Text>
+                <Text style={[styles.lastSessionCross, { color: colors.error }]}>✗</Text>
+                <Text style={[styles.lastSessionWord, { color: colors.text }]}>{w.word}</Text>
               </View>
             ))}
           </View>
@@ -126,7 +128,7 @@ export default function RecallSummaryScreen() {
 
       <View style={styles.buttons}>
         <TouchableOpacity
-          style={styles.restartButton}
+          style={[styles.restartButton, { backgroundColor: colors.success }]}
           onPress={handleRestart}
           testID="restart-button"
           accessibilityRole="button"
@@ -135,12 +137,12 @@ export default function RecallSummaryScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.doneButton}
+          style={[styles.doneButton, { borderColor: colors.border, backgroundColor: colors.card }]}
           onPress={handleDone}
           testID="done-button"
           accessibilityRole="button"
         >
-          <Text style={styles.doneText}>Done</Text>
+          <Text style={[styles.doneText, { color: colors.textSecondary }]}>Done</Text>
         </TouchableOpacity>
       </View>
     </View>

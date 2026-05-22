@@ -8,6 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { fetchLlmStats, type Period, type LlmStatsResponse, type LlmCall } from '@/src/api/statsClient';
+import { useThemeColors } from '@/src/utils/theme';
 
 const TASK_LABELS: Record<string, string> = { image: 'Image', text: 'Extract', word: 'Lookup', grade: 'Grade' };
 
@@ -31,6 +32,7 @@ export default function LlmStatsScreen() {
   const [data, setData] = useState<LlmStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const colors = useThemeColors();
 
   const load = useCallback(async (p: Period) => {
     setLoading(true);
@@ -48,41 +50,54 @@ export default function LlmStatsScreen() {
   useEffect(() => { load(period); }, [period, load]);
 
   const renderCall = useCallback(({ item }: { item: LlmCall }) => (
-    <View style={styles.callRow}>
-      <View style={[styles.taskBadge, item.task === 'grade' ? styles.badgeGrade : styles.badgeExtract]}>
-        <Text style={styles.taskBadgeText}>{TASK_LABELS[item.task] ?? item.task}</Text>
+    <View style={[styles.callRow, { borderBottomColor: colors.border }]}>
+      <View style={[
+        styles.taskBadge,
+        item.task === 'grade' ? { backgroundColor: colors.success + '22' } : { backgroundColor: colors.primary + '22' }
+      ]}>
+        <Text style={[styles.taskBadgeText, { color: item.task === 'grade' ? colors.success : colors.primary }]}>
+          {TASK_LABELS[item.task] ?? item.task}
+        </Text>
       </View>
       <View style={styles.callInfo}>
-        <Text style={styles.callProvider}>{item.provider} · {item.model}</Text>
+        <Text style={[styles.callProvider, { color: colors.text }]}>{item.provider} · {item.model}</Text>
       </View>
-      <Text style={styles.callTime}>{relativeTime(item.called_at)}</Text>
+      <Text style={[styles.callTime, { color: colors.textSecondary }]}>{relativeTime(item.called_at)}</Text>
     </View>
-  ), []);
+  ), [colors]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Period picker */}
         <View style={styles.pickerRow}>
           {PERIODS.map((p) => (
             <TouchableOpacity
               key={p.value}
-              style={[styles.pill, period === p.value && styles.pillActive]}
+              style={[
+                styles.pill,
+                { backgroundColor: colors.inputBackground },
+                period === p.value && { backgroundColor: colors.primary }
+              ]}
               onPress={() => setPeriod(p.value)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.pillText, period === p.value && styles.pillTextActive]}>
+              <Text style={[
+                styles.pillText,
+                { color: colors.textSecondary },
+                period === p.value && { color: '#fff', fontWeight: '700' }
+              ]}>
                 {p.label}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {loading && <ActivityIndicator style={styles.center} color="#6B7280" />}
+        {loading && <ActivityIndicator style={styles.center} color={colors.primary} />}
 
         {!loading && error && (
           <View style={styles.center}>
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity onPress={() => load(period)} style={styles.retryBtn} activeOpacity={0.7}>
+            <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+            <TouchableOpacity onPress={() => load(period)} style={[styles.retryBtn, { backgroundColor: colors.primary }]} activeOpacity={0.7}>
               <Text style={styles.retryText}>Retry</Text>
             </TouchableOpacity>
           </View>
@@ -96,21 +111,21 @@ export default function LlmStatsScreen() {
               <>
                 {/* Summary */}
                 {data.total_calls === 0 ? (
-                  <Text style={styles.empty}>No LLM calls recorded for this period.</Text>
+                  <Text style={[styles.empty, { color: colors.textSecondary }]}>No LLM calls recorded for this period.</Text>
                 ) : (
                   <View style={styles.summarySection}>
-                    <Text style={styles.sectionTitle}>Summary · {data.total_calls} calls</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Summary · {data.total_calls} calls</Text>
                     {data.by_provider.map((pc) => {
                       const pct = data.total_calls > 0 ? pc.count / data.total_calls : 0;
                       return (
-                        <View key={`${pc.provider}-${pc.model}`} style={styles.providerCard}>
+                        <View key={`${pc.provider}-${pc.model}`} style={[styles.providerCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
                           <View style={styles.providerHeader}>
-                            <Text style={styles.providerName}>{pc.provider}</Text>
-                            <Text style={styles.providerCount}>{pc.count}</Text>
+                            <Text style={[styles.providerName, { color: colors.text }]}>{pc.provider}</Text>
+                            <Text style={[styles.providerCount, { color: colors.text }]}>{pc.count}</Text>
                           </View>
-                          <Text style={styles.modelName}>{pc.model}</Text>
-                          <View style={styles.barTrack}>
-                            <View style={[styles.barFill, { width: `${Math.round(pct * 100)}%` }]} />
+                          <Text style={[styles.modelName, { color: colors.textSecondary }]}>{pc.model}</Text>
+                          <View style={[styles.barTrack, { backgroundColor: colors.border }]}>
+                            <View style={[styles.barFill, { backgroundColor: colors.primary, width: `${Math.round(pct * 100)}%` }]} />
                           </View>
                         </View>
                       );
@@ -118,7 +133,7 @@ export default function LlmStatsScreen() {
                   </View>
                 )}
                 {data.calls.length > 0 && (
-                  <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Call Log</Text>
+                  <Text style={[styles.sectionTitle, { marginTop: 24, color: colors.textSecondary }]}>Call Log</Text>
                 )}
               </>
             }

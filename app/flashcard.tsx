@@ -29,6 +29,7 @@ import {
   type SRSUpdate,
 } from '@/src/screens/srsAlgorithm';
 import TextWithLinks from '@/src/components/TextWithLinks';
+import { useThemeColors } from '@/src/utils/theme';
 
 type Phase = 'question' | 'revealed';
 type FcMode = 'passive' | 'self-rated';
@@ -36,6 +37,7 @@ type FcMode = 'passive' | 'self-rated';
 export default function FlashcardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
   const { tagId, fcMode: fcModeParam, todayOnly, sortOrder } = useLocalSearchParams<{ tagId: string; fcMode: string; todayOnly: string; sortOrder?: string }>();
   const fcMode: FcMode = fcModeParam === 'self-rated' ? 'self-rated' : 'passive';
 
@@ -171,6 +173,7 @@ export default function FlashcardScreen() {
     });
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   function handleNext() {
     if (currentIndex + 1 < deck.length) {
       setCurrentIndex(i => i + 1);
@@ -241,8 +244,8 @@ export default function FlashcardScreen() {
 
   if (!deckLoaded) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -250,9 +253,9 @@ export default function FlashcardScreen() {
   const isEmpty = fcMode === 'self-rated' ? card === null : deck.length === 0;
   if (isEmpty) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.emptyText}>No words to review</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No words to review</Text>
+        <TouchableOpacity style={[styles.backButton, { backgroundColor: colors.primary }]} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
@@ -268,15 +271,15 @@ export default function FlashcardScreen() {
       : `${currentIndex + 1} / ${deck.length}`;
 
   return (
-    <View style={styles.screen} {...panResponder.panHandlers}>
+    <View style={[styles.screen, { backgroundColor: colors.background }]} {...panResponder.panHandlers}>
       <ScrollView
         scrollEnabled={fcMode !== 'passive' || phase === 'revealed'}
-        contentContainerStyle={styles.container}
+        contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.progress}>{progressText}</Text>
+        <Text style={[styles.progress, { color: colors.textSecondary }]}>{progressText}</Text>
 
-        <Text style={styles.wordText}>{currentWord!.word}</Text>
+        <Text style={[styles.wordText, { color: colors.text }]}>{currentWord!.word}</Text>
 
         {fcMode === 'self-rated' && card && card.wrongCount > 0 && (
           <Text style={[
@@ -291,35 +294,35 @@ export default function FlashcardScreen() {
 
         {phase === 'revealed' && (
           <View style={styles.revealedSection}>
-            <View style={styles.infoBlock}>
-              <Text style={styles.infoLabel}>Definition</Text>
-              <TextWithLinks text={currentWord!.definition} style={styles.infoText} />
+            <View style={[styles.infoBlock, { backgroundColor: colors.inputBackground }]}>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Definition</Text>
+              <TextWithLinks text={currentWord!.definition} style={[styles.infoText, { color: colors.text }]} />
             </View>
-            <View style={styles.infoBlock}>
-              <Text style={styles.infoLabel}>Example</Text>
-              <TextWithLinks text={currentWord!.example_sentence} style={styles.infoText} italic />
+            <View style={[styles.infoBlock, { backgroundColor: colors.inputBackground }]}>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Example</Text>
+              <TextWithLinks text={currentWord!.example_sentence} style={[styles.infoText, { color: colors.textSecondary }]} italic />
             </View>
           </View>
         )}
       </ScrollView>
 
-      <View style={[styles.actionFooter, { paddingBottom: insets.bottom + 24 }]}>
+      <View style={[styles.actionFooter, { paddingBottom: insets.bottom + 24, backgroundColor: colors.card, borderTopColor: colors.border }]}>
         {fcMode === 'passive' ? (
           <View style={styles.passiveRow}>
             {currentIndex > 0 && (
               <TouchableOpacity
-                style={[styles.navButton, styles.backButtonInline]}
+                style={[styles.navButton, styles.backButtonInline, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
                 onPress={handleBack}
                 testID="prev-button"
               >
-                <Text style={styles.backButtonInlineText}>← Back</Text>
+                <Text style={[styles.backButtonInlineText, { color: colors.textSecondary }]}>← Back</Text>
               </TouchableOpacity>
             )}
 
             {phase === 'question' ? (
               <>
                 <TouchableOpacity
-                  style={[styles.navButton, styles.revealButtonInline]}
+                  style={[styles.navButton, styles.revealButtonInline, { backgroundColor: colors.primary }]}
                   onPress={handleReveal}
                   testID="reveal-button"
                 >
@@ -327,17 +330,17 @@ export default function FlashcardScreen() {
                 </TouchableOpacity>
                 {currentIndex + 1 < deck.length && (
                   <TouchableOpacity
-                    style={[styles.navButton, styles.skipButtonInline]}
+                    style={[styles.navButton, styles.skipButtonInline, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
                     onPress={handleNext}
                     testID="skip-button"
                   >
-                    <Text style={styles.skipButtonInlineText}>Skip →</Text>
+                    <Text style={[styles.skipButtonInlineText, { color: colors.textSecondary }]}>Skip →</Text>
                   </TouchableOpacity>
                 )}
               </>
             ) : (
               <TouchableOpacity
-                style={[styles.navButton, styles.nextButtonInline]}
+                style={[styles.navButton, styles.nextButtonInline, { backgroundColor: colors.success }]}
                 onPress={handleNext}
                 testID="next-button"
               >
@@ -348,16 +351,16 @@ export default function FlashcardScreen() {
             )}
           </View>
         ) : phase === 'question' ? (
-          <TouchableOpacity style={styles.revealButton} onPress={handleReveal} testID="reveal-button">
+          <TouchableOpacity style={[styles.revealButton, { backgroundColor: colors.primary }]} onPress={handleReveal} testID="reveal-button">
             <Text style={styles.revealButtonText}>Reveal Answer</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.ratingRow}>
-            <TouchableOpacity style={styles.missedButton} onPress={handleMissedIt} testID="missed-it-button">
-              <Text style={styles.missedButtonText}>Missed it ✗</Text>
+            <TouchableOpacity style={[styles.missedButton, { backgroundColor: colors.error + '22' }]} onPress={handleMissedIt} testID="missed-it-button">
+              <Text style={[styles.missedButtonText, { color: colors.error }]}>Missed it ✗</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.gotItButton} onPress={handleGotIt} testID="got-it-button">
-              <Text style={styles.gotItButtonText}>Got it ✓</Text>
+            <TouchableOpacity style={[styles.gotItButton, { backgroundColor: colors.success + '22' }]} onPress={handleGotIt} testID="got-it-button">
+              <Text style={[styles.gotItButtonText, { color: colors.success }]}>Got it ✓</Text>
             </TouchableOpacity>
           </View>
         )}

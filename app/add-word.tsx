@@ -18,6 +18,7 @@ import { insertManualWord } from '@/src/db/operations/insertManualWord';
 import { addTagToWord, type Tag } from '@/src/db/operations/tags';
 import TagPickerSheet from '@/src/components/TagPickerSheet';
 import { lookupWord } from '@/src/api/http';
+import { useThemeColors } from '@/src/utils/theme';
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -25,6 +26,7 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 
 export default function AddWordScreen() {
   const params = useLocalSearchParams<{ tagId?: string | string[]; tagName?: string | string[] }>();
+  const colors = useThemeColors();
   const tagId = firstParam(params.tagId)?.trim();
   const tagName = firstParam(params.tagName)?.trim();
   const initialTags: Tag[] = tagId && tagName ? [{ id: tagId, name: tagName }] : [];
@@ -70,106 +72,110 @@ export default function AddWordScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
-        style={styles.keyboardAvoid}
+        style={[styles.keyboardAvoid, { backgroundColor: colors.background }]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#333" />
+            <Ionicons name="close" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Add Word</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Add Word</Text>
           <View style={styles.headerSpacer} />
         </View>
 
         {/* Form */}
-        <ScrollView style={styles.form} keyboardShouldPersistTaps="handled">
-          <Text style={styles.label}>
-            Word <Text style={styles.required}>*</Text>
+        <ScrollView style={[styles.form, { backgroundColor: colors.background }]} keyboardShouldPersistTaps="handled">
+          <Text style={[styles.label, { color: colors.text }]}>
+            Word <Text style={[styles.required, { color: colors.error }]}>*</Text>
           </Text>
           <View style={styles.wordRow}>
             <TextInput
               testID="word-input"
-              style={[styles.input, styles.wordInput]}
+              style={[styles.input, styles.wordInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.inputBackground }]}
               value={word}
               onChangeText={setWord}
               placeholder="pellucid"
-              placeholderTextColor="#C7C7CC"
+              placeholderTextColor={colors.textSecondary}
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="next"
             />
             <TouchableOpacity
               testID="autofill-button"
-              style={styles.autofillButton}
+              style={[styles.autofillButton, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
               onPress={handleAutofill}
               disabled={!word.trim() || autofilling}
             >
               {autofilling ? (
-                <ActivityIndicator size="small" color="#007AFF" />
+                <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                <Ionicons name="sparkles" size={20} color={word.trim() ? '#007AFF' : '#C7C7CC'} />
+                <Ionicons name="sparkles" size={20} color={word.trim() ? colors.primary : colors.textSecondary} />
               )}
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.label}>
-            Definition <Text style={styles.required}>*</Text>
+          <Text style={[styles.label, { color: colors.text }]}>
+            Definition <Text style={[styles.required, { color: colors.error }]}>*</Text>
           </Text>
           <TextInput
             testID="definition-input"
-            style={[styles.input, styles.multilineInput]}
+            style={[styles.input, styles.multilineInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.inputBackground }]}
             value={definition}
             onChangeText={setDefinition}
             placeholder="Translucently clear..."
-            placeholderTextColor="#C7C7CC"
+            placeholderTextColor={colors.textSecondary}
             multiline
             textAlignVertical="top"
             returnKeyType="next"
           />
 
-          <Text style={styles.label}>Example sentence</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Example sentence</Text>
           <TextInput
             testID="example-input"
-            style={[styles.input, styles.multilineInput]}
+            style={[styles.input, styles.multilineInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.inputBackground }]}
             value={exampleSentence}
             onChangeText={setExampleSentence}
             placeholder="(optional)"
-            placeholderTextColor="#C7C7CC"
+            placeholderTextColor={colors.textSecondary}
             multiline
             textAlignVertical="top"
           />
 
           {/* Tags */}
-          <Text style={styles.label}>Tags</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Tags</Text>
           <View style={styles.chipsRow}>
             {selectedTags.map((tag) => (
-              <View key={tag.id} style={styles.chip}>
-                <Text style={styles.chipText}>{tag.name}</Text>
+              <View key={tag.id} style={[styles.chip, { backgroundColor: colors.accent, borderColor: colors.border }]}>
+                <Text style={[styles.chipText, { color: colors.primary }]}>{tag.name}</Text>
                 <TouchableOpacity
                   onPress={() => setSelectedTags((prev) => prev.filter((t) => t.id !== tag.id))}
                   hitSlop={6}
                   style={styles.chipDelete}
                 >
-                  <Ionicons name="close" size={13} color="#1D4ED8" />
+                  <Ionicons name="close" size={13} color={colors.primary} />
                 </TouchableOpacity>
               </View>
             ))}
-            <TouchableOpacity style={styles.chipAdd} onPress={() => setTagPickerVisible(true)}>
-              <Ionicons name="add" size={16} color="#007AFF" />
-              <Text style={styles.chipAddText}>Add tag</Text>
+            <TouchableOpacity style={[styles.chipAdd, { borderColor: colors.primary }]} onPress={() => setTagPickerVisible(true)}>
+              <Ionicons name="add" size={16} color={colors.primary} />
+              <Text style={[styles.chipAddText, { color: colors.primary }]}>Add tag</Text>
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity
             testID="save-word-button"
-            style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
+            style={[
+              styles.saveButton,
+              { backgroundColor: colors.primary },
+              !canSave && { backgroundColor: colors.inputBackground }
+            ]}
             onPress={handleSave}
             disabled={!canSave || saving || autofilling}
           >
-            <Text style={[styles.saveButtonText, !canSave && styles.saveButtonTextDisabled]}>
+            <Text style={[styles.saveButtonText, !canSave && { color: colors.textSecondary }]}>
               {saving ? 'Saving…' : 'Save'}
             </Text>
           </TouchableOpacity>

@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getAllTags, fetchAllWords, fetchWordsByTag, type Tag } from '@/src/db/operations/tags';
 import { fetchDueWords, fetchDueWordsFc } from '@/src/db/operations/srs';
 import { fetchTodayWordCount } from '@/src/db/operations/sessionHistory';
+import { useThemeColors } from '@/src/utils/theme';
 
 type DeckOption = { id: string | null; name: string };
 export type Mode = 'adaptive' | 'classic' | 'flashcard' | 'tutor';
@@ -21,6 +22,7 @@ export type FcMode = 'passive' | 'self-rated';
 export default function RecallSetupScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
 
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
@@ -101,16 +103,16 @@ export default function RecallSetupScreen() {
       const isSelected = item.id === selectedTagId;
       return (
         <TouchableOpacity
-          style={[styles.row, isSelected && styles.rowSelected]}
+          style={[styles.row, { backgroundColor: colors.card }, isSelected && { backgroundColor: colors.primary }]}
           onPress={() => setSelectedTagId(item.id)}
           accessibilityRole="radio"
           accessibilityState={{ selected: isSelected }}
         >
-          <Text style={[styles.rowText, isSelected && styles.rowTextSelected]}>{item.name}</Text>
+          <Text style={[styles.rowText, { color: colors.text }, isSelected && { color: '#fff', fontWeight: '600' }]}>{item.name}</Text>
         </TouchableOpacity>
       );
     },
-    [selectedTagId],
+    [selectedTagId, colors],
   );
 
   const allCaughtUp = (mode === 'adaptive' || mode === 'tutor') && wordCount === 0;
@@ -122,10 +124,10 @@ export default function RecallSetupScreen() {
       : '';
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
-      <Text style={styles.heading}>Choose a deck</Text>
+    <View style={[styles.container, { paddingBottom: insets.bottom + 16, backgroundColor: colors.background }]}>
+      <Text style={[styles.heading, { color: colors.text }]}>Choose a deck</Text>
 
-      <Text style={styles.subHeading}>Review Mode</Text>
+      <Text style={[styles.subHeading, { color: colors.textSecondary }]}>Review Mode</Text>
       <View style={styles.modeGrid}>
         {(['adaptive', 'classic', 'flashcard', 'tutor'] as Mode[]).map(m => {
           const isActive = mode === m;
@@ -145,17 +147,25 @@ export default function RecallSetupScreen() {
           return (
             <TouchableOpacity
               key={m}
-              style={[styles.modeCard, isActive && styles.modeCardActive]}
+              style={[
+                styles.modeCard,
+                { backgroundColor: colors.inputBackground, borderColor: 'transparent' },
+                isActive && { backgroundColor: colors.accent, borderColor: colors.primary }
+              ]}
               onPress={() => setMode(m)}
               testID={`mode-${m}`}
             >
               <Ionicons
                 name={iconName}
                 size={18}
-                color={isActive ? '#3B82F6' : '#6B7280'}
+                color={isActive ? colors.primary : colors.textSecondary}
                 style={styles.modeIcon}
               />
-              <Text style={[styles.modeCardText, isActive && styles.modeCardTextActive]}>
+              <Text style={[
+                styles.modeCardText,
+                { color: colors.textSecondary },
+                isActive && { color: colors.primary, fontWeight: '700' }
+              ]}>
                 {label}
               </Text>
             </TouchableOpacity>
@@ -164,15 +174,23 @@ export default function RecallSetupScreen() {
       </View>
 
       {mode === 'flashcard' && (
-        <View style={styles.fcModeToggle}>
+        <View style={[styles.fcModeToggle, { backgroundColor: colors.inputBackground }]}>
           {(['passive', 'self-rated'] as FcMode[]).map(fm => (
             <TouchableOpacity
               key={fm}
-              style={[styles.modeButton, fcMode === fm && styles.modeButtonActive]}
+              style={[
+                styles.modeButton,
+                { backgroundColor: 'transparent' },
+                fcMode === fm && { backgroundColor: colors.card, shadowColor: colors.shadow }
+              ]}
               onPress={() => setFcMode(fm)}
               testID={`fcmode-${fm}`}
             >
-              <Text style={[styles.modeButtonText, fcMode === fm && styles.modeButtonTextActive]}>
+              <Text style={[
+                styles.modeButtonText,
+                { color: colors.textSecondary },
+                fcMode === fm && { color: colors.text, fontWeight: '700' }
+              ]}>
                 {fm === 'passive' ? 'Passive' : 'Self-Rated'}
               </Text>
             </TouchableOpacity>
@@ -180,16 +198,24 @@ export default function RecallSetupScreen() {
         </View>
       )}
 
-      <Text style={styles.subHeading}>Sort Order</Text>
-      <View style={styles.sortToggle}>
+      <Text style={[styles.subHeading, { color: colors.textSecondary }]}>Sort Order</Text>
+      <View style={[styles.sortToggle, { backgroundColor: colors.inputBackground }]}>
         {(['jumbled', 'alphabetical', 'newest'] as const).map(so => (
           <TouchableOpacity
             key={so}
-            style={[styles.modeButton, sortOrder === so && styles.modeButtonActive]}
+            style={[
+              styles.modeButton,
+              { backgroundColor: 'transparent' },
+              sortOrder === so && { backgroundColor: colors.card, shadowColor: colors.shadow }
+            ]}
             onPress={() => setSortOrder(so)}
             testID={`sort-${so}`}
           >
-            <Text style={[styles.modeButtonText, sortOrder === so && styles.modeButtonTextActive]}>
+            <Text style={[
+              styles.modeButtonText,
+              { color: colors.textSecondary },
+              sortOrder === so && { color: colors.text, fontWeight: '700' }
+            ]}>
               {so === 'jumbled' ? 'Jumbled' : so === 'alphabetical' ? 'Alphabetical' : 'Newest'}
             </Text>
           </TouchableOpacity>
@@ -200,53 +226,67 @@ export default function RecallSetupScreen() {
         data={deckOptions}
         keyExtractor={(item) => item.id ?? '__all__'}
         renderItem={renderItem}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: colors.border }]} />}
         style={styles.list}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { borderColor: colors.border }]}
       />
 
-      <Text style={styles.wordCount} testID="word-count-label">
+      <Text style={[styles.wordCount, { color: colors.textSecondary }]} testID="word-count-label">
         {`${wordCount}`}{` ${wordCount === 1 ? 'word' : 'words'}${wordCountSuffix}`}
       </Text>
 
       {allCaughtUp && (
-        <Text style={styles.caughtUpLabel} testID="caught-up-label">
+        <Text style={[styles.caughtUpLabel, { color: colors.success }]} testID="caught-up-label">
           All caught up! No words due today.
         </Text>
       )}
 
       {fcAllCaughtUp && (
-        <Text style={styles.caughtUpLabel} testID="fc-caught-up-label">
+        <Text style={[styles.caughtUpLabel, { color: colors.success }]} testID="fc-caught-up-label">
           All caught up! No words due today.
         </Text>
       )}
 
       {wordCount === 0 && (mode === 'classic' || (mode === 'flashcard' && fcMode === 'passive')) && (
-        <Text style={styles.noWordsLabel} testID="no-words-label">
+        <Text style={[styles.noWordsLabel, { color: colors.error }]} testID="no-words-label">
           No words to review
         </Text>
       )}
 
       <TouchableOpacity
-        style={[styles.todayButton, todayCount === 0 && styles.startButtonDisabled]}
+        style={[
+          styles.todayButton,
+          { backgroundColor: '#8B5CF6' },
+          todayCount === 0 && { backgroundColor: colors.inputBackground }
+        ]}
         onPress={handleTodayWords}
         disabled={todayCount === 0}
         testID="today-words-button"
       >
-        <Text style={[styles.todayButtonText, todayCount === 0 && styles.startButtonTextDisabled]}>
+        <Text style={[
+          styles.todayButtonText,
+          todayCount === 0 && { color: colors.textSecondary }
+        ]}>
           Today's Words ({todayCount})
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.startButton, wordCount === 0 && styles.startButtonDisabled]}
+        style={[
+          styles.startButton,
+          { backgroundColor: colors.primary },
+          wordCount === 0 && { backgroundColor: colors.inputBackground }
+        ]}
         onPress={handleStart}
         disabled={wordCount === 0}
         accessibilityRole="button"
         accessibilityState={{ disabled: wordCount === 0 }}
         testID="start-button"
       >
-        <Text style={[styles.startButtonText, wordCount === 0 && styles.startButtonTextDisabled]}>
+        <Text style={[
+          styles.startButtonText,
+          wordCount === 0 && { color: colors.textSecondary }
+        ]}>
           Start
         </Text>
       </TouchableOpacity>

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ListRenderItemInfo,
   Alert,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -43,6 +44,7 @@ export default function LibraryScreen() {
     }
   }, [params.tagId]);
   const [sortOrder, setSortOrder] = useState<'alphabetical' | 'newest' | 'oldest'>('alphabetical');
+  const [showSortMenu, setShowSortMenu] = useState(false);
 
   const fetchWords = useCallback(async (tagId: string | null) => {
     if (tagId) {
@@ -87,6 +89,10 @@ export default function LibraryScreen() {
   const activeTagName = filterTags.find((t) => t.id === activeTagId)?.name ?? null;
 
   const handleSortPress = useCallback(() => {
+    if (Platform.OS === 'web') {
+      setShowSortMenu((prev) => !prev);
+      return;
+    }
     Alert.alert(
       'Sort Order',
       'Choose how you want to order your library:',
@@ -122,10 +128,10 @@ export default function LibraryScreen() {
 
   const sortedAndFiltered = [...filtered].sort((a, b) => {
     if (sortOrder === 'newest') {
-      return b.created_at.getTime() - a.created_at.getTime();
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     }
     if (sortOrder === 'oldest') {
-      return a.created_at.getTime() - b.created_at.getTime();
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
     }
     return a.word.localeCompare(b.word);
   });
@@ -273,6 +279,68 @@ export default function LibraryScreen() {
       >
         <Ionicons name="add" size={28} color={colors.card} />
       </TouchableOpacity>
+
+      {showSortMenu && (
+        <>
+          <TouchableOpacity
+            style={styles.sortMenuBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowSortMenu(false)}
+          />
+          <View style={[styles.sortMenu, { top: 56 + insets.top, backgroundColor: colors.card, borderColor: colors.border }]}>
+            <TouchableOpacity
+              style={[
+                styles.sortMenuItem,
+                sortOrder === 'alphabetical' && { backgroundColor: colors.inputBackground }
+              ]}
+              onPress={() => {
+                setSortOrder('alphabetical');
+                setShowSortMenu(false);
+              }}
+            >
+              <Ionicons name="swap-vertical-outline" size={16} color={colors.textSecondary} style={{ marginRight: 8 }} />
+              <Text style={[styles.sortMenuItemText, { color: colors.text }]}>Alphabetical (A-Z)</Text>
+              {sortOrder === 'alphabetical' && (
+                <Ionicons name="checkmark" size={16} color={colors.text} style={{ marginLeft: 'auto' }} />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.sortMenuItem,
+                sortOrder === 'newest' && { backgroundColor: colors.inputBackground }
+              ]}
+              onPress={() => {
+                setSortOrder('newest');
+                setShowSortMenu(false);
+              }}
+            >
+              <Ionicons name="time" size={16} color={colors.textSecondary} style={{ marginRight: 8 }} />
+              <Text style={[styles.sortMenuItemText, { color: colors.text }]}>Newest First</Text>
+              {sortOrder === 'newest' && (
+                <Ionicons name="checkmark" size={16} color={colors.text} style={{ marginLeft: 'auto' }} />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.sortMenuItem,
+                sortOrder === 'oldest' && { backgroundColor: colors.inputBackground }
+              ]}
+              onPress={() => {
+                setSortOrder('oldest');
+                setShowSortMenu(false);
+              }}
+            >
+              <Ionicons name="time-outline" size={16} color={colors.textSecondary} style={{ marginRight: 8 }} />
+              <Text style={[styles.sortMenuItemText, { color: colors.text }]}>Oldest First</Text>
+              {sortOrder === 'oldest' && (
+                <Ionicons name="checkmark" size={16} color={colors.text} style={{ marginLeft: 'auto' }} />
+              )}
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -379,5 +447,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#111827',
     borderRadius: 32,
     padding: 14,
+  },
+  sortMenuBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+    zIndex: 999,
+  },
+  sortMenu: {
+    position: 'absolute',
+    right: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 4,
+    width: 200,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  sortMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  sortMenuItemText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

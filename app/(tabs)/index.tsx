@@ -20,6 +20,7 @@ import { filterWords } from '@/src/screens/libraryLogic';
 import { getAllTags, fetchWordsByTag, type Tag } from '@/src/db/operations/tags';
 import { setNav } from '@/src/store/libraryNav';
 import { useThemeColors } from '@/src/utils/theme';
+import { getDefaultSortOrder } from '@/src/config/settings';
 
 type WordRow = {
   id: string;
@@ -43,7 +44,7 @@ export default function LibraryScreen() {
       router.setParams({ tagId: undefined });
     }
   }, [params.tagId]);
-  const [sortOrder, setSortOrder] = useState<'alphabetical' | 'newest' | 'oldest'>('alphabetical');
+  const [sortOrder, setSortOrder] = useState<'alphabetical' | 'newest' | 'oldest'>(getDefaultSortOrder());
   const [showSortMenu, setShowSortMenu] = useState(false);
 
   const fetchWords = useCallback(async (tagId: string | null) => {
@@ -62,6 +63,8 @@ export default function LibraryScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      const defaultOrder = getDefaultSortOrder();
+      setSortOrder((curr) => (curr !== defaultOrder ? defaultOrder : curr));
       let active = true;
       Promise.all([getAllTags(), fetchWords(activeTagId)])
         .then(([tags]) => {

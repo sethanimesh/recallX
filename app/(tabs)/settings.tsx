@@ -11,6 +11,8 @@ import {
   resetSRSProgress,
   getPronunciationVoice,
   setPronunciationVoice,
+  getDefaultSortOrder,
+  setDefaultSortOrder,
 } from '@/src/config/settings';
 import { useThemeColors } from '@/src/utils/theme';
 import * as Speech from 'expo-speech';
@@ -27,10 +29,13 @@ export default function SettingsScreen() {
   const [selectedVoice, setSelectedVoice] = useState<string | null>(getPronunciationVoice());
   const [voiceSheetVisible, setVoiceSheetVisible] = useState(false);
   const [displayVoiceName, setDisplayVoiceName] = useState('System Default');
+  const [defaultSortOrder, setDefaultSortOrderState] = useState(getDefaultSortOrder());
+  const [showSortOrderDropdown, setShowSortOrderDropdown] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       setCurrentUrl(getBackendUrl());
+      setDefaultSortOrderState(getDefaultSortOrder());
       setProvidersStatus('loading');
       async function loadProviders() {
         try {
@@ -149,6 +154,48 @@ export default function SettingsScreen() {
           <Text style={[styles.rowLabel, { color: colors.text }]}>AI Usage</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => setShowSortOrderDropdown((prev) => !prev)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="filter-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
+          <View style={styles.rowContent}>
+            <Text style={[styles.rowLabel, { color: colors.text }]}>Default Sorting Mode</Text>
+            <Text style={[styles.rowSubtitle, { color: colors.textSecondary }]}>
+              {sortOrderLabel(defaultSortOrder)}
+            </Text>
+          </View>
+          <Ionicons name={showSortOrderDropdown ? 'chevron-down' : 'chevron-forward'} size={18} color={colors.textSecondary} />
+        </TouchableOpacity>
+
+        {showSortOrderDropdown && (
+          <View style={[styles.dropdownContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {(['alphabetical', 'newest', 'oldest'] as const).map((mode) => (
+              <TouchableOpacity
+                key={mode}
+                style={[
+                  styles.dropdownRow,
+                  { borderColor: colors.border },
+                  defaultSortOrder === mode && { backgroundColor: colors.inputBackground }
+                ]}
+                onPress={async () => {
+                  setDefaultSortOrderState(mode);
+                  await setDefaultSortOrder(mode);
+                  setShowSortOrderDropdown(false);
+                }}
+              >
+                <Text style={[styles.dropdownLabel, { color: colors.text }, defaultSortOrder === mode && { fontWeight: '700' }]}>
+                  {sortOrderLabel(mode)}
+                </Text>
+                {defaultSortOrder === mode && (
+                  <Ionicons name="checkmark" size={18} color={colors.primary ?? colors.text} style={{ marginLeft: 'auto' }} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -267,4 +314,27 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     flex: 1,
   },
+  dropdownContainer: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#fff',
+  },
+  dropdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 56,
+    paddingRight: 20,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: '#E5E7EB',
+  },
+  dropdownLabel: {
+    fontSize: 15,
+  },
 });
+
+function sortOrderLabel(mode: 'alphabetical' | 'newest' | 'oldest'): string {
+  if (mode === 'newest') return 'Newest First';
+  if (mode === 'oldest') return 'Oldest First';
+  return 'Alphabetical (A-Z)';
+}

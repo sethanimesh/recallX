@@ -3,12 +3,14 @@ import { sessionResults, sessions, words } from '@/src/db/schema';
 const BACKEND_URL_KEY = 'recallx:backendUrl';
 const PREFERRED_PROVIDER_KEY = 'recallx:preferredProvider';
 const PRONUNCIATION_VOICE_KEY = 'recallx:pronunciationVoice';
+const DEFAULT_SORT_ORDER_KEY = 'recallx:defaultSortOrder';
 
 export const DEFAULT_BACKEND_URL = 'http://100.82.134.121:8000';
 
 let _backendUrl: string = DEFAULT_BACKEND_URL;
 let _preferredProvider: string | null = null;
 let _pronunciationVoice: string | null = null;
+let _defaultSortOrder: 'alphabetical' | 'newest' | 'oldest' = 'alphabetical';
 
 /** Lazy accessor so Jest mocks are fully initialised before first call. */
 function getStorage() {
@@ -21,19 +23,22 @@ function getStorage() {
 export async function initSettings(): Promise<void> {
   try {
     const storage = getStorage();
-    const [url, provider, voice] = await Promise.all([
+    const [url, provider, voice, sortOrder] = await Promise.all([
       storage.getItem(BACKEND_URL_KEY),
       storage.getItem(PREFERRED_PROVIDER_KEY),
       storage.getItem(PRONUNCIATION_VOICE_KEY),
+      storage.getItem(DEFAULT_SORT_ORDER_KEY),
     ]);
     _backendUrl = url ?? DEFAULT_BACKEND_URL;
     _preferredProvider = provider ?? null;
     _pronunciationVoice = voice ?? null;
+    _defaultSortOrder = (sortOrder as any) ?? 'alphabetical';
   } catch (err) {
     console.warn('[Settings] initSettings failed, using defaults:', err);
     _backendUrl = DEFAULT_BACKEND_URL;
     _preferredProvider = null;
     _pronunciationVoice = null;
+    _defaultSortOrder = 'alphabetical';
   }
 }
 
@@ -72,6 +77,15 @@ export async function setPronunciationVoice(voice: string | null): Promise<void>
   } else {
     await storage.setItem(PRONUNCIATION_VOICE_KEY, voice);
   }
+}
+
+export function getDefaultSortOrder(): 'alphabetical' | 'newest' | 'oldest' {
+  return _defaultSortOrder;
+}
+
+export async function setDefaultSortOrder(order: 'alphabetical' | 'newest' | 'oldest'): Promise<void> {
+  _defaultSortOrder = order;
+  await getStorage().setItem(DEFAULT_SORT_ORDER_KEY, order);
 }
 
 export function getCommonHeaders(): Record<string, string> {

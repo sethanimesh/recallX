@@ -104,7 +104,14 @@ def create_word(req: CreateWordRequest) -> WordRecord:
                 conn.commit()
             else:
                 # Active version exists — can't re-add
-                raise HTTPException(status_code=409, detail="Word already exists")
+                existing = conn.execute(
+                    "SELECT id FROM words WHERE word = ? COLLATE NOCASE AND deleted_at IS NULL",
+                    (normalized_word,)
+                ).fetchone()
+                raise HTTPException(
+                    status_code=409,
+                    detail={"message": "Word already exists", "word_id": existing[0] if existing else None}
+                )
     return WordRecord(
         id=req.id, word=normalized_word, definition=req.definition,
         example_sentence=req.example_sentence, source_type=req.source_type,

@@ -29,7 +29,7 @@ export interface CreateWordPayload {
 }
 
 export class WordServerError extends Error {
-  constructor(message: string, public readonly statusCode: number) {
+  constructor(message: string, public readonly statusCode: number, public readonly data?: any) {
     super(message);
     this.name = 'WordServerError';
   }
@@ -60,11 +60,19 @@ async function request<T>(url: string, options: RequestInit): Promise<T> {
   }
   if (!response.ok) {
     let detail = `HTTP ${response.status}`;
+    let rawDetail: any;
     try {
       const err = await response.json();
-      detail = err?.detail ?? detail;
+      rawDetail = err?.detail;
+      if (typeof rawDetail === 'string') {
+        detail = rawDetail;
+      } else if (rawDetail && typeof rawDetail === 'object' && rawDetail.message) {
+        detail = rawDetail.message;
+      } else if (rawDetail) {
+        detail = JSON.stringify(rawDetail);
+      }
     } catch {}
-    throw new WordServerError(`Request failed: ${detail}`, response.status);
+    throw new WordServerError(`Request failed: ${detail}`, response.status, rawDetail);
   }
   if (response.status === 204) return undefined as T;
   try {

@@ -59,11 +59,21 @@ export default function AddWordScreen() {
     if (!canSave || saving) return;
     setSaving(true);
     try {
-      const newId = await insertManualWord(word, definition, exampleSentence);
+      const result = await insertManualWord(word, definition, exampleSentence);
+      const newId = result.id;
       if (selectedTags.length > 0) {
         await Promise.all(selectedTags.map((t) => addTagToWord(newId, t.id)));
       }
       router.dismissAll();
+      
+      if (!result.isNew) {
+        if (selectedTags.length > 0) {
+          Alert.alert('Word Updated', 'This word already exists in your vocabulary. It has been updated with the new tags.');
+        } else {
+          Alert.alert('Word Exists', 'This word already exists in your vocabulary.');
+        }
+      }
+      
       router.push(`/words/${newId}`);
     } catch (err) {
       setSaving(false);

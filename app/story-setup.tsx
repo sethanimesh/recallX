@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,9 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  Animated,
 } from 'react-native';
+import * as Crypto from 'expo-crypto';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,6 +34,21 @@ export default function StorySetupScreen() {
   
   const [stories, setStories] = useState<SavedStory[]>([]);
   const [loading, setLoading] = useState(false);
+  const pulseAnim = React.useRef(new Animated.Value(0.6)).current;
+
+  useEffect(() => {
+    if (loading) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 0.6, duration: 800, useNativeDriver: true })
+        ])
+      ).start();
+    } else {
+      pulseAnim.stopAnimation();
+      pulseAnim.setValue(0.6);
+    }
+  }, [loading, pulseAnim]);
 
   useFocusEffect(
     useCallback(() => {
@@ -92,7 +109,7 @@ export default function StorySetupScreen() {
       
       // Save it to the backend immediately
       const saved = await saveBackendStory({
-        id: crypto.randomUUID(),
+        id: Crypto.randomUUID(),
         tag_id: selectedTagId,
         prompt: customPrompt,
         title: response.title,
@@ -218,6 +235,20 @@ export default function StorySetupScreen() {
           />
         </>
       )}
+
+      {loading && (
+        <View style={[StyleSheet.absoluteFill, styles.loadingOverlay, { backgroundColor: colors.background }]}>
+          <Animated.View style={{ opacity: pulseAnim, transform: [{ scale: pulseAnim }] }}>
+            <Ionicons name="sparkles" size={64} color={colors.primary} style={{ alignSelf: 'center', marginBottom: 24 }} />
+          </Animated.View>
+          <Animated.Text style={[styles.loadingText, { color: colors.text, opacity: pulseAnim }]}>
+            Generating your story...
+          </Animated.Text>
+          <Text style={[styles.loadingSubtext, { color: colors.textSecondary }]}>
+            Crafting a unique tale with your {wordCount} words. This might take a few moments.
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -268,4 +299,12 @@ const styles = StyleSheet.create({
   },
   storyTitle: { fontSize: 15, fontWeight: '600', marginBottom: 2 },
   storyDate: { fontSize: 12 },
+  loadingOverlay: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+    padding: 32,
+  },
+  loadingText: { fontSize: 24, fontWeight: '800', textAlign: 'center', marginBottom: 12 },
+  loadingSubtext: { fontSize: 16, textAlign: 'center', lineHeight: 24 },
 });

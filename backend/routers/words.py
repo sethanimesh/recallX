@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 import database
+from routers.extract import get_chain
 
 router = APIRouter()
 
@@ -218,3 +219,27 @@ def delete_word(word_id: str) -> WordRecord:
         ).fetchone()
         tags_by_word = _get_tags_for_words(conn, [word_id])
     return _row_to_record(row, tags_by_word.get(word_id, []))
+
+
+@router.post("/words/{word_id}/generate-mnemonic", response_model=WordRecord)
+async def generate_word_mnemonic(word_id: str) -> WordRecord:
+    with sqlite3.connect(database._DEFAULT_DB_PATH) as conn:
+        row = conn.execute(
+            "SELECT id, word, definition, example_sentence, mnemonic, source_type, "
+            "created_at, updated_at, deleted_at FROM words WHERE id = ?",
+            (word_id,),
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Word not found")
+        
+        tags_by_word = _get_tags_for_words(conn, [word_id])
+        record = _row_to_record(row, tags_by_word.get(word_id, []))
+
+    if record.mnemonic:
+        return record
+
+    mnemonic = await get_chain().generate_mnemonic(record.word, record.definition)
+    if not mnemonic:
+        raise HTTPException(status_code=500, detail="Failed to generate mnemonic")
+
+    return update_word(word_id, UpdateWordRequest(mnemonic=mnemonic))

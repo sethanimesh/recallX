@@ -1,4 +1,4 @@
-import { deleteWord, patchWord } from '@/src/api/wordServerClient';
+import { deleteWord, patchWord, generateMnemonic } from '@/src/api/wordServerClient';
 import { db } from '@/src/db/client';
 import { sources, tags, words, wordTags } from '@/src/db/schema';
 import { and, eq, isNull, sql } from 'drizzle-orm';
@@ -91,4 +91,13 @@ export async function softDeleteWord(id: string): Promise<void> {
   const result = await deleteWord(id);
   const deletedAtMs = result?.deleted_at ? new Date(result.deleted_at) : new Date();
   await db.update(words).set({ deleted_at: deletedAtMs }).where(eq(words.id, id));
+}
+
+export async function generateMnemonicForWord(id: string): Promise<string | null> {
+  const result = await generateMnemonic(id);
+  if (result && result.mnemonic) {
+    await db.update(words).set({ mnemonic: result.mnemonic, updated_at: new Date() }).where(eq(words.id, id));
+    return result.mnemonic;
+  }
+  return null;
 }

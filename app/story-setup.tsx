@@ -40,24 +40,26 @@ export default function StorySetupScreen() {
     }, [])
   );
 
-  useEffect(() => {
-    let cancelled = false;
-    async function loadDeckInfo() {
-      const rows = selectedTagId === null
-        ? await fetchAllWords()
-        : await fetchWordsByTag(selectedTagId);
-      
-      const savedStories = await fetchStories(selectedTagId);
-      
-      if (!cancelled) {
-        setWords(rows);
-        setWordCount(rows.length);
-        setStories(savedStories);
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      async function loadDeckInfo() {
+        const rows = selectedTagId === null
+          ? await fetchAllWords()
+          : await fetchWordsByTag(selectedTagId);
+        
+        const savedStories = await fetchStories(selectedTagId);
+        
+        if (!cancelled) {
+          setWords(rows);
+          setWordCount(rows.length);
+          setStories(savedStories);
+        }
       }
-    }
-    loadDeckInfo().catch(() => {});
-    return () => { cancelled = true; };
-  }, [selectedTagId]);
+      loadDeckInfo().catch(() => {});
+      return () => { cancelled = true; };
+    }, [selectedTagId])
+  );
 
   const handleGenerate = async () => {
     if (words.length === 0) return;

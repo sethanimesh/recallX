@@ -62,9 +62,11 @@ interface EditableFieldProps {
   onSave: (newValue: string) => Promise<void>;
   multiline?: boolean;
   italic?: boolean;
+  placeholder?: string;
+  rightAccessory?: React.ReactNode;
 }
 
-function EditableField({ label, value, onSave, multiline = false, italic = false }: EditableFieldProps) {
+function EditableField({ label, value, onSave, multiline = false, italic = false, placeholder, rightAccessory }: EditableFieldProps) {
   const colors = useThemeColors();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -101,7 +103,10 @@ function EditableField({ label, value, onSave, multiline = false, italic = false
   if (editing) {
     return (
       <View style={styles.fieldContainer}>
-        <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{label}</Text>
+        <View style={styles.fieldLabelRow}>
+          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{label}</Text>
+          {rightAccessory}
+        </View>
         <TextInput
           ref={inputRef}
           style={[styles.fieldInput, italic && styles.fieldInputItalic, multiline && styles.fieldInputMultiline, { color: colors.text, borderColor: colors.primary, backgroundColor: colors.inputBackground }]}
@@ -110,6 +115,8 @@ function EditableField({ label, value, onSave, multiline = false, italic = false
           onBlur={handleBlur}
           multiline={multiline}
           autoFocus
+          placeholder={placeholder}
+          placeholderTextColor={colors.textSecondary}
         />
       </View>
     );
@@ -117,13 +124,22 @@ function EditableField({ label, value, onSave, multiline = false, italic = false
 
   return (
     <View style={styles.fieldContainer}>
-      <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{label}</Text>
+      <View style={styles.fieldLabelRow}>
+        <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{label}</Text>
+        {rightAccessory}
+      </View>
       <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
-        <TextWithLinks 
-          text={value} 
-          style={[styles.fieldText, { color: italic ? colors.textSecondary : colors.text }]} 
-          italic={italic} 
-        />
+        {value ? (
+          <TextWithLinks 
+            text={value} 
+            style={[styles.fieldText, { color: italic ? colors.textSecondary : colors.text }]} 
+            italic={italic} 
+          />
+        ) : (
+          <Text style={[styles.fieldText, { color: colors.textSecondary, fontStyle: 'italic' }]}>
+            {placeholder || `Tap to add ${label.toLowerCase()}`}
+          </Text>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -149,6 +165,7 @@ export default function WordDetailScreen() {
 
   const [editingWord, setEditingWord] = useState(false);
   const [draftWord, setDraftWord] = useState('');
+  const [generatingMnemonic, setGeneratingMnemonic] = useState(false);
   const wordInputRef = useRef<TextInput>(null);
 
   // Keep draftWord in sync if wordData changes externally
@@ -306,6 +323,26 @@ export default function WordDetailScreen() {
     },
     [id],
   );
+
+  const handleGenerateMnemonic = useCallback(async () => {
+    if (!id) return;
+    setGeneratingMnemonic(true);
+    try {
+      // Must import generateMnemonicForWord at the top of the file
+      const { generateMnemonicForWord } = require('@/src/db/operations/wordDetail');
+      const newMnemonic = await generateMnemonicForWord(id);
+      if (newMnemonic) {
+        setWordData((prev) => (prev ? { ...prev, mnemonic: newMnemonic } : prev));
+      } else {
+        Alert.alert('Generation Failed', 'Could not generate a mnemonic. Please try again.');
+      }
+    } catch (err: any) {
+      const msg = err instanceof Error ? err.message : String(err);
+      Alert.alert('Generation Failed', msg);
+    } finally {
+      setGeneratingMnemonic(false);
+    }
+  }, [id]);
 
   const handlePronunciationPress = useCallback(async () => {
     if (!wordData?.word) return;
@@ -519,9 +556,29 @@ export default function WordDetailScreen() {
         {/* Mnemonic */}
         <EditableField
           label="Mnemonic"
-          value={wordData.mnemonic || 'No mnemonic generated yet.'}
+          value={wordData.mnemonic || ''}
+          placeholder="Tap to add a mnemonic..."
           onSave={saveMnemonic}
           multiline
+          rightAccessory={
+            !wordData.mnemonic ? (
+              <TouchableOpacity
+                onPress={handleGenerateMnemonic}
+                disabled={generatingMnemonic}
+                style={styles.generateButton}
+                hitSlop={8}
+              >
+                {generatingMnemonic ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <>
+                    <Ionicons name="sparkles" size={14} color={colors.primary} />
+                    <Text style={[styles.generateButtonText, { color: colors.primary }]}>Generate</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            ) : undefined
+          }
         />
 
         {/* Tags */}
@@ -685,13 +742,31 @@ const styles = StyleSheet.create({
   fieldContainer: {
     marginBottom: 24,
   },
+  fieldLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
   fieldLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: '#999',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    marginBottom: 6,
+  },
+  generateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  generateButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   fieldText: {
     fontSize: 16,

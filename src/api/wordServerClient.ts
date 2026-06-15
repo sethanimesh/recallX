@@ -110,6 +110,10 @@ export function deleteWord(id: string, baseUrl?: string) {
   return request<ServerWordRecord>(`${baseFor(baseUrl)}/words/${id}`, { method: 'DELETE' });
 }
 
+export function generateMnemonic(id: string, baseUrl?: string) {
+  return request<ServerWordRecord>(`${baseFor(baseUrl)}/words/${id}/generate-mnemonic`, { method: 'POST' });
+}
+
 export function postTag(payload: { id: string; name: string }, baseUrl?: string) {
   return request<ServerTagRecord>(`${baseFor(baseUrl)}/tags`, {
     method: 'POST',

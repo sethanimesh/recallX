@@ -57,11 +57,15 @@ export default function IngestScreen() {
     };
   }, []);
 
+  // Use a ref to always call the latest startExtraction, avoiding stale closures in useFocusEffect
+  const startExtractionRef = useRef<typeof startExtraction | null>(null);
+  startExtractionRef.current = startExtraction;
+
   useFocusEffect(
     useCallback(() => {
       const cropResult = takePendingCropResult();
-      if (cropResult) {
-        startExtraction({
+      if (cropResult && startExtractionRef.current) {
+        startExtractionRef.current({
           type: 'image',
           uri: cropResult.uri,
           base64: cropResult.base64,

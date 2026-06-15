@@ -5,7 +5,7 @@ const PREFERRED_PROVIDER_KEY = 'recallx:preferredProvider';
 const PRONUNCIATION_VOICE_KEY = 'recallx:pronunciationVoice';
 const DEFAULT_SORT_ORDER_KEY = 'recallx:defaultSortOrder';
 
-export const DEFAULT_BACKEND_URL = 'http://100.82.134.121:8000';
+export const DEFAULT_BACKEND_URL = 'http://192.168.1.15:8000';
 
 let _backendUrl: string = DEFAULT_BACKEND_URL;
 let _preferredProvider: string | null = null;

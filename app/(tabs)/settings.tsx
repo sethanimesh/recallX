@@ -172,7 +172,7 @@ export default function SettingsScreen() {
 
         {showSortOrderDropdown && (
           <View style={[styles.dropdownContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {(['alphabetical', 'newest', 'oldest'] as const).map((mode) => (
+            {(['alphabetical', 'newest', 'oldest', 'most_incorrect'] as const).map((mode) => (
               <TouchableOpacity
                 key={mode}
                 style={[
@@ -333,8 +333,9 @@ const styles = StyleSheet.create({
   },
 });
 
-function sortOrderLabel(mode: 'alphabetical' | 'newest' | 'oldest'): string {
+function sortOrderLabel(mode: 'alphabetical' | 'newest' | 'oldest' | 'most_incorrect'): string {
   if (mode === 'newest') return 'Newest First';
   if (mode === 'oldest') return 'Oldest First';
+  if (mode === 'most_incorrect') return 'Most Incorrect';
   return 'Alphabetical (A-Z)';
 }

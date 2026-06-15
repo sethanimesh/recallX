@@ -27,6 +27,8 @@ type WordRow = {
   word: string;
   definition: string;
   created_at: Date;
+  srs_wrong_count: number;
+  fc_wrong_count: number;
 };
 
 export default function LibraryScreen() {
@@ -44,16 +46,16 @@ export default function LibraryScreen() {
       router.setParams({ tagId: undefined });
     }
   }, [params.tagId]);
-  const [sortOrder, setSortOrder] = useState<'alphabetical' | 'newest' | 'oldest'>(getDefaultSortOrder());
+  const [sortOrder, setSortOrder] = useState<'alphabetical' | 'newest' | 'oldest' | 'most_incorrect'>(getDefaultSortOrder());
   const [showSortMenu, setShowSortMenu] = useState(false);
 
   const fetchWords = useCallback(async (tagId: string | null) => {
     if (tagId) {
       const rows = await fetchWordsByTag(tagId);
-      setAllWords(rows.map((r) => ({ id: r.id, word: r.word, definition: r.definition, created_at: r.created_at })));
+      setAllWords(rows.map((r) => ({ id: r.id, word: r.word, definition: r.definition, created_at: r.created_at, srs_wrong_count: r.srs_wrong_count, fc_wrong_count: r.fc_wrong_count })));
     } else {
       const rows = await db
-        .select({ id: wordsTable.id, word: wordsTable.word, definition: wordsTable.definition, created_at: wordsTable.created_at })
+        .select({ id: wordsTable.id, word: wordsTable.word, definition: wordsTable.definition, created_at: wordsTable.created_at, srs_wrong_count: wordsTable.srs_wrong_count, fc_wrong_count: wordsTable.fc_wrong_count })
         .from(wordsTable)
         .where(isNull(wordsTable.deleted_at))
         .orderBy(asc(wordsTable.word));
@@ -113,6 +115,10 @@ export default function LibraryScreen() {
           onPress: () => setSortOrder('oldest'),
         },
         {
+          text: 'Most Incorrect',
+          onPress: () => setSortOrder('most_incorrect'),
+        },
+        {
           text: 'Cancel',
           style: 'cancel',
         },
@@ -124,12 +130,18 @@ export default function LibraryScreen() {
   const getSortIcon = useCallback(() => {
     if (sortOrder === 'newest') return 'time';
     if (sortOrder === 'oldest') return 'time-outline';
+    if (sortOrder === 'most_incorrect') return 'warning-outline';
     return 'swap-vertical-outline';
   }, [sortOrder]);
 
   const filtered = filterWords(allWords, query);
 
   const sortedAndFiltered = [...filtered].sort((a, b) => {
+    if (sortOrder === 'most_incorrect') {
+      const aWrong = (a.srs_wrong_count || 0) + (a.fc_wrong_count || 0);
+      const bWrong = (b.srs_wrong_count || 0) + (b.fc_wrong_count || 0);
+      if (aWrong !== bWrong) return bWrong - aWrong;
+    }
     if (sortOrder === 'newest') {
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     }
@@ -338,6 +350,23 @@ export default function LibraryScreen() {
               <Ionicons name="time-outline" size={16} color={colors.textSecondary} style={{ marginRight: 8 }} />
               <Text style={[styles.sortMenuItemText, { color: colors.text }]}>Oldest First</Text>
               {sortOrder === 'oldest' && (
+                <Ionicons name="checkmark" size={16} color={colors.text} style={{ marginLeft: 'auto' }} />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.sortMenuItem,
+                sortOrder === 'most_incorrect' && { backgroundColor: colors.inputBackground }
+              ]}
+              onPress={() => {
+                setSortOrder('most_incorrect');
+                setShowSortMenu(false);
+              }}
+            >
+              <Ionicons name="warning-outline" size={16} color={colors.textSecondary} style={{ marginRight: 8 }} />
+              <Text style={[styles.sortMenuItemText, { color: colors.text }]}>Most Incorrect</Text>
+              {sortOrder === 'most_incorrect' && (
                 <Ionicons name="checkmark" size={16} color={colors.text} style={{ marginLeft: 'auto' }} />
               )}
             </TouchableOpacity>

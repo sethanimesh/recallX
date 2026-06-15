@@ -10,7 +10,7 @@ export const DEFAULT_BACKEND_URL = 'http://100.82.134.121:8000';
 let _backendUrl: string = DEFAULT_BACKEND_URL;
 let _preferredProvider: string | null = null;
 let _pronunciationVoice: string | null = null;
-let _defaultSortOrder: 'alphabetical' | 'newest' | 'oldest' = 'alphabetical';
+let _defaultSortOrder: 'alphabetical' | 'newest' | 'oldest' | 'most_incorrect' = 'alphabetical';
 
 /** Lazy accessor so Jest mocks are fully initialised before first call. */
 function getStorage() {
@@ -79,11 +79,11 @@ export async function setPronunciationVoice(voice: string | null): Promise<void>
   }
 }
 
-export function getDefaultSortOrder(): 'alphabetical' | 'newest' | 'oldest' {
+export function getDefaultSortOrder(): 'alphabetical' | 'newest' | 'oldest' | 'most_incorrect' {
   return _defaultSortOrder;
 }
 
-export async function setDefaultSortOrder(order: 'alphabetical' | 'newest' | 'oldest'): Promise<void> {
+export async function setDefaultSortOrder(order: 'alphabetical' | 'newest' | 'oldest' | 'most_incorrect'): Promise<void> {
   _defaultSortOrder = order;
   await getStorage().setItem(DEFAULT_SORT_ORDER_KEY, order);
 }

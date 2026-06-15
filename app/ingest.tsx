@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput as RNTextInput, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { setPendingCropUri } from '@/src/store/pendingCropUri';
@@ -11,6 +11,7 @@ import { activeExtractionClient } from '@/src/api/index';
 import type { ImageInput, TextInput } from '@/src/api/types';
 import ExtractionProgress from '@/src/components/ExtractionProgress';
 import { setPendingExtraction } from '@/src/store/pendingWords';
+import { getSavedInstructions, addSavedInstruction, removeSavedInstruction } from '@/src/store/savedInstructions';
 import type { Tag } from '@/src/db/operations/tags';
 import { useThemeColors } from '@/src/utils/theme';
 
@@ -40,6 +41,14 @@ export default function IngestScreen() {
   const lastActivePhaseRef = useRef<'uploading' | 'analyzing' | 'done'>('uploading');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
+  
+  const [isCustomMode, setIsCustomMode] = useState(false);
+  const [customInstructions, setCustomInstructions] = useState('');
+  const [savedInstructions, setSavedInstructions] = useState<string[]>([]);
+
+  useEffect(() => {
+    getSavedInstructions().then(setSavedInstructions);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -63,6 +72,10 @@ export default function IngestScreen() {
   );
 
   async function startExtraction(input: ImageInput | TextInput) {
+    if (isCustomMode && customInstructions.trim()) {
+      input.instructions = customInstructions.trim();
+      addSavedInstruction(customInstructions).then(setSavedInstructions);
+    }
     if (isMountedRef.current) setModalState({ phase: 'uploading' });
     lastActivePhaseRef.current = 'uploading';
     if (isMountedRef.current) setModalState({ phase: 'analyzing' });
@@ -126,6 +139,74 @@ export default function IngestScreen() {
           onRetry={() => setModalState({ phase: 'idle' })}
           failedAtPhase={modalState.phase === 'error' ? lastActivePhaseRef.current : undefined}
         />
+      ) : isCustomMode ? (
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+            <TouchableOpacity onPress={() => setIsCustomMode(false)} style={{ marginRight: 12 }}>
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>Custom Instructions</Text>
+          </View>
+
+          <RNTextInput
+            style={[styles.input, { color: colors.text, backgroundColor: colors.inputBackground, borderColor: colors.border }]}
+            placeholder="e.g. Use the bold words"
+            placeholderTextColor={colors.text + '80'}
+            value={customInstructions}
+            onChangeText={setCustomInstructions}
+            multiline
+          />
+
+          {savedInstructions.length > 0 && (
+            <View style={{ marginBottom: 24 }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 8 }}>Saved Instructions</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {savedInstructions.map((inst, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[styles.savedChip, { backgroundColor: colors.primary + '20' }]}
+                    onPress={() => setCustomInstructions(inst)}
+                  >
+                    <Text style={{ color: colors.primary, marginRight: 4 }}>{inst}</Text>
+                    <TouchableOpacity onPress={() => removeSavedInstruction(inst).then(setSavedInstructions)}>
+                      <Ionicons name="close-circle" size={16} color={colors.primary} />
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 12, marginTop: 8 }}>
+            Choose Source
+          </Text>
+
+          <View style={styles.buttonGroup}>
+            <TouchableOpacity
+              style={[styles.sourceButton, { backgroundColor: colors.inputBackground }]}
+              onPress={handleCamera}
+            >
+              <Ionicons name="camera-outline" size={24} color={colors.primary} style={styles.icon} />
+              <Text style={[styles.buttonLabel, { color: colors.text }]}>Camera</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.sourceButton, { backgroundColor: colors.inputBackground }]}
+              onPress={handleLibrary}
+            >
+              <Ionicons name="image-outline" size={24} color={colors.primary} style={styles.icon} />
+              <Text style={[styles.buttonLabel, { color: colors.text }]}>Photo Library</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.sourceButton, { backgroundColor: colors.inputBackground }]}
+              onPress={handleDocument}
+            >
+              <Ionicons name="document-outline" size={24} color={colors.primary} style={styles.icon} />
+              <Text style={[styles.buttonLabel, { color: colors.text }]}>PDF / Document</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       ) : (
         <View style={styles.buttonGroup}>
           <TouchableOpacity
@@ -165,6 +246,14 @@ export default function IngestScreen() {
             <Ionicons name="pencil-outline" size={24} color={colors.primary} style={styles.icon} />
             <Text style={[styles.buttonLabel, { color: colors.text }]}>Add Manually</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.sourceButton, { backgroundColor: colors.inputBackground }]}
+            onPress={() => setIsCustomMode(true)}
+          >
+            <Ionicons name="color-wand-outline" size={24} color={colors.primary} style={styles.icon} />
+            <Text style={[styles.buttonLabel, { color: colors.text }]}>Custom Extraction</Text>
+          </TouchableOpacity>
         </View>
       )}
     </SafeAreaView>
@@ -201,5 +290,22 @@ const styles = StyleSheet.create({
   },
   buttonLabel: {
     fontSize: 16,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    minHeight: 100,
+    fontSize: 16,
+    marginBottom: 24,
+    textAlignVertical: 'top',
+  },
+  savedChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
   },
 });

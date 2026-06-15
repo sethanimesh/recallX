@@ -71,3 +71,8 @@ Return JSON matching this exact shape:
 
 If your API response format requires a top-level array instead, each array item must still use exactly these keys: "word", "definition", "example_sentence".
 Do not use alternate keys for definitions; use "definition" exactly."""
+
+def build_prompt(base_prompt: str, instructions: str | None) -> str:
+    if not instructions:
+        return base_prompt
+    return f"{base_prompt}\n\nAdditional User Instructions regarding what words to extract: {instructions}"

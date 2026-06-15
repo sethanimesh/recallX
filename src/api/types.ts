@@ -3,11 +3,13 @@ export interface ImageInput {
   uri: string;
   base64: string;
   mimeType: string;
+  instructions?: string;
 }
 
 export interface TextInput {
   type: 'text';
   content: string;
+  instructions?: string;
 }
 
 export interface ExtractedWord {

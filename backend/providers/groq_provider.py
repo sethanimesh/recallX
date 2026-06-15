@@ -1,7 +1,7 @@
 import logging
 from openai import AsyncOpenAI, RateLimitError  # noqa: F401 — re-exported for callers
 from providers.base import LLMProvider, ExtractionRequest, ExtractedWord, ExtractionResult
-from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, TEXT_SYSTEM_PROMPT, WORD_LOOKUP_SYSTEM_PROMPT
+from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, TEXT_SYSTEM_PROMPT, WORD_LOOKUP_SYSTEM_PROMPT, build_prompt
 from config import get_provider_config
 
 logger = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ class GroqProvider:
         if req.input_type == "image":
             model = self._vision_model
             messages = [
-                {"role": "system", "content": IMAGE_SYSTEM_PROMPT},
+                {"role": "system", "content": build_prompt(IMAGE_SYSTEM_PROMPT, req.instructions)},
                 {"role": "user", "content": [
                     {"type": "image_url", "image_url": {"url": f"data:{req.mime_type};base64,{req.content}"}},
                     {"type": "text", "text": IMAGE_USER_PROMPT},
@@ -60,13 +60,13 @@ class GroqProvider:
         elif req.input_type == "word":
             model = self._text_model
             messages = [
-                {"role": "system", "content": WORD_LOOKUP_SYSTEM_PROMPT},
+                {"role": "system", "content": build_prompt(WORD_LOOKUP_SYSTEM_PROMPT, req.instructions)},
                 {"role": "user", "content": req.content},
             ]
         else:
             model = self._text_model
             messages = [
-                {"role": "system", "content": TEXT_SYSTEM_PROMPT},
+                {"role": "system", "content": build_prompt(TEXT_SYSTEM_PROMPT, req.instructions)},
                 {"role": "user", "content": req.content},
             ]
         response = await self._client.chat.completions.create(

@@ -2,7 +2,7 @@ import logging
 import httpx
 from providers.base import LLMProvider, ExtractionRequest, ExtractedWord
 from providers._parse import parse_llm_response
-from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, TEXT_SYSTEM_PROMPT, WORD_LOOKUP_SYSTEM_PROMPT
+from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, TEXT_SYSTEM_PROMPT, WORD_LOOKUP_SYSTEM_PROMPT, build_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class OllamaProvider:
     async def extract_words(self, req: ExtractionRequest) -> list[ExtractedWord]:
         if req.input_type == "image":
             model = self._vision_model
-            system_prompt = IMAGE_SYSTEM_PROMPT
+            system_prompt = build_prompt(IMAGE_SYSTEM_PROMPT, req.instructions)
             message = {
                 "role": "user",
                 "content": IMAGE_USER_PROMPT,
@@ -32,7 +32,7 @@ class OllamaProvider:
             }
         else:
             model = self._text_model
-            system_prompt = WORD_LOOKUP_SYSTEM_PROMPT if req.input_type == "word" else TEXT_SYSTEM_PROMPT
+            system_prompt = build_prompt(WORD_LOOKUP_SYSTEM_PROMPT if req.input_type == "word" else TEXT_SYSTEM_PROMPT, req.instructions)
             message = {"role": "user", "content": req.content}
 
         headers = {}

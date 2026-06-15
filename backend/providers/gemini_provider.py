@@ -4,7 +4,7 @@ from google import genai
 from google.genai import types as genai_types
 from providers.base import LLMProvider, ExtractionRequest, ExtractedWord
 from providers._parse import parse_llm_response
-from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, TEXT_SYSTEM_PROMPT, WORD_LOOKUP_SYSTEM_PROMPT
+from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, TEXT_SYSTEM_PROMPT, WORD_LOOKUP_SYSTEM_PROMPT, build_prompt
 from config import get_provider_config
 
 logger = logging.getLogger(__name__)
@@ -30,14 +30,15 @@ class GeminiProvider:
         if req.input_type == "image":
             image_bytes = base64.b64decode(req.content)
             part = genai_types.Part.from_bytes(data=image_bytes, mime_type=req.mime_type or "image/jpeg")
+            system_prompt = build_prompt(IMAGE_SYSTEM_PROMPT, req.instructions)
             contents = [
                 genai_types.Content(role="user", parts=[
                     part,
-                    genai_types.Part.from_text(text=f"{IMAGE_SYSTEM_PROMPT}\n\n{IMAGE_USER_PROMPT}"),
+                    genai_types.Part.from_text(text=f"{system_prompt}\n\n{IMAGE_USER_PROMPT}"),
                 ])
             ]
         else:
-            system_prompt = WORD_LOOKUP_SYSTEM_PROMPT if req.input_type == "word" else TEXT_SYSTEM_PROMPT
+            system_prompt = build_prompt(WORD_LOOKUP_SYSTEM_PROMPT if req.input_type == "word" else TEXT_SYSTEM_PROMPT, req.instructions)
             contents = [
                 genai_types.Content(role="user", parts=[
                     genai_types.Part.from_text(text=f"{system_prompt}\n\n{req.content}"),

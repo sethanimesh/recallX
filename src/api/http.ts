@@ -24,8 +24,8 @@ export class HttpExtractionClient implements ExtractionClient {
     const base = (this.baseUrl ?? getBackendUrl()).replace(/\/$/, '');
     const body =
       input.type === 'image'
-        ? { input_type: 'image' as const, content: input.base64, mime_type: input.mimeType }
-        : { input_type: 'text' as const, content: input.content, mime_type: null };
+        ? { input_type: 'image' as const, content: input.base64, mime_type: input.mimeType, instructions: input.instructions }
+        : { input_type: 'text' as const, content: input.content, mime_type: null, instructions: input.instructions };
 
     const url = `${base}/extract`;
     const response = await fetch(url, {

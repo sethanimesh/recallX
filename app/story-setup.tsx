@@ -64,7 +64,7 @@ export default function StorySetupScreen() {
           ? await fetchAllWords()
           : await fetchWordsByTag(selectedTagId);
         
-        const savedStories = await fetchBackendStories(selectedTagId);
+        const savedStories = await fetchBackendStories(null);
         
         if (!cancelled) {
           setWords(rows);
@@ -143,6 +143,12 @@ export default function StorySetupScreen() {
   };
 
   const deckOptions: DeckOption[] = [{ id: null, name: 'All Words' }, ...tags];
+
+  const getTagName = (tagId: string | null) => {
+    if (!tagId) return 'All Words';
+    const tag = tags.find(t => t.id === tagId);
+    return tag ? tag.name : 'Unknown Deck';
+  };
 
   const renderDeckItem = useCallback(
     ({ item }: ListRenderItemInfo<DeckOption>) => {
@@ -223,7 +229,12 @@ export default function StorySetupScreen() {
               <TouchableOpacity style={[styles.storyCard, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => handleOpenStory(item.id)}>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.storyTitle, { color: colors.text }]} numberOfLines={1}>{item.title}</Text>
-                  <Text style={[styles.storyDate, { color: colors.textSecondary }]}>{new Date(item.created_at * 1000).toLocaleDateString()}</Text>
+                  <View style={styles.storyMetaRow}>
+                    <View style={[styles.tagPill, { backgroundColor: colors.inputBackground }]}>
+                      <Text style={[styles.tagPillText, { color: colors.textSecondary }]}>{getTagName(item.tag_id)}</Text>
+                    </View>
+                    <Text style={[styles.storyDate, { color: colors.textSecondary }]}>{new Date(item.created_at * 1000).toLocaleDateString()}</Text>
+                  </View>
                 </View>
                 <TouchableOpacity onPress={() => handleDeleteStory(item.id)} style={{ padding: 8 }}>
                   <Ionicons name="trash-outline" size={20} color={colors.error} />
@@ -298,6 +309,9 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   storyTitle: { fontSize: 15, fontWeight: '600', marginBottom: 2 },
+  storyMetaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  tagPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 },
+  tagPillText: { fontSize: 11, fontWeight: '500', textTransform: 'uppercase' },
   storyDate: { fontSize: 12 },
   loadingOverlay: {
     justifyContent: 'center',

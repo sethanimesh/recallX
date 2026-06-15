@@ -299,6 +299,14 @@ export default function WordDetailScreen() {
     [id],
   );
 
+  const saveMnemonic = useCallback(
+    async (newVal: string) => {
+      await updateWordField(id!, 'mnemonic', newVal);
+      setWordData((prev) => (prev ? { ...prev, mnemonic: newVal } : prev));
+    },
+    [id],
+  );
+
   const handlePronunciationPress = useCallback(async () => {
     if (!wordData?.word) return;
 
@@ -506,6 +514,14 @@ export default function WordDetailScreen() {
           onSave={saveExampleSentence}
           multiline
           italic
+        />
+
+        {/* Mnemonic */}
+        <EditableField
+          label="Mnemonic"
+          value={wordData.mnemonic || 'No mnemonic generated yet.'}
+          onSave={saveMnemonic}
+          multiline
         />
 
         {/* Tags */}

@@ -22,6 +22,7 @@ export async function runMigrations(): Promise<void> {
       word TEXT NOT NULL,
       definition TEXT NOT NULL,
       example_sentence TEXT NOT NULL,
+      mnemonic TEXT,
       source_id TEXT REFERENCES sources(id),
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
@@ -61,6 +62,7 @@ export async function runMigrations(): Promise<void> {
     );
   `);
   try { await expo.execAsync('CREATE INDEX IF NOT EXISTS idx_sr_word_at ON session_results(word_id, answered_at);'); } catch {}
+  try { await expo.execAsync('ALTER TABLE words ADD COLUMN mnemonic TEXT;'); } catch {}
   // SRS columns — ALTER TABLE errors if column already exists; suppress with try/catch
   try { await expo.execAsync('ALTER TABLE words ADD COLUMN srs_interval INTEGER NOT NULL DEFAULT 0;'); } catch {}
   try { await expo.execAsync('ALTER TABLE words ADD COLUMN srs_ease_factor REAL NOT NULL DEFAULT 2.5;'); } catch {}

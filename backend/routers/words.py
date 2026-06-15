@@ -25,6 +25,7 @@ class WordRecord(BaseModel):
     word: str
     definition: str
     example_sentence: str
+    mnemonic: Optional[str] = None
     source_type: Optional[str] = None
     created_at: int
     updated_at: int
@@ -37,6 +38,7 @@ class CreateWordRequest(BaseModel):
     word: str
     definition: str
     example_sentence: str
+    mnemonic: Optional[str] = None
     source_type: Optional[str] = None
     created_at: int
     updated_at: int
@@ -46,6 +48,7 @@ class UpdateWordRequest(BaseModel):
     word: Optional[str] = None
     definition: Optional[str] = None
     example_sentence: Optional[str] = None
+    mnemonic: Optional[str] = None
 
 
 def _get_tags_for_words(conn: sqlite3.Connection, word_ids: list[str]) -> dict[str, list[TagInfo]]:
@@ -66,8 +69,8 @@ def _get_tags_for_words(conn: sqlite3.Connection, word_ids: list[str]) -> dict[s
 def _row_to_record(row: tuple, tags: list[TagInfo]) -> WordRecord:
     return WordRecord(
         id=row[0], word=row[1], definition=row[2], example_sentence=row[3],
-        source_type=row[4], created_at=row[5], updated_at=row[6],
-        deleted_at=row[7], tags=tags,
+        mnemonic=row[4], source_type=row[5], created_at=row[6], updated_at=row[7],
+        deleted_at=row[8], tags=tags,
     )
 
 
@@ -77,9 +80,9 @@ def create_word(req: CreateWordRequest) -> WordRecord:
     with sqlite3.connect(database._DEFAULT_DB_PATH) as conn:
         try:
             conn.execute(
-                "INSERT INTO words (id, word, definition, example_sentence, source_type, "
-                "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (req.id, normalized_word, req.definition, req.example_sentence,
+                "INSERT INTO words (id, word, definition, example_sentence, mnemonic, source_type, "
+                "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (req.id, normalized_word, req.definition, req.example_sentence, req.mnemonic,
                  req.source_type, req.created_at, req.updated_at),
             )
             conn.commit()
@@ -96,9 +99,9 @@ def create_word(req: CreateWordRequest) -> WordRecord:
                 conn.commit()
                 # Now insert the new word with the new req.id
                 conn.execute(
-                    "INSERT INTO words (id, word, definition, example_sentence, source_type, "
-                    "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    (req.id, normalized_word, req.definition, req.example_sentence,
+                    "INSERT INTO words (id, word, definition, example_sentence, mnemonic, source_type, "
+                    "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (req.id, normalized_word, req.definition, req.example_sentence, req.mnemonic,
                      req.source_type, req.created_at, req.updated_at),
                 )
                 conn.commit()
@@ -114,7 +117,7 @@ def create_word(req: CreateWordRequest) -> WordRecord:
                 )
     return WordRecord(
         id=req.id, word=normalized_word, definition=req.definition,
-        example_sentence=req.example_sentence, source_type=req.source_type,
+        example_sentence=req.example_sentence, mnemonic=req.mnemonic, source_type=req.source_type,
         created_at=req.created_at, updated_at=req.updated_at,
     )
 
@@ -123,7 +126,7 @@ def create_word(req: CreateWordRequest) -> WordRecord:
 def get_words() -> list[WordRecord]:
     with sqlite3.connect(database._DEFAULT_DB_PATH) as conn:
         rows = conn.execute(
-            "SELECT id, word, definition, example_sentence, source_type, "
+            "SELECT id, word, definition, example_sentence, mnemonic, source_type, "
             "created_at, updated_at, deleted_at FROM words WHERE deleted_at IS NULL ORDER BY word"
         ).fetchall()
         if not rows:
@@ -148,6 +151,9 @@ def update_word(word_id: str, req: UpdateWordRequest) -> WordRecord:
     if req.example_sentence is not None:
         updates.append("example_sentence = ?")
         params.append(req.example_sentence)
+    if req.mnemonic is not None:
+        updates.append("mnemonic = ?")
+        params.append(req.mnemonic)
     params.append(word_id)
     with sqlite3.connect(database._DEFAULT_DB_PATH) as conn:
         try:
@@ -186,7 +192,7 @@ def update_word(word_id: str, req: UpdateWordRequest) -> WordRecord:
         if cursor.rowcount == 0:
             raise HTTPException(status_code=404, detail="Word not found")
         row = conn.execute(
-            "SELECT id, word, definition, example_sentence, source_type, "
+            "SELECT id, word, definition, example_sentence, mnemonic, source_type, "
             "created_at, updated_at, deleted_at FROM words WHERE id = ?",
             (word_id,),
         ).fetchone()
@@ -206,7 +212,7 @@ def delete_word(word_id: str) -> WordRecord:
         if cursor.rowcount == 0:
             raise HTTPException(status_code=404, detail="Word not found")
         row = conn.execute(
-            "SELECT id, word, definition, example_sentence, source_type, "
+            "SELECT id, word, definition, example_sentence, mnemonic, source_type, "
             "created_at, updated_at, deleted_at FROM words WHERE id = ?",
             (word_id,),
         ).fetchone()

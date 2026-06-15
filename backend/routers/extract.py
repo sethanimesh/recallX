@@ -1,4 +1,5 @@
 import logging
+import asyncio
 from io import BytesIO, StringIO
 
 from fastapi import APIRouter, HTTPException, UploadFile, File
@@ -21,7 +22,14 @@ def get_chain() -> ProviderChain:
 @router.post("/extract", response_model=list[ExtractedWord])
 async def extract_words(request: ExtractionRequest) -> list[ExtractedWord]:
     try:
-        return await get_chain().extract(request)
+        words = await get_chain().extract(request)
+        async def fetch_mnemonic(w: ExtractedWord):
+            try:
+                w.mnemonic = await get_chain().generate_mnemonic(w.word, w.definition)
+            except Exception as e:
+                logger.error(f"Failed to generate mnemonic for {w.word}: {e}")
+        await asyncio.gather(*(fetch_mnemonic(w) for w in words))
+        return words
     except ExtractionFailedError as e:
         raise HTTPException(
             status_code=503,
@@ -49,7 +57,14 @@ async def extract_pdf(file: UploadFile = File(...)) -> list[ExtractedWord]:
 
     req = ExtractionRequest(input_type="text", content=text)
     try:
-        return await get_chain().extract(req)
+        words = await get_chain().extract(req)
+        async def fetch_mnemonic(w: ExtractedWord):
+            try:
+                w.mnemonic = await get_chain().generate_mnemonic(w.word, w.definition)
+            except Exception as e:
+                logger.error(f"Failed to generate mnemonic for {w.word}: {e}")
+        await asyncio.gather(*(fetch_mnemonic(w) for w in words))
+        return words
     except ExtractionFailedError as e:
         raise HTTPException(
             status_code=503,

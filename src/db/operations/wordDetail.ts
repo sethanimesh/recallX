@@ -17,6 +17,7 @@ export interface WordWithSource {
   word: string;
   definition: string;
   example_sentence: string;
+  mnemonic: string | null;
   source_id: string | null;
   source?: { type: 'image' | 'pdf' | 'video'; uri: string; created_at: Date };
 }
@@ -33,6 +34,7 @@ export async function fetchWordWithSource(id: string): Promise<WordWithSource | 
       word: row.word,
       definition: row.definition,
       example_sentence: row.example_sentence,
+      mnemonic: row.mnemonic,
       source_id: null,
     };
   }
@@ -45,6 +47,7 @@ export async function fetchWordWithSource(id: string): Promise<WordWithSource | 
     word: row.word,
     definition: row.definition,
     example_sentence: row.example_sentence,
+    mnemonic: row.mnemonic,
     source_id: row.source_id,
     source: source
       ? { type: source.type, uri: source.uri, created_at: source.created_at }
@@ -64,7 +67,7 @@ export async function fetchWordTags(wordId: string): Promise<string[]> {
 
 export async function updateWordField(
   id: string,
-  field: 'word' | 'definition' | 'example_sentence',
+  field: 'word' | 'definition' | 'example_sentence' | 'mnemonic',
   value: string,
 ): Promise<void> {
   let updatedValue = value.trim();
@@ -77,8 +80,10 @@ export async function updateWordField(
     await db.update(words).set({ word: updatedValue, updated_at: now }).where(eq(words.id, id));
   } else if (field === 'definition') {
     await db.update(words).set({ definition: updatedValue, updated_at: now }).where(eq(words.id, id));
-  } else {
+  } else if (field === 'example_sentence') {
     await db.update(words).set({ example_sentence: updatedValue, updated_at: now }).where(eq(words.id, id));
+  } else {
+    await db.update(words).set({ mnemonic: updatedValue, updated_at: now }).where(eq(words.id, id));
   }
 }
 

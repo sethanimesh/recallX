@@ -1,6 +1,6 @@
 import logging
 from openai import RateLimitError
-from providers.base import ExtractionRequest, ExtractedWord, GradeResult, LLMProvider, TutorChatResponse
+from providers.base import ExtractionRequest, ExtractedWord, GradeResult, LLMProvider, TutorChatResponse, StoryResponse
 from config import get_provider_order
 import database
 
@@ -314,6 +314,226 @@ class ProviderChain:
             except Exception as e:
                 msg = f"{provider.name}: {type(e).__name__}: {e}"
                 logger.error("Provider %s error during tutoring — %s", provider.name, e)
+                failures.append(msg)
+
+        raise ExtractionFailedError(failures)
+
+    async def generate_mnemonic(self, word: str, definition: str) -> str:
+        """Generate a funny or bizarre mnemonic for a given word."""
+        from openai import AsyncOpenAI
+        from config import get_provider_config
+
+        _MNEMONIC_RESPONSE_FORMAT = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "MnemonicResponse",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "mnemonic": {"type": "string"},
+                    },
+                    "required": ["mnemonic"],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        }
+
+        system_prompt = (
+            "You are a highly creative vocabulary assistant. Your task is to generate a funny, "
+            "bizarre, or weirdly memorable mnemonic for the given word to lock it into memory.\n"
+            "Return a JSON object with exactly one key: 'mnemonic'."
+        )
+        user_prompt = f"Word: {word}\nDefinition: {definition}"
+
+        failures: list[str] = []
+        for provider in self._providers:
+            if provider.name == "gemini" and getattr(provider, "_client", None) is not None:
+                try:
+                    from google.genai import types as genai_types
+                    from pydantic import BaseModel
+
+                    class MnemonicResponseSchema(BaseModel):
+                        mnemonic: str
+
+                    response = await provider._client.aio.models.generate_content(
+                        model=provider._model,
+                        contents=user_prompt,
+                        config=genai_types.GenerateContentConfig(
+                            system_instruction=system_prompt,
+                            response_mime_type="application/json",
+                            response_schema=MnemonicResponseSchema,
+                            temperature=0.9,
+                        ),
+                    )
+                    raw = response.text or '{"mnemonic": ""}'
+                    import json
+                    return json.loads(raw).get("mnemonic", "")
+                except Exception as e:
+                    failures.append(f"gemini: {e}")
+                continue
+
+            cfg = {}
+            try:
+                cfg = get_provider_config(provider.name)
+            except Exception:
+                pass
+
+            text_model = cfg.get("text_model")
+            base_url = cfg.get("base_url")
+            api_key = cfg.get("api_key")
+
+            if not text_model:
+                continue
+
+            try:
+                client = AsyncOpenAI(api_key=api_key or "missing", base_url=base_url)
+                response = await client.chat.completions.create(
+                    model=text_model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=0.9,
+                    response_format=_MNEMONIC_RESPONSE_FORMAT,
+                )
+                raw = response.choices[0].message.content or "{}"
+                import json
+                return json.loads(raw).get("mnemonic", "")
+            except Exception as e:
+                failures.append(f"{provider.name}: {e}")
+
+        logger.warning(f"Failed to generate mnemonic for {word}: {failures}")
+        return ""
+
+
+
+    async def generate_story(
+        self,
+        words: list[dict],
+        custom_prompt: str,
+    ) -> StoryResponse:
+        from openai import AsyncOpenAI
+        from config import get_provider_config
+
+        _STORY_RESPONSE_FORMAT = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "StoryResponse",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string"},
+                        "content": {"type": "string"},
+                    },
+                    "required": ["title", "content"],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        }
+
+        # Build words text
+        words_text = "\n".join([f"- {w['word']}: {w['definition']}" for w in words])
+        
+        system_prompt = (
+            "You are a creative writer helping a language learner remember new vocabulary. "
+            "Write a custom, cohesive short story or news article that naturally incorporates all "
+            "of the following words. Emphasize their meanings within the context of the story.\n\n"
+            f"Words to include:\n{words_text}\n\n"
+        )
+        if custom_prompt.strip():
+            system_prompt += f"User's special instructions: {custom_prompt.strip()}\n\n"
+
+        system_prompt += (
+            "Return a JSON object with 'title' and 'content' (the story). "
+            "Ensure you use every word provided above."
+        )
+
+        failures: list[str] = []
+        for provider in self._providers:
+            if provider.name == "gemini" and getattr(provider, "_client", None) is not None:
+                try:
+                    logger.info("Trying Gemini native SDK for story generation")
+                    from google.genai import types as genai_types
+                    
+                    response = await provider._client.aio.models.generate_content(
+                        model=provider._model,
+                        contents=[
+                            genai_types.Content(
+                                role="user",
+                                parts=[genai_types.Part.from_text(text="Please write the story.")]
+                            )
+                        ],
+                        config=genai_types.GenerateContentConfig(
+                            system_instruction=system_prompt,
+                            response_mime_type="application/json",
+                            response_schema=StoryResponse,
+                            temperature=0.7,
+                        ),
+                    )
+                    raw = response.text or "{}"
+                    logger.info("LLM inference succeeded provider=gemini task=story")
+                    try:
+                        database.record_llm_call("gemini", provider._model, "story")
+                    except Exception:
+                        pass
+                    return StoryResponse.model_validate_json(raw)
+                except Exception as e:
+                    msg = f"gemini: {type(e).__name__}: {e}"
+                    logger.error("Gemini native SDK error during story generation — %s", e)
+                    failures.append(msg)
+                continue
+
+            cfg = {}
+            try:
+                cfg = get_provider_config(provider.name)
+            except Exception:
+                pass
+
+            text_model = cfg.get("text_model")
+            base_url = cfg.get("base_url")
+            api_key = cfg.get("api_key")
+
+            if not text_model:
+                continue
+
+            try:
+                logger.info("Trying provider %s for story generation", provider.name)
+                client = AsyncOpenAI(
+                    api_key=api_key or "missing",
+                    base_url=base_url,
+                )
+                
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": "Please write the story."}
+                ]
+
+                response = await client.chat.completions.create(
+                    model=text_model,
+                    messages=messages,
+                    temperature=0.7,
+                    response_format=_STORY_RESPONSE_FORMAT,
+                )
+                raw = response.choices[0].message.content or "{}"
+                logger.info(
+                    "LLM inference succeeded provider=%s model=%s task=story",
+                    provider.name,
+                    text_model,
+                )
+                try:
+                    database.record_llm_call(provider.name, text_model, "story")
+                except Exception:
+                    pass
+                return StoryResponse.model_validate_json(raw)
+            except (RateLimitError, ValueError) as e:
+                msg = f"{provider.name}: {type(e).__name__}: {e}"
+                logger.warning("Provider %s skipped for story generation — %s", provider.name, e)
+                failures.append(msg)
+            except Exception as e:
+                msg = f"{provider.name}: {type(e).__name__}: {e}"
+                logger.error("Provider %s error during story generation — %s", provider.name, e)
                 failures.append(msg)
 
         raise ExtractionFailedError(failures)

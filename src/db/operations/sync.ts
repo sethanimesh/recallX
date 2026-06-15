@@ -29,6 +29,7 @@ export async function syncFromServer(): Promise<void> {
           word: w.word,
           definition: w.definition,
           example_sentence: w.example_sentence,
+          mnemonic: w.mnemonic ?? null,
           source_id: null,
           created_at: new Date(w.created_at),
           updated_at: new Date(w.updated_at),

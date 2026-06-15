@@ -11,6 +11,7 @@ export interface ServerWordRecord {
   word: string;
   definition: string;
   example_sentence: string;
+  mnemonic: string | null;
   source_type: 'image' | 'pdf' | null;
   created_at: number;
   updated_at: number;
@@ -23,6 +24,7 @@ export interface CreateWordPayload {
   word: string;
   definition: string;
   example_sentence: string;
+  mnemonic: string | null;
   source_type: 'image' | 'pdf' | null;
   created_at: number;
   updated_at: number;
@@ -95,7 +97,7 @@ export function getWords(baseUrl?: string) {
 
 export function patchWord(
   id: string,
-  updates: { word?: string; definition?: string; example_sentence?: string },
+  updates: { word?: string; definition?: string; example_sentence?: string; mnemonic?: string },
   baseUrl?: string,
 ) {
   return request<ServerWordRecord>(`${baseFor(baseUrl)}/words/${id}`, {

@@ -21,12 +21,16 @@ def init_db(db_path: str = _DEFAULT_DB_PATH) -> None:
                 word             TEXT NOT NULL UNIQUE COLLATE NOCASE,
                 definition       TEXT NOT NULL,
                 example_sentence TEXT NOT NULL,
+                mnemonic         TEXT,
                 source_type      TEXT,
                 created_at       INTEGER NOT NULL,
                 updated_at       INTEGER NOT NULL,
                 deleted_at       INTEGER
             )
         """)
+        if info and "mnemonic" not in col_names:
+            conn.execute("ALTER TABLE words ADD COLUMN mnemonic TEXT")
+
         conn.execute("""
             CREATE TABLE IF NOT EXISTS tags (
                 id   TEXT PRIMARY KEY,

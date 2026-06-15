@@ -7,6 +7,7 @@ class ExtractedWord(BaseModel):
     word: str
     definition: str
     example_sentence: str
+    mnemonic: str | None = None
 
 
 class ExtractionResult(BaseModel):
@@ -22,6 +23,11 @@ class TutorChatResponse(BaseModel):
     response: str
     evaluation: Literal["correct", "close", "incorrect"]
     hint_provided: bool
+
+
+class StoryResponse(BaseModel):
+    title: str
+    content: str
 
 
 class ExtractionRequest(BaseModel):

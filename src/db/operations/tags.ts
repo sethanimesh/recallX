@@ -22,6 +22,7 @@ export interface WordRow {
   word: string;
   definition: string;
   example_sentence: string;
+  mnemonic: string | null;
   source_id: string | null;
   created_at: Date;
   updated_at: Date;
@@ -130,6 +131,7 @@ export async function fetchWordsByTag(tagId: string): Promise<WordRow[]> {
       word: words.word,
       definition: words.definition,
       example_sentence: words.example_sentence,
+      mnemonic: words.mnemonic,
       source_id: words.source_id,
       created_at: words.created_at,
       updated_at: words.updated_at,
@@ -150,6 +152,7 @@ export async function fetchAllWords(): Promise<WordRow[]> {
       word: words.word,
       definition: words.definition,
       example_sentence: words.example_sentence,
+      mnemonic: words.mnemonic,
       source_id: words.source_id,
       created_at: words.created_at,
       updated_at: words.updated_at,

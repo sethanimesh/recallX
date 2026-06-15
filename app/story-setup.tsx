@@ -14,8 +14,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getAllTags, fetchAllWords, fetchWordsByTag, type Tag, type WordRow } from '@/src/db/operations/tags';
-import { fetchStories, deleteStory, type StoryRow } from '@/src/db/operations/stories';
-import { generateStory } from '@/src/api/storyClient';
+import { generateStory, fetchBackendStories, saveBackendStory, deleteBackendStory, type SavedStory } from '@/src/api/storyClient';
 import { useThemeColors } from '@/src/utils/theme';
 
 type DeckOption = { id: string | null; name: string };
@@ -31,7 +30,7 @@ export default function StorySetupScreen() {
   const [words, setWords] = useState<WordRow[]>([]);
   const [customPrompt, setCustomPrompt] = useState('');
   
-  const [stories, setStories] = useState<StoryRow[]>([]);
+  const [stories, setStories] = useState<SavedStory[]>([]);
   const [loading, setLoading] = useState(false);
 
   useFocusEffect(
@@ -48,7 +47,7 @@ export default function StorySetupScreen() {
           ? await fetchAllWords()
           : await fetchWordsByTag(selectedTagId);
         
-        const savedStories = await fetchStories(selectedTagId);
+        const savedStories = await fetchBackendStories(selectedTagId);
         
         if (!cancelled) {
           setWords(rows);
@@ -91,13 +90,19 @@ export default function StorySetupScreen() {
       };
       const response = await generateStory(payload);
       
-      // Save it locally
-      const { insertStory } = await import('@/src/db/operations/stories');
-      const id = await insertStory(selectedTagId, customPrompt, response.title, response.content);
+      // Save it to the backend immediately
+      const saved = await saveBackendStory({
+        id: crypto.randomUUID(),
+        tag_id: selectedTagId,
+        prompt: customPrompt,
+        title: response.title,
+        content: response.content,
+        created_at: Math.floor(Date.now() / 1000),
+      });
       
       // Navigate to view it
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      router.push({ pathname: '/story-view' as any, params: { storyId: id } });
+      router.push({ pathname: '/story-view' as any, params: { storyId: saved.id } });
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to generate story.');
     } finally {
@@ -114,7 +119,7 @@ export default function StorySetupScreen() {
     Alert.alert('Delete Story', 'Are you sure you want to delete this story?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        await deleteStory(id);
+        await deleteBackendStory(id);
         setStories(prev => prev.filter(s => s.id !== id));
       }}
     ]);
@@ -201,7 +206,7 @@ export default function StorySetupScreen() {
               <TouchableOpacity style={[styles.storyCard, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => handleOpenStory(item.id)}>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.storyTitle, { color: colors.text }]} numberOfLines={1}>{item.title}</Text>
-                  <Text style={[styles.storyDate, { color: colors.textSecondary }]}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                  <Text style={[styles.storyDate, { color: colors.textSecondary }]}>{new Date(item.created_at * 1000).toLocaleDateString()}</Text>
                 </View>
                 <TouchableOpacity onPress={() => handleDeleteStory(item.id)} style={{ padding: 8 }}>
                   <Ionicons name="trash-outline" size={20} color={colors.error} />

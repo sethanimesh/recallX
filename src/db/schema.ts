@@ -56,11 +56,3 @@ export const sessionResults = sqliteTable('session_results', {
   answered_at: integer('answered_at', { mode: 'timestamp' }).notNull(),
 });
 
-export const stories = sqliteTable('stories', {
-  id: text('id').primaryKey(),
-  tag_id: text('tag_id').references(() => tags.id),
-  prompt: text('prompt'),
-  title: text('title').notNull(),
-  content: text('content').notNull(),
-  created_at: integer('created_at', { mode: 'timestamp' }).notNull(),
-});

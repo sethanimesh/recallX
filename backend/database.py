@@ -53,6 +53,16 @@ def init_db(db_path: str = _DEFAULT_DB_PATH) -> None:
                 called_at INTEGER NOT NULL   -- Unix timestamp (UTC seconds)
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS stories (
+                id TEXT PRIMARY KEY,
+                tag_id TEXT,
+                prompt TEXT,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                created_at INTEGER NOT NULL
+            )
+        """)
         conn.commit()
 
 

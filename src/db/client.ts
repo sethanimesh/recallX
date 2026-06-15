@@ -61,16 +61,7 @@ export async function runMigrations(): Promise<void> {
       answered_at INTEGER NOT NULL
     );
   `);
-  await expo.execAsync(`
-    CREATE TABLE IF NOT EXISTS stories (
-      id TEXT PRIMARY KEY,
-      tag_id TEXT REFERENCES tags(id),
-      prompt TEXT,
-      title TEXT NOT NULL,
-      content TEXT NOT NULL,
-      created_at INTEGER NOT NULL
-    );
-  `);
+
   try { await expo.execAsync('CREATE INDEX IF NOT EXISTS idx_sr_word_at ON session_results(word_id, answered_at);'); } catch {}
   try { await expo.execAsync('ALTER TABLE words ADD COLUMN mnemonic TEXT;'); } catch {}
   // SRS columns — ALTER TABLE errors if column already exists; suppress with try/catch

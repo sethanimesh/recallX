@@ -4,10 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '@/src/utils/theme';
-import { db } from '@/src/db/client';
-import { stories } from '@/src/db/schema';
-import { eq } from 'drizzle-orm';
-import { type StoryRow } from '@/src/db/operations/stories';
+import { getBackendStory, type SavedStory } from '@/src/api/storyClient';
 
 export default function StoryViewScreen() {
   const { storyId } = useLocalSearchParams<{ storyId: string }>();
@@ -15,18 +12,16 @@ export default function StoryViewScreen() {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   
-  const [story, setStory] = useState<StoryRow | null>(null);
+  const [story, setStory] = useState<SavedStory | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadStory() {
       try {
-        const rows = await db.select().from(stories).where(eq(stories.id, storyId));
-        if (rows.length > 0) {
-          setStory(rows[0] as StoryRow);
-        }
+        const fetched = await getBackendStory(storyId);
+        setStory(fetched);
       } catch (err) {
-        console.warn('Failed to load story:', err);
+        console.warn('Failed to load story from backend:', err);
       } finally {
         setLoading(false);
       }
@@ -85,7 +80,7 @@ const styles = StyleSheet.create({
   },
   headerButton: { width: 40, height: 40, justifyContent: 'center' },
   headerTitle: { flex: 1, fontSize: 16, fontWeight: '700', textAlign: 'center' },
-  contentContainer: { padding: 20 },
+  contentContainer: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 20 },
   title: { fontSize: 24, fontWeight: '800', marginBottom: 20, lineHeight: 32 },
   content: { fontSize: 16, lineHeight: 26 },
   errorText: { fontSize: 18, marginBottom: 24 },

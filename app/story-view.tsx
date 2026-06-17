@@ -6,6 +6,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '@/src/utils/theme';
 import { getBackendStory, type SavedStory } from '@/src/api/storyClient';
 
+const renderMarkdown = (text: string) => {
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <Text key={index} style={{ fontWeight: '800' }}>
+          {part.slice(2, -2)}
+        </Text>
+      );
+    }
+    return <Text key={index}>{part}</Text>;
+  });
+};
+
 export default function StoryViewScreen() {
   const { storyId } = useLocalSearchParams<{ storyId: string }>();
   const router = useRouter();
@@ -61,7 +75,9 @@ export default function StoryViewScreen() {
       </View>
       <ScrollView contentContainerStyle={[styles.contentContainer, { paddingBottom: insets.bottom + 24 }]}>
         <Text style={[styles.title, { color: colors.text }]}>{story.title}</Text>
-        <Text style={[styles.content, { color: colors.text }]}>{story.content}</Text>
+        <Text style={[styles.content, { color: colors.text }]}>
+          {renderMarkdown(story.content)}
+        </Text>
       </ScrollView>
     </View>
   );

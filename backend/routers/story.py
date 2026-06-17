@@ -66,9 +66,12 @@ def get_stories(tag_id: Optional[str] = None):
         with sqlite3.connect(_DEFAULT_DB_PATH) as conn:
             conn.row_factory = sqlite3.Row
             if tag_id:
-                rows = conn.execute("SELECT * FROM stories WHERE tag_id = ? ORDER BY created_at DESC", (tag_id,)).fetchall()
+                if tag_id == "null":
+                    rows = conn.execute("SELECT * FROM stories WHERE tag_id IS NULL ORDER BY created_at DESC").fetchall()
+                else:
+                    rows = conn.execute("SELECT * FROM stories WHERE tag_id = ? ORDER BY created_at DESC", (tag_id,)).fetchall()
             else:
-                rows = conn.execute("SELECT * FROM stories WHERE tag_id IS NULL ORDER BY created_at DESC").fetchall()
+                rows = conn.execute("SELECT * FROM stories ORDER BY created_at DESC").fetchall()
             
             return [dict(r) for r in rows]
     except Exception as e:

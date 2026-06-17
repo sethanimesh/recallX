@@ -29,6 +29,8 @@ type WordRow = {
   created_at: Date;
   srs_wrong_count: number;
   fc_wrong_count: number;
+  srs_consecutive_correct: number;
+  fc_consecutive_correct: number;
 };
 
 export default function LibraryScreen() {
@@ -52,10 +54,10 @@ export default function LibraryScreen() {
   const fetchWords = useCallback(async (tagId: string | null) => {
     if (tagId) {
       const rows = await fetchWordsByTag(tagId);
-      setAllWords(rows.map((r) => ({ id: r.id, word: r.word, definition: r.definition, created_at: r.created_at, srs_wrong_count: r.srs_wrong_count, fc_wrong_count: r.fc_wrong_count })));
+      setAllWords(rows.map((r) => ({ id: r.id, word: r.word, definition: r.definition, created_at: r.created_at, srs_wrong_count: r.srs_wrong_count, fc_wrong_count: r.fc_wrong_count, srs_consecutive_correct: r.srs_consecutive_correct, fc_consecutive_correct: r.fc_consecutive_correct })));
     } else {
       const rows = await db
-        .select({ id: wordsTable.id, word: wordsTable.word, definition: wordsTable.definition, created_at: wordsTable.created_at, srs_wrong_count: wordsTable.srs_wrong_count, fc_wrong_count: wordsTable.fc_wrong_count })
+        .select({ id: wordsTable.id, word: wordsTable.word, definition: wordsTable.definition, created_at: wordsTable.created_at, srs_wrong_count: wordsTable.srs_wrong_count, fc_wrong_count: wordsTable.fc_wrong_count, srs_consecutive_correct: wordsTable.srs_consecutive_correct, fc_consecutive_correct: wordsTable.fc_consecutive_correct })
         .from(wordsTable)
         .where(isNull(wordsTable.deleted_at))
         .orderBy(asc(wordsTable.word));
@@ -140,7 +142,15 @@ export default function LibraryScreen() {
     if (sortOrder === 'most_incorrect') {
       const aWrong = (a.srs_wrong_count || 0) + (a.fc_wrong_count || 0);
       const bWrong = (b.srs_wrong_count || 0) + (b.fc_wrong_count || 0);
+      
+      const aTotal = aWrong + (a.srs_consecutive_correct || 0) + (a.fc_consecutive_correct || 0);
+      const bTotal = bWrong + (b.srs_consecutive_correct || 0) + (b.fc_consecutive_correct || 0);
+      
+      const aReviewed = aTotal > 0 ? 1 : 0;
+      const bReviewed = bTotal > 0 ? 1 : 0;
+      
       if (aWrong !== bWrong) return bWrong - aWrong;
+      if (aReviewed !== bReviewed) return bReviewed - aReviewed;
     }
     if (sortOrder === 'newest') {
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();

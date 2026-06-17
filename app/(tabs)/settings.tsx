@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActionSheetIOS } from 'react-native';
+import { View, ScrollView, Text, TouchableOpacity, StyleSheet, Alert, ActionSheetIOS } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -132,9 +132,10 @@ export default function SettingsScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-      <Text style={[styles.title, { color: colors.text, backgroundColor: colors.background }]}>Settings</Text>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        <Text style={[styles.title, { color: colors.text, backgroundColor: colors.background }]}>Settings</Text>
 
-      <View style={styles.section}>
+        <View style={styles.section}>
         <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>LIBRARY</Text>
 
         <TouchableOpacity style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/manage-tags')} activeOpacity={0.7}>
@@ -258,6 +259,7 @@ export default function SettingsScreen() {
           <Text style={[styles.rowLabel, styles.destructive, { color: colors.error }]}>Reset SRS Progress</Text>
         </TouchableOpacity>
       </View>
+      </ScrollView>
 
       <VoicePickerSheet
         visible={voiceSheetVisible}

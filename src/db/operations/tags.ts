@@ -29,6 +29,8 @@ export interface WordRow {
   deleted_at: Date | null;
   srs_wrong_count: number;
   fc_wrong_count: number;
+  srs_consecutive_correct: number;
+  fc_consecutive_correct: number;
 }
 
 export async function createOrGetTag(name: string): Promise<string> {
@@ -138,6 +140,8 @@ export async function fetchWordsByTag(tagId: string): Promise<WordRow[]> {
       deleted_at: words.deleted_at,
       srs_wrong_count: words.srs_wrong_count,
       fc_wrong_count: words.fc_wrong_count,
+      srs_consecutive_correct: words.srs_consecutive_correct,
+      fc_consecutive_correct: words.fc_consecutive_correct,
     })
     .from(words)
     .innerJoin(wordTags, eq(wordTags.word_id, words.id))
@@ -159,6 +163,8 @@ export async function fetchAllWords(): Promise<WordRow[]> {
       deleted_at: words.deleted_at,
       srs_wrong_count: words.srs_wrong_count,
       fc_wrong_count: words.fc_wrong_count,
+      srs_consecutive_correct: words.srs_consecutive_correct,
+      fc_consecutive_correct: words.fc_consecutive_correct,
     })
     .from(words)
     .where(isNull(words.deleted_at))

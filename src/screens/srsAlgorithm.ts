@@ -32,29 +32,60 @@ export interface ResponseResult {
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-// Aggressive interval calculation:
-// - Never wrong: standard SM-2
-// - Wrong ≥1: stay at 1 day until 5 consecutive correct sessions
-// - After 5 consecutive: SM-2 with caps based on failure count
-//   wrongCount 6+  → permanently 1 day
-//   wrongCount 3-5 → max 2 days
-//   wrongCount 1-2 → normal SM-2 resumes
-function calculateNextInterval(
-  interval: number,
+// Advanced DSR-inspired calculation (Difficulty, Stability, Retrievability)
+// This replaces the rigid SM-2 approach with a more fluid, human-like memory model.
+function calculateNextStability(
+  currentStability: number,
   easeFactor: number,
   wrongCount: number,
   consecutiveCorrect: number,
 ): number {
-  if (wrongCount === 0) {
-    return Math.max(1, Math.round(interval * easeFactor));
-  }
-  if (consecutiveCorrect < 5) {
+  // Base case: first time graduating
+  if (currentStability === 0 || currentStability < 1) {
     return 1;
   }
-  const sm2 = Math.max(1, Math.round(interval * easeFactor));
-  if (wrongCount >= 6) return 1;
-  if (wrongCount >= 3) return Math.min(sm2, 2);
-  return sm2;
+
+  // Relearning phase: if they got it wrong recently, they need a short proof streak
+  // before stability starts growing exponentially again.
+  if (wrongCount > 0 && consecutiveCorrect < 2) {
+    return 1;
+  }
+
+  // 1. Streak Confidence: gently rewards consistent correct answers
+  // Math.log(streak + 2) provides a logarithmic growth (e.g. streak=2 -> 1.38, streak=5 -> 1.9)
+  const streakConfidence = Math.log(consecutiveCorrect + 2) / Math.log(3); // Normalizes streak=1 to ~1.0
+
+  // 2. Inherent Difficulty Penalty: cards that have been wrong a lot grow stability slower
+  const difficultyPenalty = Math.pow(0.85, Math.min(wrongCount, 10)); // Max penalty ~20% of original growth
+
+  // 3. Combined Growth Multiplier
+  let growthMultiplier = easeFactor * streakConfidence * difficultyPenalty;
+
+  // Clamp multiplier to prevent runaway intervals (max 3x) or stagnant intervals (min 1.2x)
+  growthMultiplier = Math.max(1.2, Math.min(growthMultiplier, 3.0));
+
+  // Compute next stability (interval in days)
+  let nextStability = currentStability * growthMultiplier;
+
+  // Apply "fuzzing" to prevent clumping of reviews on the exact same day
+  // Fuzzing adds ±5% randomness to intervals > 4 days
+  if (nextStability > 4) {
+    const fuzz = nextStability * 0.05;
+    nextStability += (Math.random() * (fuzz * 2)) - fuzz;
+  }
+
+  return Math.max(1, Math.round(nextStability));
+}
+
+// Adjust Ease Factor (represents internal Difficulty)
+function calculateNextEaseFactor(easeFactor: number, correct: boolean): number {
+  if (correct) {
+    // Gently increase ease when correct, acknowledging learning
+    return Math.min(3.5, easeFactor + 0.05);
+  } else {
+    // Sharply decrease ease when wrong, marking it as a difficult card
+    return Math.max(1.3, easeFactor - 0.2);
+  }
 }
 
 export function createSession(
@@ -147,15 +178,15 @@ export function handleResponse(
 ): ResponseResult {
   const now = new Date();
   const step = session.cardsSinceBuffer;
-
   const wasInBuffer = card.inBuffer;
 
   if (!wasInBuffer) {
-    // This is a brand new card being introduced from mainDeck
+    // Brand new card being introduced from mainDeck
     if (correct) {
-      // Correct on very first try! Graduates immediately.
+      // Correct on first try: Graduates immediately
       const newConsecutiveCorrect = card.consecutiveCorrect + 1;
-      const newInterval = calculateNextInterval(card.interval, card.easeFactor, card.wrongCount, newConsecutiveCorrect);
+      const newEaseFactor = calculateNextEaseFactor(card.easeFactor, true);
+      const newInterval = calculateNextStability(card.interval, newEaseFactor, card.wrongCount, newConsecutiveCorrect);
 
       return {
         session: {
@@ -165,15 +196,15 @@ export function handleResponse(
         },
         srsUpdate: {
           interval: newInterval,
-          easeFactor: card.easeFactor,
+          easeFactor: newEaseFactor,
           nextReviewAt: new Date(now.getTime() + newInterval * MS_PER_DAY),
           wrongCount: card.wrongCount,
           consecutiveCorrect: newConsecutiveCorrect,
         },
       };
     } else {
-      // Incorrect on first try! Enters active pool (buffer)
-      const newEaseFactor = Math.max(1.3, card.easeFactor - 0.2);
+      // Incorrect on first try: Enters active pool (buffer)
+      const newEaseFactor = calculateNextEaseFactor(card.easeFactor, false);
       const newWrongCount = card.wrongCount + 1;
 
       const updatedCard: CardState = {
@@ -182,7 +213,7 @@ export function handleResponse(
         successCount: 0,
         wrongCount: newWrongCount,
         consecutiveCorrect: 0,
-        nextAppearanceIndex: step + 2, // Re-appear after a 1-card gap (step + 2)
+        nextAppearanceIndex: step + 2, // Re-appear soon
       };
 
       return {
@@ -195,20 +226,25 @@ export function handleResponse(
         srsUpdate: {
           interval: 0,
           easeFactor: newEaseFactor,
-          nextReviewAt: now,
+          nextReviewAt: now, // Due immediately
           wrongCount: newWrongCount,
           consecutiveCorrect: 0,
         },
       };
     }
   } else {
-    // This card was already in active play (buffer)
+    // Card was already in active play (buffer)
     if (correct) {
       const newSuccessCount = card.successCount + 1;
 
       if (newSuccessCount >= 2) {
-        // Correct twice consecutively! Graduates from buffer.
+        // Correct twice consecutively: Graduates from buffer
         const newConsecutiveCorrect = card.consecutiveCorrect + 1;
+        const newEaseFactor = calculateNextEaseFactor(card.easeFactor, true);
+        
+        // If it was already a graduated card that lapsed, recalculate its stability
+        // If it was a new card, it will get 1 day stability
+        const newInterval = calculateNextStability(card.interval, newEaseFactor, card.wrongCount, newConsecutiveCorrect);
 
         return {
           session: {
@@ -217,19 +253,19 @@ export function handleResponse(
             cardsSinceBuffer: step + 1,
           },
           srsUpdate: {
-            interval: 1,
-            easeFactor: card.easeFactor,
-            nextReviewAt: new Date(now.getTime() + MS_PER_DAY),
+            interval: newInterval,
+            easeFactor: newEaseFactor,
+            nextReviewAt: new Date(now.getTime() + newInterval * MS_PER_DAY),
             wrongCount: card.wrongCount,
             consecutiveCorrect: newConsecutiveCorrect,
           },
         };
       } else {
-        // Correct once, needs one more correct response to graduate. Space it out.
+        // Correct once, needs one more to graduate
         const updatedCard: CardState = {
           ...card,
           successCount: newSuccessCount,
-          nextAppearanceIndex: step + 3, // Re-appear after a 2-card gap (step + 3)
+          nextAppearanceIndex: step + 3,
         };
 
         return {
@@ -240,24 +276,24 @@ export function handleResponse(
           },
           srsUpdate: {
             interval: card.interval,
-            easeFactor: card.easeFactor,
-            nextReviewAt: new Date(now.getTime() + 60_000), // check again in 1 min
+            easeFactor: card.easeFactor, // Don't bump ease until fully graduated
+            nextReviewAt: new Date(now.getTime() + 60_000), // Check again in 1 min
             wrongCount: card.wrongCount,
             consecutiveCorrect: card.consecutiveCorrect,
           },
         };
       }
     } else {
-      // Incorrect again! Reset streak, schedule to re-appear very soon.
-      const newEaseFactor = Math.max(1.3, card.easeFactor - 0.2);
+      // Incorrect again in buffer
+      const newEaseFactor = calculateNextEaseFactor(card.easeFactor, false);
       const newWrongCount = card.wrongCount + 1;
 
       const updatedCard: CardState = {
         ...card,
-        successCount: 0,
+        successCount: 0, // Reset streak in buffer
         wrongCount: newWrongCount,
-        consecutiveCorrect: 0,
-        nextAppearanceIndex: step + 2, // Re-appear after a 1-card gap (step + 2)
+        consecutiveCorrect: 0, // Reset overall streak
+        nextAppearanceIndex: step + 2,
       };
 
       return {
@@ -267,7 +303,7 @@ export function handleResponse(
           cardsSinceBuffer: step + 1,
         },
         srsUpdate: {
-          interval: 0,
+          interval: 0, // Falls back to 0 interval (in relearning)
           easeFactor: newEaseFactor,
           nextReviewAt: now,
           wrongCount: newWrongCount,

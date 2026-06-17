@@ -17,6 +17,8 @@ const RECALL_TODAY_COLUMNS = {
   srs_next_review_at: words.srs_next_review_at,
   srs_wrong_count: words.srs_wrong_count,
   srs_consecutive_correct: words.srs_consecutive_correct,
+  fc_wrong_count: words.fc_wrong_count,
+  mnemonic: words.mnemonic,
 };
 
 const FLASHCARD_TODAY_COLUMNS = {
@@ -33,6 +35,8 @@ const FLASHCARD_TODAY_COLUMNS = {
   srs_next_review_at: words.fc_next_review_at,
   srs_wrong_count: words.fc_wrong_count,
   srs_consecutive_correct: words.fc_consecutive_correct,
+  fc_wrong_count: words.fc_wrong_count,
+  mnemonic: words.mnemonic,
 };
 
 export interface SessionResultRow {

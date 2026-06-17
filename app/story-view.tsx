@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, fontSize: 16, fontWeight: '700', textAlign: 'center' },
   contentContainer: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 20 },
   title: { fontSize: 24, fontWeight: '800', marginBottom: 20, lineHeight: 32 },
-  content: { fontSize: 16, lineHeight: 26 },
+  content: { fontSize: 16, lineHeight: 26, textAlign: 'justify' },
   errorText: { fontSize: 18, marginBottom: 24 },
   backButton: { paddingVertical: 12, paddingHorizontal: 32, borderRadius: 12 },
   backButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },

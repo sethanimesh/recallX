@@ -63,6 +63,12 @@ def init_db(db_path: str = _DEFAULT_DB_PATH) -> None:
                 created_at INTEGER NOT NULL
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS system_prompts (
+                id TEXT PRIMARY KEY,
+                prompt_text TEXT NOT NULL
+            )
+        """)
         conn.commit()
 
 
@@ -78,4 +84,27 @@ def record_llm_call(
             "INSERT INTO llm_calls (provider, model, task, called_at) VALUES (?, ?, ?, ?)",
             (provider, model, task, int(time.time())),
         )
+        conn.commit()
+
+
+def get_system_prompt(prompt_id: str, db_path: str = _DEFAULT_DB_PATH) -> str:
+    from prompts import DEFAULT_PROMPTS
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute("SELECT prompt_text FROM system_prompts WHERE id = ?", (prompt_id,)).fetchone()
+        if row:
+            return row[0]
+    return DEFAULT_PROMPTS.get(prompt_id, "")
+
+def set_system_prompt(prompt_id: str, prompt_text: str, db_path: str = _DEFAULT_DB_PATH) -> None:
+    with sqlite3.connect(db_path) as conn:
+        conn.execute(
+            "INSERT INTO system_prompts (id, prompt_text) VALUES (?, ?) "
+            "ON CONFLICT(id) DO UPDATE SET prompt_text=excluded.prompt_text",
+            (prompt_id, prompt_text)
+        )
+        conn.commit()
+
+def reset_system_prompt(prompt_id: str, db_path: str = _DEFAULT_DB_PATH) -> None:
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("DELETE FROM system_prompts WHERE id = ?", (prompt_id,))
         conn.commit()

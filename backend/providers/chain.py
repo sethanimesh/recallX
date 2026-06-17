@@ -106,17 +106,11 @@ class ProviderChain:
             },
         }
 
-        prompt = (
-            f"You are a lenient vocabulary teacher grading an answer.\n\n"
-            f"Word: {word}\n"
-            f"Stored definition: {stored_definition}\n"
-            f"answer: {user_answer}\n\n"
-            "Decide if the answer captures the core meaning of the stored "
-            "definition. Be lenient — synonyms, paraphrases, and partial but correct "
-            "descriptions count as correct. Return a JSON object with:\n"
-            '  "correct": true or false\n'
-            '  "feedback": a short (1-2 sentence) explanation of the grade'
-        )
+        template = database.get_system_prompt("grade")
+        try:
+            prompt = template.format(word=word, stored_definition=stored_definition, user_answer=user_answer)
+        except Exception:
+            prompt = template
 
         failures: list[str] = []
         for provider in self._providers:
@@ -202,20 +196,11 @@ class ProviderChain:
             },
         }
 
-        system_prompt = (
-            f"You are a friendly, encouraging, and human-like AI vocabulary tutor.\n"
-            f"You are helping the user practice the target word: \"{word}\".\n"
-            f"Stored Definition: \"{stored_definition}\"\n"
-            f"Stored Example Sentence: \"{stored_example}\"\n\n"
-            f"Behavioral Guidelines:\n"
-            f"1. Evaluate the user's latest response:\n"
-            f"   - If they define the word correctly (synonyms, paraphrase, or general correct sense): Praise them warmly, motivate them, and confirm it's correct. Set evaluation='correct' and hint_provided=false.\n"
-            f"   - If they are close (partially correct or slightly off): Motivate them for being close, gently correct the nuance, and provide the exact stored definition. Set evaluation='close' and hint_provided=false.\n"
-            f"   - If they are incorrect or far away: Correct them gently, explain the correct meaning, and show them the example sentence. Set evaluation='incorrect' and hint_provided=false.\n"
-            f"   - If they cannot remember, say they don't know, ask for help, or type 'help'/'hint'/'skip': Help them remember by giving them a hint (like a fill-in-the-blank sentence where the target word is replaced by underscores, e.g. \"The customer remained ___ despite the salesman's efforts\", or a conceptual clue). Do NOT reveal the definition or the word itself yet. Encourage them to try again. Set evaluation='incorrect' and hint_provided=true.\n"
-            f"2. Keep your conversational response natural, concise (1-3 sentences), and human-like.\n"
-            f"3. If is_retry is True, this is a word the user struggled with earlier in this session. Greet them with encouragement and ask them if they remember it now.\n"
-        )
+        template = database.get_system_prompt("tutor")
+        try:
+            system_prompt = template.format(word=word, stored_definition=stored_definition, stored_example=stored_example)
+        except Exception:
+            system_prompt = template
 
         failures: list[str] = []
         for provider in self._providers:
@@ -339,11 +324,7 @@ class ProviderChain:
             },
         }
 
-        system_prompt = (
-            "You are a highly creative vocabulary assistant. Your task is to generate a funny, "
-            "bizarre, or weirdly memorable mnemonic for the given word to lock it into memory.\n"
-            "Return a JSON object with exactly one key: 'mnemonic'."
-        )
+        system_prompt = database.get_system_prompt("mnemonic")
         user_prompt = f"Word: {word}\nDefinition: {definition}"
 
         failures: list[str] = []
@@ -436,12 +417,11 @@ class ProviderChain:
         # Build words text
         words_text = "\n".join([f"- {w['word']}: {w['definition']}" for w in words])
         
-        system_prompt = (
-            "You are a creative writer helping a language learner remember new vocabulary. "
-            "Write a custom, cohesive short story or news article that naturally incorporates all "
-            "of the following words. Emphasize their meanings within the context of the story.\n\n"
-            f"Words to include:\n{words_text}\n\n"
-        )
+        template = database.get_system_prompt("story")
+        try:
+            system_prompt = template.format(words_text=words_text)
+        except Exception:
+            system_prompt = template
         if custom_prompt.strip():
             system_prompt += f"User's special instructions: {custom_prompt.strip()}\n\n"
 

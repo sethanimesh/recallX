@@ -23,6 +23,15 @@ export default function PracticeScreen() {
         >
           <Text style={styles.buttonText}>Start Review</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.secondaryButton, { backgroundColor: colors.background, borderColor: colors.border, borderWidth: 1 }]}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          onPress={() => router.push('/retention' as any)}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.secondaryButtonText, { color: colors.text }]}>View Retention Stats</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -70,5 +79,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
+  },
+  secondaryButton: {
+    marginTop: 12,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    width: '100%',
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

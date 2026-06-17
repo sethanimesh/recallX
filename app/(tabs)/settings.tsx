@@ -236,6 +236,15 @@ export default function SettingsScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
 
+        <TouchableOpacity style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/manage-prompts')} activeOpacity={0.7}>
+          <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
+          <View style={styles.rowContent}>
+            <Text style={[styles.rowLabel, { color: colors.text }]}>AI Prompts</Text>
+            <Text style={[styles.rowSubtitle, { color: colors.textSecondary }]}>Configure system instructions</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+        </TouchableOpacity>
+
         <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name="information-circle-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
           <View style={styles.rowContent}>

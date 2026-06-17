@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import database
-from routers import extract, grade, words, tags, stats, providers, tutor, story
+from routers import extract, grade, words, tags, stats, providers, tutor, story, prompts
 
 
 @asynccontextmanager
@@ -31,3 +31,4 @@ app.include_router(stats.router)
 app.include_router(providers.router)
 app.include_router(tutor.router)
 app.include_router(story.router)
+app.include_router(prompts.router)

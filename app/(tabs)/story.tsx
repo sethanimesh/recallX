@@ -1,7 +1,9 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import { useThemeColors } from '@/src/utils/theme';
+import { TVFocusable } from '@/src/components/TVFocusable';
+import { scaleSize, scaleFont } from '@/src/utils/tvConfig';
 
 export default function StoryScreen() {
   const router = useRouter();
@@ -15,7 +17,7 @@ export default function StoryScreen() {
         <Text style={[styles.cardBody, { color: colors.textSecondary }]}>
           Generate engaging stories to read your vocabulary in context.
         </Text>
-        <TouchableOpacity
+        <TVFocusable
           style={[styles.button, { backgroundColor: colors.primary }]}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onPress={() => router.push('/story-setup' as any)}
@@ -23,7 +25,7 @@ export default function StoryScreen() {
           testID="story-setup-button"
         >
           <Text style={styles.buttonText}>Get Started</Text>
-        </TouchableOpacity>
+        </TVFocusable>
       </View>
     </View>
   );

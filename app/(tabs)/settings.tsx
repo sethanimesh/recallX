@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
-import { View, ScrollView, Text, TouchableOpacity, StyleSheet, Alert, ActionSheetIOS } from 'react-native';
+import { View, ScrollView, Text, StyleSheet, Alert, ActionSheetIOS } from 'react-native';
+import { TVFocusable } from '@/src/components/TVFocusable';
+import { scaleSize, scaleFont } from '@/src/utils/tvConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
@@ -138,25 +140,25 @@ export default function SettingsScreen() {
         <View style={styles.section}>
         <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>LIBRARY</Text>
 
-        <TouchableOpacity style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/manage-tags')} activeOpacity={0.7}>
+        <TVFocusable style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/manage-tags')} activeOpacity={0.7}>
           <Ionicons name="pricetags-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
           <Text style={[styles.rowLabel, { color: colors.text }]}>Manage Tags</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-        </TouchableOpacity>
+        </TVFocusable>
 
-        <TouchableOpacity style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/export-words')} activeOpacity={0.7}>
+        <TVFocusable style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/export-words')} activeOpacity={0.7}>
           <Ionicons name="download-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
           <Text style={[styles.rowLabel, { color: colors.text }]}>Export Words</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-        </TouchableOpacity>
+        </TVFocusable>
 
-        <TouchableOpacity style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/llm-stats')} activeOpacity={0.7}>
+        <TVFocusable style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/llm-stats')} activeOpacity={0.7}>
           <Ionicons name="hardware-chip-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
           <Text style={[styles.rowLabel, { color: colors.text }]}>AI Usage</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-        </TouchableOpacity>
+        </TVFocusable>
 
-        <TouchableOpacity
+        <TVFocusable
           style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => setShowSortOrderDropdown((prev) => !prev)}
           activeOpacity={0.7}
@@ -169,12 +171,12 @@ export default function SettingsScreen() {
             </Text>
           </View>
           <Ionicons name={showSortOrderDropdown ? 'chevron-down' : 'chevron-forward'} size={18} color={colors.textSecondary} />
-        </TouchableOpacity>
+        </TVFocusable>
 
         {showSortOrderDropdown && (
           <View style={[styles.dropdownContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {(['alphabetical', 'newest', 'oldest', 'most_incorrect'] as const).map((mode) => (
-              <TouchableOpacity
+              <TVFocusable
                 key={mode}
                 style={[
                   styles.dropdownRow,
@@ -193,7 +195,7 @@ export default function SettingsScreen() {
                 {defaultSortOrder === mode && (
                   <Ionicons name="checkmark" size={18} color={colors.primary ?? colors.text} style={{ marginLeft: 'auto' }} />
                 )}
-              </TouchableOpacity>
+              </TVFocusable>
             ))}
           </View>
         )}
@@ -202,16 +204,16 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>CONNECTION</Text>
 
-        <TouchableOpacity style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/settings-url' as any)} activeOpacity={0.7}>
+        <TVFocusable style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/settings-url' as any)} activeOpacity={0.7}>
           <Ionicons name="server-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
           <View style={styles.rowContent}>
             <Text style={[styles.rowLabel, { color: colors.text }]}>Backend URL</Text>
             <Text style={[styles.rowSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>{currentUrl}</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-        </TouchableOpacity>
+        </TVFocusable>
 
-        <TouchableOpacity
+        <TVFocusable
           style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={providersStatus === 'loaded' ? openProviderPicker : undefined}
           activeOpacity={providersStatus === 'loaded' ? 0.7 : 1}
@@ -222,29 +224,29 @@ export default function SettingsScreen() {
             <Text style={[styles.rowSubtitle, { color: colors.textSecondary }]}>{providerSubtitle}</Text>
           </View>
           {providersStatus === 'loaded' && <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />}
-        </TouchableOpacity>
+        </TVFocusable>
       </View>
 
       <View style={styles.section}>
         <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>APP</Text>
 
-        <TouchableOpacity style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => setVoiceSheetVisible(true)} activeOpacity={0.7}>
+        <TVFocusable style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => setVoiceSheetVisible(true)} activeOpacity={0.7}>
           <Ionicons name="volume-high-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
           <View style={styles.rowContent}>
             <Text style={[styles.rowLabel, { color: colors.text }]}>Pronunciation Voice</Text>
             <Text style={[styles.rowSubtitle, { color: colors.textSecondary }]}>{displayVoiceName}</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-        </TouchableOpacity>
+        </TVFocusable>
 
-        <TouchableOpacity style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/manage-prompts')} activeOpacity={0.7}>
+        <TVFocusable style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/manage-prompts')} activeOpacity={0.7}>
           <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
           <View style={styles.rowContent}>
             <Text style={[styles.rowLabel, { color: colors.text }]}>AI Prompts</Text>
             <Text style={[styles.rowSubtitle, { color: colors.textSecondary }]}>Configure system instructions</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-        </TouchableOpacity>
+        </TVFocusable>
 
         <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name="information-circle-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
@@ -254,10 +256,10 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <TouchableOpacity style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handleResetSRS} activeOpacity={0.7}>
+        <TVFocusable style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handleResetSRS} activeOpacity={0.7}>
           <Ionicons name="refresh-outline" size={22} color={colors.error} style={styles.rowIcon} />
           <Text style={[styles.rowLabel, styles.destructive, { color: colors.error }]}>Reset SRS Progress</Text>
-        </TouchableOpacity>
+        </TVFocusable>
       </View>
       </ScrollView>
 

@@ -5,7 +5,6 @@ import {
   FlatList,
   TextInput,
   StyleSheet,
-  TouchableOpacity,
   ListRenderItemInfo,
   Alert,
   Platform,
@@ -21,6 +20,8 @@ import { getAllTags, fetchWordsByTag, type Tag } from '@/src/db/operations/tags'
 import { setNav } from '@/src/store/libraryNav';
 import { useThemeColors } from '@/src/utils/theme';
 import { getDefaultSortOrder } from '@/src/config/settings';
+import { TVFocusable } from '@/src/components/TVFocusable';
+import { scaleSize, scaleFont } from '@/src/utils/tvConfig';
 
 type WordRow = {
   id: string;
@@ -179,7 +180,7 @@ export default function LibraryScreen() {
 
   const renderItem = useCallback(
     ({ item, index }: ListRenderItemInfo<WordRow>) => (
-      <TouchableOpacity
+      <TVFocusable
         testID={`word-row-${item.id}`}
         style={styles.row}
         onPress={() => {
@@ -192,7 +193,7 @@ export default function LibraryScreen() {
         <Text style={[styles.definition, { color: colors.textSecondary }]} numberOfLines={1} ellipsizeMode="tail">
           {item.definition}
         </Text>
-      </TouchableOpacity>
+      </TVFocusable>
     ),
     [colors],
   );
@@ -234,7 +235,7 @@ export default function LibraryScreen() {
           autoCorrect={false}
           clearButtonMode="while-editing"
         />
-        <TouchableOpacity
+        <TVFocusable
           testID="library-sort-button"
           style={styles.sortButton}
           onPress={handleSortPress}
@@ -242,13 +243,13 @@ export default function LibraryScreen() {
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Ionicons name={getSortIcon()} size={20} color={colors.textSecondary} />
-        </TouchableOpacity>
+        </TVFocusable>
       </View>
 
       {/* Tag filter strip */}
       {filterTags.length > 0 && (
         <View testID="library-tag-wrap" style={styles.tagWrap}>
-          <TouchableOpacity
+          <TVFocusable
             testID="library-tag-chip-all"
             style={[
               styles.tagChip,
@@ -264,9 +265,9 @@ export default function LibraryScreen() {
             ]}>
               All
             </Text>
-          </TouchableOpacity>
+          </TVFocusable>
           {filterTags.map((tag) => (
-            <TouchableOpacity
+            <TVFocusable
               key={tag.id}
               testID={`library-tag-chip-${tag.id}`}
               style={[
@@ -283,7 +284,7 @@ export default function LibraryScreen() {
               ]}>
                 {tag.name}
               </Text>
-            </TouchableOpacity>
+            </TVFocusable>
           ))}
         </View>
       )}
@@ -297,23 +298,23 @@ export default function LibraryScreen() {
         contentContainerStyle={sortedAndFiltered.length === 0 ? styles.listEmpty : undefined}
         keyboardShouldPersistTaps="handled"
       />
-      <TouchableOpacity
+      <TVFocusable
         testID="library-add-button"
         style={[styles.fab, { bottom: 24 + insets.bottom, backgroundColor: colors.text }]}
         onPress={handleAddPress}
       >
         <Ionicons name="add" size={28} color={colors.card} />
-      </TouchableOpacity>
+      </TVFocusable>
 
       {showSortMenu && (
         <>
-          <TouchableOpacity
+          <TVFocusable
             style={styles.sortMenuBackdrop}
             activeOpacity={1}
             onPress={() => setShowSortMenu(false)}
           />
           <View style={[styles.sortMenu, { top: 56 + insets.top, backgroundColor: colors.card, borderColor: colors.border }]}>
-            <TouchableOpacity
+            <TVFocusable
               style={[
                 styles.sortMenuItem,
                 sortOrder === 'alphabetical' && { backgroundColor: colors.inputBackground }
@@ -328,9 +329,9 @@ export default function LibraryScreen() {
               {sortOrder === 'alphabetical' && (
                 <Ionicons name="checkmark" size={16} color={colors.text} style={{ marginLeft: 'auto' }} />
               )}
-            </TouchableOpacity>
+            </TVFocusable>
 
-            <TouchableOpacity
+            <TVFocusable
               style={[
                 styles.sortMenuItem,
                 sortOrder === 'newest' && { backgroundColor: colors.inputBackground }
@@ -345,9 +346,9 @@ export default function LibraryScreen() {
               {sortOrder === 'newest' && (
                 <Ionicons name="checkmark" size={16} color={colors.text} style={{ marginLeft: 'auto' }} />
               )}
-            </TouchableOpacity>
+            </TVFocusable>
 
-            <TouchableOpacity
+            <TVFocusable
               style={[
                 styles.sortMenuItem,
                 sortOrder === 'oldest' && { backgroundColor: colors.inputBackground }
@@ -362,9 +363,9 @@ export default function LibraryScreen() {
               {sortOrder === 'oldest' && (
                 <Ionicons name="checkmark" size={16} color={colors.text} style={{ marginLeft: 'auto' }} />
               )}
-            </TouchableOpacity>
+            </TVFocusable>
 
-            <TouchableOpacity
+            <TVFocusable
               style={[
                 styles.sortMenuItem,
                 sortOrder === 'most_incorrect' && { backgroundColor: colors.inputBackground }
@@ -379,7 +380,7 @@ export default function LibraryScreen() {
               {sortOrder === 'most_incorrect' && (
                 <Ionicons name="checkmark" size={16} color={colors.text} style={{ marginLeft: 'auto' }} />
               )}
-            </TouchableOpacity>
+            </TVFocusable>
           </View>
         </>
       )}

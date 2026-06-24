@@ -9,6 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
   PanResponder,
+  useTVEventHandler,
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,6 +29,8 @@ import { getTagsForWord, removeTagFromWord, type Tag } from '@/src/db/operations
 import { fetchWordHistory, type SessionResultRow } from '@/src/db/operations/sessionHistory';
 import TagPickerSheet from '@/src/components/TagPickerSheet';
 import TextWithLinks from '@/src/components/TextWithLinks';
+import { TVFocusable } from '@/src/components/TVFocusable';
+import { scaleSize, scaleFont } from '@/src/utils/tvConfig';
 import { getNav, navigate, clearNav } from '@/src/store/libraryNav';
 
 type PronunciationState = 'idle' | 'playing' | 'error';
@@ -406,6 +409,15 @@ export default function WordDetailScreen() {
     if (nextId) router.setParams({ id: nextId });
   }, []);
 
+  useTVEventHandler((event) => {
+    if (!navState.active) return;
+    if (event && event.eventType === 'right') {
+      goToAdjacentWord(1);
+    } else if (event && event.eventType === 'left') {
+      goToAdjacentWord(-1);
+    }
+  });
+
   const panResponder = useMemo(
     () =>
       navState.active
@@ -635,7 +647,7 @@ export default function WordDetailScreen() {
           testID="word-detail-nav-bar"
           style={[styles.navBar, { paddingBottom: insets.bottom + 8, borderTopColor: colors.border, backgroundColor: colors.card }]}
         >
-          <TouchableOpacity
+          <TVFocusable
             testID="word-detail-nav-prev"
             disabled={!canPrev}
             onPress={() => goToAdjacentWord(-1)}
@@ -643,11 +655,11 @@ export default function WordDetailScreen() {
             style={[styles.navChevron, !canPrev && styles.navChevronDisabled]}
           >
             <Ionicons name="chevron-back" size={28} color={colors.primary} />
-          </TouchableOpacity>
+          </TVFocusable>
 
           <Text style={[styles.navCounter, { color: colors.textSecondary }]}>{navIndex + 1} / {ids.length}</Text>
 
-          <TouchableOpacity
+          <TVFocusable
             testID="word-detail-nav-next"
             disabled={!canNext}
             onPress={() => goToAdjacentWord(1)}
@@ -655,7 +667,7 @@ export default function WordDetailScreen() {
             style={[styles.navChevron, !canNext && styles.navChevronDisabled]}
           >
             <Ionicons name="chevron-forward" size={28} color={colors.primary} />
-          </TouchableOpacity>
+          </TVFocusable>
         </View>
       )}
 

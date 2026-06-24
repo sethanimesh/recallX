@@ -3,12 +3,14 @@ import 'react-native-reanimated';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { useColorScheme, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useColorScheme, View, Text, StyleSheet } from 'react-native';
 import { runMigrations } from '@/src/db/client';
 import { syncFromServer } from '@/src/db/operations/sync';
 import { initSettings } from '@/src/config/settings';
 import { LoadingScreen } from '@/src/components/LoadingScreen';
 import { palette } from '@/src/utils/theme';
+import { TVFocusable } from '@/src/components/TVFocusable';
+import { scaleSize, scaleFont } from '@/src/utils/tvConfig';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -83,9 +85,9 @@ export default function RootLayout() {
       {syncError && (
         <View style={[styles.banner, isDark && { backgroundColor: '#78350F' }]}>
           <Text style={[styles.bannerText, isDark && { color: '#FDE68A' }]}>Could not sync — showing cached data</Text>
-          <TouchableOpacity onPress={() => setSyncError(false)}>
+          <TVFocusable onPress={() => setSyncError(false)}>
             <Text style={[styles.bannerDismiss, isDark && { color: '#FDE68A' }]}>✕</Text>
-          </TouchableOpacity>
+          </TVFocusable>
         </View>
       )}
       <Stack>

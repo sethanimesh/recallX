@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
   StyleSheet,
@@ -30,6 +29,8 @@ import {
   type SRSUpdate,
 } from '@/src/screens/srsAlgorithm';
 import { useThemeColors } from '@/src/utils/theme';
+import { TVFocusable } from '@/src/components/TVFocusable';
+import { scaleSize, scaleFont } from '@/src/utils/tvConfig';
 
 type Phase = 'input' | 'result';
 type Mode = 'adaptive' | 'classic';
@@ -236,9 +237,9 @@ export default function RecallScreen() {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No words to review</Text>
-        <TouchableOpacity style={[styles.backButton, { backgroundColor: colors.primary }]} onPress={() => router.back()}>
+        <TVFocusable style={[styles.backButton, { backgroundColor: colors.primary }]} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>Go Back</Text>
-        </TouchableOpacity>
+        </TVFocusable>
       </View>
     );
   }
@@ -283,7 +284,7 @@ export default function RecallScreen() {
             editable={!loading}
             testID="answer-input"
           />
-          <TouchableOpacity
+          <TVFocusable
             style={[
               styles.submitButton,
               { backgroundColor: colors.primary },
@@ -294,7 +295,7 @@ export default function RecallScreen() {
             testID="submit-button"
           >
             <Text style={styles.submitButtonText}>Submit</Text>
-          </TouchableOpacity>
+          </TVFocusable>
         </View>
       )}
 
@@ -327,7 +328,7 @@ export default function RecallScreen() {
             <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Example:</Text>
             <Text style={[styles.infoText, { color: colors.text }]}>{currentWord!.example_sentence}</Text>
           </View>
-          <TouchableOpacity
+          <TVFocusable
             style={[styles.nextButton, { backgroundColor: colors.primary }]}
             onPress={() => { setCountdown(null); handleNext(); }}
             testID="next-button"
@@ -335,7 +336,7 @@ export default function RecallScreen() {
             <Text style={styles.nextButtonText}>
               {isLastCard ? 'See Results' : countdown !== null ? `Next in ${countdown}s` : 'Next Word →'}
             </Text>
-          </TouchableOpacity>
+          </TVFocusable>
         </View>
       )}
     </ScrollView>

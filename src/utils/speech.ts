@@ -44,7 +44,7 @@ export function getBestFemaleVoice(voices: Speech.Voice[]): Speech.Voice | undef
   // 2. Separate into quality/gender tiers
   // Tier 1: Enhanced/Premium Female
   const enhancedFemale = englishVoices.filter(
-    (v) => v.quality === 'enhanced' && isFemaleVoice(v.name)
+    (v) => v.quality === Speech.VoiceQuality.Enhanced && isFemaleVoice(v.name)
   );
   if (enhancedFemale.length > 0) return enhancedFemale[0];
 
@@ -53,7 +53,7 @@ export function getBestFemaleVoice(voices: Speech.Voice[]): Speech.Voice | undef
   if (defaultFemale.length > 0) return defaultFemale[0];
 
   // Tier 3: Enhanced Quality English (any gender/default)
-  const enhancedEnglish = englishVoices.filter((v) => v.quality === 'enhanced');
+  const enhancedEnglish = englishVoices.filter((v) => v.quality === Speech.VoiceQuality.Enhanced);
   if (enhancedEnglish.length > 0) return enhancedEnglish[0];
 
   // Tier 4: First English voice

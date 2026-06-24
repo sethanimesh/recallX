@@ -147,7 +147,7 @@ export default function VoicePickerSheet({
                 {item.language.toUpperCase()}
               </Text>
             </View>
-            {item.quality === 'enhanced' && (
+            {item.quality === Speech.VoiceQuality.Enhanced && (
               <View style={[styles.enhancedBadge, { backgroundColor: colors.accent }]}>
                 <Ionicons name="sparkles" size={10} color={colors.primary} />
                 <Text style={[styles.enhancedText, { color: colors.primary }]}>High Quality</Text>

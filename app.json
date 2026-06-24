@@ -50,7 +50,7 @@
         "@react-native-tvos/config-tv",
         {
           "isTV": true,
-          "androidTVBanner": "./assets/images/tv-banner.jpg"
+          "androidTVBanner": "./assets/images/tv-banner.png"
         }
       ]
     ],

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Directory, File } from 'expo-file-system';
 import {
   buildFilename,

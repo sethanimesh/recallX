@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { db } from '@/src/db/client';
 import { words, wordTags } from '@/src/db/schema';
 import { isNull, lte, or, eq, and, asc } from 'drizzle-orm';

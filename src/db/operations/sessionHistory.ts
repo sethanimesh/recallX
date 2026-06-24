@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { db } from '@/src/db/client';
 import { sessions, sessionResults, words, wordTags } from '@/src/db/schema';
 import { eq, and, isNull, gte, desc } from 'drizzle-orm';

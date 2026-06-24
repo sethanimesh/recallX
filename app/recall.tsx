@@ -305,16 +305,16 @@ export default function RecallScreen() {
             style={[
               styles.banner,
               gradeResult.correct
-                ? { backgroundColor: colors.dark ? colors.success + '22' : '#DCFCE7' }
-                : { backgroundColor: colors.dark ? colors.error + '22' : '#FEE2E2' }
+                ? { backgroundColor: colors.background === '#111827' ? colors.success + '22' : '#DCFCE7' }
+                : { backgroundColor: colors.background === '#111827' ? colors.error + '22' : '#FEE2E2' }
             ]}
             testID="result-banner"
           >
             <Text style={[
               styles.bannerText,
               gradeResult.correct
-                ? { color: colors.dark ? colors.success : '#22c55e' }
-                : { color: colors.dark ? colors.error : '#ef4444' }
+                ? { color: colors.background === '#111827' ? colors.success : '#22c55e' }
+                : { color: colors.background === '#111827' ? colors.error : '#ef4444' }
             ]}>
               {gradeResult.correct ? 'Correct ✓' : 'Incorrect ✗'}
             </Text>

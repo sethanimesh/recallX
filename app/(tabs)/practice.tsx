@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import { useThemeColors } from '@/src/utils/theme';
+import { TVFocusable } from '@/src/components/TVFocusable';
 
 export default function PracticeScreen() {
   const router = useRouter();
@@ -13,7 +14,7 @@ export default function PracticeScreen() {
       <View style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
         <Text style={[styles.cardTitle, { color: colors.text }]}>Recall Practice</Text>
         <Text style={[styles.cardBody, { color: colors.textSecondary }]}>Test yourself on your saved words</Text>
-        <TouchableOpacity
+        <TVFocusable
           style={[styles.button, { backgroundColor: colors.primary }]}
           // '/recall-setup' is a registered stack screen; cast needed until expo-router types regenerate
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -22,16 +23,16 @@ export default function PracticeScreen() {
           testID="begin-button"
         >
           <Text style={styles.buttonText}>Start Review</Text>
-        </TouchableOpacity>
+        </TVFocusable>
 
-        <TouchableOpacity
+        <TVFocusable
           style={[styles.secondaryButton, { backgroundColor: colors.background, borderColor: colors.border, borderWidth: 1 }]}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onPress={() => router.push('/retention' as any)}
           accessibilityRole="button"
         >
           <Text style={[styles.secondaryButtonText, { color: colors.text }]}>View Retention Stats</Text>
-        </TouchableOpacity>
+        </TVFocusable>
       </View>
     </View>
   );

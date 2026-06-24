@@ -1,5 +1,4 @@
-import { fetchWithHeaders } from './http';
-import { getBackendUrl } from '../config/settings';
+import { getBackendUrl, getCommonHeaders } from '../config/settings';
 
 export interface PromptRecord {
   id: string;
@@ -9,7 +8,7 @@ export interface PromptRecord {
 
 export async function fetchPrompts(): Promise<PromptRecord[]> {
   const url = `${getBackendUrl()}/prompts`;
-  const res = await fetchWithHeaders(url);
+  const res = await fetch(url, { headers: getCommonHeaders() });
   if (!res.ok) {
     throw new Error(`Failed to fetch prompts: ${res.status}`);
   }
@@ -18,8 +17,9 @@ export async function fetchPrompts(): Promise<PromptRecord[]> {
 
 export async function updatePrompt(promptId: string, promptText: string): Promise<PromptRecord> {
   const url = `${getBackendUrl()}/prompts/${promptId}`;
-  const res = await fetchWithHeaders(url, {
+  const res = await fetch(url, {
     method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getCommonHeaders() },
     body: JSON.stringify({ prompt_text: promptText }),
   });
   if (!res.ok) {
@@ -30,8 +30,9 @@ export async function updatePrompt(promptId: string, promptText: string): Promis
 
 export async function resetPrompt(promptId: string): Promise<PromptRecord> {
   const url = `${getBackendUrl()}/prompts/${promptId}/reset`;
-  const res = await fetchWithHeaders(url, {
+  const res = await fetch(url, {
     method: 'POST',
+    headers: getCommonHeaders(),
   });
   if (!res.ok) {
     throw new Error(`Failed to reset prompt: ${res.status}`);

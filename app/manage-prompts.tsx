@@ -41,7 +41,7 @@ export default function ManagePromptsScreen() {
           headerTitle: 'AI Prompts',
           headerStyle: { backgroundColor: colors.card },
           headerTintColor: colors.text,
-          headerBackTitleVisible: false,
+          headerBackVisible: false,
         }}
       />
       {loading ? (

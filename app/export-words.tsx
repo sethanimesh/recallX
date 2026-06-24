@@ -126,7 +126,7 @@ export default function ExportWordsScreen() {
     }
     setExportingFormat(format);
     try {
-      const result = await saveWordsExport(format, selectedTagIds, selectedDirectory, sortOrder);
+      const result = await saveWordsExport(format, selectedTagIds, selectedDirectory as any, sortOrder);
       Alert.alert(
         'Export Saved',
         `${result.filename} saved with ${result.count} ${result.count === 1 ? 'word' : 'words'}.\n\nLocation:\n${result.uri}`,

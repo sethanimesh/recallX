@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
+import { useThemeColors } from '@/src/utils/theme';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
@@ -48,6 +49,7 @@ interface UIChatMessage {
 
 export default function TutorScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const insets = useDynamicInsets();
   const { tagId, todayOnly, sortOrder } = useLocalSearchParams<{ tagId: string; todayOnly: string; sortOrder?: string }>();
 
@@ -538,8 +540,8 @@ const styles = StyleSheet.create({
   currentWordText: { fontSize: 13, fontWeight: '700', color: '#fff' },
   chatList: { padding: 16, gap: 12, paddingBottom: 32 },
   messageRow: { flexDirection: 'row', width: '100%', marginBottom: 4 },
-  userRow: { justifyContent: 'end', alignSelf: 'flex-end' },
-  tutorRow: { justifyContent: 'start', alignSelf: 'flex-start', gap: 8 },
+  userRow: { justifyContent: 'flex-end', alignSelf: 'flex-end' },
+  tutorRow: { justifyContent: 'flex-start', alignSelf: 'flex-start', gap: 8 },
   avatar: {
     width: 28,
     height: 28,

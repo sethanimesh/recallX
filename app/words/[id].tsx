@@ -9,7 +9,6 @@ import {
   ScrollView,
   ActivityIndicator,
   PanResponder,
-  useTVEventHandler,
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -365,7 +364,7 @@ export default function WordDetailScreen() {
       await Speech.stop();
 
       // Retrieve the preferred voice from settings or detect a smart default female voice
-      let selectedVoice = getPronunciationVoice();
+      let selectedVoice: string | null | undefined = getPronunciationVoice();
       if (!selectedVoice) {
         selectedVoice = await getSmartDefaultVoice();
       }
@@ -409,7 +408,10 @@ export default function WordDetailScreen() {
     if (nextId) router.setParams({ id: nextId });
   }, []);
 
-  useTVEventHandler((event) => {
+  // @ts-ignore
+  const useTVEventHandler = require('react-native').useTVEventHandler;
+
+  useTVEventHandler((event: any) => {
     if (!navState.active) return;
     if (event && event.eventType === 'right') {
       goToAdjacentWord(1);

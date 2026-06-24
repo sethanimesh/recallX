@@ -10,10 +10,11 @@ import {
   View,
 } from 'react-native';
 
-export interface TVFocusableProps extends PressableProps {
+export interface TVFocusableProps extends Omit<PressableProps, 'children' | 'style' | 'delayLongPress'> {
   children?: React.ReactNode | ((state: { pressed: boolean; focused: boolean }) => React.ReactNode);
   style?: StyleProp<ViewStyle> | ((state: { pressed: boolean; focused: boolean }) => StyleProp<ViewStyle>);
   activeOpacity?: number;
+  delayLongPress?: number;
 }
 
 /**
@@ -32,7 +33,7 @@ export const TVFocusable = forwardRef<View, TVFocusableProps>(
           ref={ref as any}
           activeOpacity={activeOpacity}
           style={style as StyleProp<ViewStyle>}
-          {...props}
+          {...(props as any)}
         >
           {typeof children === 'function' ? children({ pressed: false, focused: false }) : children}
         </TouchableOpacity>
@@ -44,12 +45,12 @@ export const TVFocusable = forwardRef<View, TVFocusableProps>(
       <Pressable
         ref={ref}
         {...props}
-        style={(state) => [
+        style={(state: any) => [
           typeof style === 'function' ? style(state) : style,
           state.focused && styles.focusedStyle,
         ]}
       >
-        {(state) => {
+        {(state: any) => {
           return (
             <View style={[state.pressed && { opacity: activeOpacity }]}>
               {typeof children === 'function' ? children(state) : children}

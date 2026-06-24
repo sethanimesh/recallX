@@ -230,7 +230,7 @@ export default function CropScreen() {
       }}
     >
       <Image
-        source={{ uri }}
+        source={{ uri: uri ?? '' }}
         style={StyleSheet.absoluteFill}
         resizeMode="contain"
       />

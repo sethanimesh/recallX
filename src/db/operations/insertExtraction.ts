@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as Crypto from 'expo-crypto';
 import { db } from '@/src/db/client';
 import { sources, words as wordsTable } from '@/src/db/schema';

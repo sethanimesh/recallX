@@ -18,6 +18,8 @@ def _strict_schema(schema: dict) -> dict:
     if schema.get("type") == "object":
         schema["additionalProperties"] = False
         if "properties" in schema:
+            if "mnemonic" in schema["properties"]:
+                del schema["properties"]["mnemonic"]
             schema["required"] = list(schema["properties"].keys())
 
     if "anyOf" in schema:

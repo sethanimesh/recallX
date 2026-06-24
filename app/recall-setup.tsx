@@ -8,7 +8,7 @@ import {
   ListRenderItemInfo,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import { Ionicons } from '@expo/vector-icons';
 import { getAllTags, fetchAllWords, fetchWordsByTag, type Tag } from '@/src/db/operations/tags';
 import { fetchDueWords, fetchDueWordsFc } from '@/src/db/operations/srs';
@@ -21,7 +21,7 @@ export type FcMode = 'passive' | 'self-rated';
 
 export default function RecallSetupScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const insets = useDynamicInsets();
   const colors = useThemeColors();
 
   const [tags, setTags] = useState<Tag[]>([]);

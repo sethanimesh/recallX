@@ -1,13 +1,13 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { Stack, router, useFocusEffect } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchPrompts, PromptRecord } from '@/src/api/promptsClient';
 import { useThemeColors } from '@/src/utils/theme';
 
 export default function ManagePromptsScreen() {
-  const insets = useSafeAreaInsets();
+  const insets = useDynamicInsets();
   const colors = useThemeColors();
   const [prompts, setPrompts] = useState<PromptRecord[]>([]);
   const [loading, setLoading] = useState(true);

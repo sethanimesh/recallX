@@ -9,7 +9,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import { Ionicons } from '@expo/vector-icons';
 
 import { takePendingExtraction } from '@/src/store/pendingWords';
@@ -22,7 +23,7 @@ import type { ExtractedWord } from '@/src/api/types';
 import { useThemeColors } from '@/src/utils/theme';
 
 export default function ReviewScreen() {
-  const insets = useSafeAreaInsets();
+  const insets = useDynamicInsets();
   const colors = useThemeColors();
   const [words, setWords] = useState<ExtractedWord[]>([]);
   const [sourceUri, setSourceUri] = useState('');

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useFocusEffect } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import {
   getAllTags,
   renameTag,
@@ -85,7 +85,7 @@ export async function submitTagRename(tag: Tag, newName: string | undefined, loa
 }
 
 export default function ManageTagsScreen() {
-  const insets = useSafeAreaInsets();
+  const insets = useDynamicInsets();
   const colors = useThemeColors();
   const [tags, setTags] = useState<TagWithCount[]>([]);
 

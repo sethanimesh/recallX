@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
@@ -48,7 +48,7 @@ interface UIChatMessage {
 
 export default function TutorScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const insets = useDynamicInsets();
   const { tagId, todayOnly, sortOrder } = useLocalSearchParams<{ tagId: string; todayOnly: string; sortOrder?: string }>();
 
   // SRS state

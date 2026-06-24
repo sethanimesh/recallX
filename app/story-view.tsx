@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '@/src/utils/theme';
 import { getBackendStory, type SavedStory } from '@/src/api/storyClient';
@@ -23,7 +23,7 @@ const renderMarkdown = (text: string) => {
 export default function StoryViewScreen() {
   const { storyId } = useLocalSearchParams<{ storyId: string }>();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const insets = useDynamicInsets();
   const colors = useThemeColors();
   
   const [story, setStory] = useState<SavedStory | null>(null);

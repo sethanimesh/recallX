@@ -9,12 +9,12 @@ import {
   Platform,
 } from 'react-native';
 import { router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import { getBackendUrl, setBackendUrl } from '@/src/config/settings';
 import { useThemeColors } from '@/src/utils/theme';
 
 export default function SettingsUrlScreen() {
-  const insets = useSafeAreaInsets();
+  const insets = useDynamicInsets();
   const colors = useThemeColors();
   const [url, setUrl] = useState(getBackendUrl());
   const [error, setError] = useState<string | null>(null);

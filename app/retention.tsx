@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import { useThemeColors } from '@/src/utils/theme';
 import { db } from '@/src/db/client';
 import { words } from '@/src/db/schema';
@@ -21,7 +21,7 @@ type Bucket = {
 
 export default function RetentionScreen() {
   const colors = useThemeColors();
-  const insets = useSafeAreaInsets();
+  const insets = useDynamicInsets();
   const router = useRouter();
   const [allWords, setAllWords] = useState<WordRow[]>([]);
   const [loading, setLoading] = useState(true);

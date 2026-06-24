@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import * as Speech from 'expo-speech';
 import { useThemeColors } from '@/src/utils/theme';
 import { getPronunciationVoice } from '@/src/config/settings';
@@ -149,7 +149,7 @@ function EditableField({ label, value, onSave, multiline = false, italic = false
 
 export default function WordDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const insets = useSafeAreaInsets();
+  const insets = useDynamicInsets();
   const colors = useThemeColors();
   const currentIdRef = useRef<string | undefined>(id);
   const currentWordRef = useRef<string | undefined>(undefined);

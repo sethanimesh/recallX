@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import * as Crypto from 'expo-crypto';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import { Ionicons } from '@expo/vector-icons';
 import { getAllTags, fetchAllWords, fetchWordsByTag, type Tag, type WordRow } from '@/src/db/operations/tags';
 import { generateStory, fetchBackendStories, saveBackendStory, deleteBackendStory, type SavedStory } from '@/src/api/storyClient';
@@ -23,7 +23,7 @@ type DeckOption = { id: string | null; name: string };
 
 export default function StorySetupScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const insets = useDynamicInsets();
   const colors = useThemeColors();
 
   const [tags, setTags] = useState<Tag[]>([]);

@@ -9,7 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { Stack, useFocusEffect } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import {
   fetchWordsForExport,
   pickExportDirectory,
@@ -40,7 +40,7 @@ function isCancelledError(error: unknown): boolean {
 }
 
 export default function ExportWordsScreen() {
-  const insets = useSafeAreaInsets();
+  const insets = useDynamicInsets();
   const colors = useThemeColors();
   const [allTags, setAllTags] = useState<TagWithCount[]>([]);
   const [allWords, setAllWords] = useState<ExportWordRecord[]>([]);

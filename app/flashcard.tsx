@@ -9,7 +9,7 @@ import {
   PanResponder,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import { fetchAllWords, fetchWordsByTag, type WordRow } from '@/src/db/operations/tags';
 import { fetchDueWordsFc, updateWordFCSRS, type WordSRSRow } from '@/src/db/operations/srs';
 import {
@@ -36,7 +36,7 @@ type FcMode = 'passive' | 'self-rated';
 
 export default function FlashcardScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const insets = useDynamicInsets();
   const colors = useThemeColors();
   const { tagId, fcMode: fcModeParam, todayOnly, sortOrder } = useLocalSearchParams<{ tagId: string; fcMode: string; todayOnly: string; sortOrder?: string }>();
   const fcMode: FcMode = fcModeParam === 'self-rated' ? 'self-rated' : 'passive';

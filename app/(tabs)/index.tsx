@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import { isNull, asc } from 'drizzle-orm';
 import { db } from '@/src/db/client';
 import { words as wordsTable } from '@/src/db/schema';
@@ -34,7 +34,7 @@ type WordRow = {
 };
 
 export default function LibraryScreen() {
-  const insets = useSafeAreaInsets();
+  const insets = useDynamicInsets();
   const colors = useThemeColors();
   const [allWords, setAllWords] = useState<WordRow[]>([]);
   const [query, setQuery] = useState('');

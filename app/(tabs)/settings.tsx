@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { View, ScrollView, Text, TouchableOpacity, StyleSheet, Alert, ActionSheetIOS } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import Constants from 'expo-constants';
 import {
   getBackendUrl,
@@ -21,7 +21,7 @@ import VoicePickerSheet from '@/src/components/VoicePickerSheet';
 type ProvidersStatus = 'loading' | 'loaded' | 'error';
 
 export default function SettingsScreen() {
-  const insets = useSafeAreaInsets();
+  const insets = useDynamicInsets();
   const [currentUrl, setCurrentUrl] = useState(getBackendUrl());
   const [providers, setProviders] = useState<string[]>([]);
   const [providersStatus, setProvidersStatus] = useState<ProvidersStatus>('loading');

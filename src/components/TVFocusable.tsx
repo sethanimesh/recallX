@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useState, useCallback } from 'react';
 import {
   Platform,
   Pressable,
@@ -15,6 +15,11 @@ export interface TVFocusableProps extends Omit<PressableProps, 'children' | 'sty
   style?: StyleProp<ViewStyle> | ((state: { pressed: boolean; focused: boolean }) => StyleProp<ViewStyle>);
   activeOpacity?: number;
   delayLongPress?: number;
+  hasTVPreferredFocus?: boolean;
+  nextFocusUp?: number | undefined;
+  nextFocusDown?: number | undefined;
+  nextFocusLeft?: number | undefined;
+  nextFocusRight?: number | undefined;
 }
 
 /**
@@ -25,7 +30,19 @@ export interface TVFocusableProps extends Omit<PressableProps, 'children' | 'sty
  * and applies a subtle focus scale/highlight automatically so D-Pad navigation is visible.
  */
 export const TVFocusable = forwardRef<View, TVFocusableProps>(
-  ({ children, style, activeOpacity = 0.7, ...props }, ref) => {
+  ({ children, style, activeOpacity = 0.7, hasTVPreferredFocus, nextFocusUp, nextFocusDown, nextFocusLeft, nextFocusRight, onFocus, onBlur, ...props }, ref) => {
+    const [isTVFocused, setIsTVFocused] = useState(false);
+
+    const handleFocus = useCallback((e: any) => {
+      setIsTVFocused(true);
+      onFocus?.(e);
+    }, [onFocus]);
+
+    const handleBlur = useCallback((e: any) => {
+      setIsTVFocused(false);
+      onBlur?.(e);
+    }, [onBlur]);
+
     if (!Platform.isTV) {
       // For mobile, fallback to standard TouchableOpacity for exact same behavior
       return (
@@ -33,6 +50,8 @@ export const TVFocusable = forwardRef<View, TVFocusableProps>(
           ref={ref as any}
           activeOpacity={activeOpacity}
           style={style as StyleProp<ViewStyle>}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           {...(props as any)}
         >
           {typeof children === 'function' ? children({ pressed: false, focused: false }) : children}
@@ -45,17 +64,32 @@ export const TVFocusable = forwardRef<View, TVFocusableProps>(
       <Pressable
         ref={ref}
         {...props}
-        style={(state: any) => [
-          typeof style === 'function' ? style(state) : style,
-          state.focused && styles.focusedStyle,
-        ]}
+        focusable={true}
+        accessible={true}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        {...(() => {
+          const tvProps: any = {};
+          if (hasTVPreferredFocus !== undefined) tvProps.hasTVPreferredFocus = hasTVPreferredFocus;
+          if (nextFocusUp !== undefined) tvProps.nextFocusUp = nextFocusUp;
+          if (nextFocusDown !== undefined) tvProps.nextFocusDown = nextFocusDown;
+          if (nextFocusLeft !== undefined) tvProps.nextFocusLeft = nextFocusLeft;
+          if (nextFocusRight !== undefined) tvProps.nextFocusRight = nextFocusRight;
+          return tvProps;
+        })()}
+        style={(state: any) => {
+          const focused = state.focused || isTVFocused;
+          return [
+            { borderWidth: 3, borderColor: 'transparent', borderRadius: 8 }, // Base style to prevent layout shift
+            typeof style === 'function' ? style({ ...state, focused }) : style,
+            focused && styles.focusedStyle,
+            state.pressed && { opacity: activeOpacity },
+          ];
+        }}
       >
         {(state: any) => {
-          return (
-            <View style={[state.pressed && { opacity: activeOpacity }]}>
-              {typeof children === 'function' ? children(state) : children}
-            </View>
-          );
+          const focused = state.focused || isTVFocused;
+          return typeof children === 'function' ? children({ ...state, focused }) : children;
         }}
       </Pressable>
     );
@@ -66,9 +100,11 @@ TVFocusable.displayName = 'TVFocusable';
 
 const styles = StyleSheet.create({
   focusedStyle: {
-    // A subtle border or background highlight for D-Pad focus
-    borderColor: '#3B82F6',
-    borderWidth: 2,
-    transform: [{ scale: 1.05 }],
+    // A visible border + glow highlight for D-Pad focus at 10ft viewing distance
+    borderColor: '#60A5FA',
+    borderWidth: 3,
+    borderRadius: 8,
+    transform: [{ scale: 1.06 }],
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
   },
 });

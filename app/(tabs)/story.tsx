@@ -23,6 +23,7 @@ export default function StoryScreen() {
           onPress={() => router.push('/story-setup' as any)}
           accessibilityRole="button"
           testID="story-setup-button"
+          hasTVPreferredFocus={true}
         >
           <Text style={styles.buttonText}>Get Started</Text>
         </TVFocusable>

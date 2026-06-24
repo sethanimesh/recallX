@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { View, ScrollView, Text, StyleSheet, Alert, ActionSheetIOS } from 'react-native';
+import { useState, useCallback, useEffect } from 'react';
+import { View, ScrollView, Text, StyleSheet, Alert, ActionSheetIOS, Platform, BackHandler } from 'react-native';
 import { TVFocusable } from '@/src/components/TVFocusable';
 import { scaleSize, scaleFont } from '@/src/utils/tvConfig';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,6 +33,20 @@ export default function SettingsScreen() {
   const [displayVoiceName, setDisplayVoiceName] = useState('System Default');
   const [defaultSortOrder, setDefaultSortOrderState] = useState(getDefaultSortOrder());
   const [showSortOrderDropdown, setShowSortOrderDropdown] = useState(false);
+  const [showProviderDropdown, setShowProviderDropdown] = useState(false);
+
+  useEffect(() => {
+    const backAction = () => {
+      if (showProviderDropdown || showSortOrderDropdown) {
+        setShowProviderDropdown(false);
+        setShowSortOrderDropdown(false);
+        return true;
+      }
+      return false;
+    };
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [showProviderDropdown, showSortOrderDropdown]);
 
   useFocusEffect(
     useCallback(() => {
@@ -72,16 +86,20 @@ export default function SettingsScreen() {
   );
 
   function openProviderPicker() {
-    const options = ['None (auto)', ...providers, 'Cancel'];
-    ActionSheetIOS.showActionSheetWithOptions(
-      { options, cancelButtonIndex: options.length - 1 },
-      (index) => {
-        if (index === options.length - 1) return;
-        const chosen = index === 0 ? null : providers[index - 1];
-        setSelectedProvider(chosen);
-        setPreferredProvider(chosen).catch((err) => console.warn('[Settings] setPreferredProvider failed:', err));
-      },
-    );
+    if (Platform.OS === 'ios') {
+      const options = ['None (auto)', ...providers, 'Cancel'];
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options, cancelButtonIndex: options.length - 1 },
+        (index) => {
+          if (index === options.length - 1) return;
+          const chosen = index === 0 ? null : providers[index - 1];
+          setSelectedProvider(chosen);
+          setPreferredProvider(chosen).catch((err) => console.warn('[Settings] setPreferredProvider failed:', err));
+        },
+      );
+    } else {
+      setShowProviderDropdown((prev) => !prev);
+    }
   }
 
   const handleSelectVoice = async (voiceId: string | null) => {
@@ -140,7 +158,7 @@ export default function SettingsScreen() {
         <View style={styles.section}>
         <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>LIBRARY</Text>
 
-        <TVFocusable style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/manage-tags')} activeOpacity={0.7}>
+        <TVFocusable style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/manage-tags')} activeOpacity={0.7} hasTVPreferredFocus={Platform.isTV}>
           <Ionicons name="pricetags-outline" size={22} color={colors.textSecondary} style={styles.rowIcon} />
           <Text style={[styles.rowLabel, { color: colors.text }]}>Manage Tags</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
@@ -223,8 +241,39 @@ export default function SettingsScreen() {
             <Text style={[styles.rowLabel, { color: colors.text }]}>AI Provider</Text>
             <Text style={[styles.rowSubtitle, { color: colors.textSecondary }]}>{providerSubtitle}</Text>
           </View>
-          {providersStatus === 'loaded' && <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />}
+          {providersStatus === 'loaded' && <Ionicons name={showProviderDropdown ? 'chevron-down' : 'chevron-forward'} size={18} color={colors.textSecondary} />}
         </TVFocusable>
+
+        {showProviderDropdown && (
+          <View style={[styles.dropdownContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {['None (auto)', ...providers].map((option, idx) => {
+              const providerValue = idx === 0 ? null : providers[idx - 1];
+              const isSelected = selectedProvider === providerValue;
+              return (
+                <TVFocusable
+                  key={option}
+                  style={[
+                    styles.dropdownRow,
+                    { borderColor: colors.border },
+                    isSelected && { backgroundColor: colors.inputBackground },
+                  ]}
+                  onPress={async () => {
+                    setSelectedProvider(providerValue);
+                    await setPreferredProvider(providerValue).catch((err) => console.warn('[Settings] setPreferredProvider failed:', err));
+                    setShowProviderDropdown(false);
+                  }}
+                >
+                  <Text style={[styles.dropdownLabel, { color: colors.text }, isSelected && { fontWeight: '700' }]}>
+                    {option}
+                  </Text>
+                  {isSelected && (
+                    <Ionicons name="checkmark" size={18} color={colors.primary ?? colors.text} style={{ marginLeft: 'auto' }} />
+                  )}
+                </TVFocusable>
+              );
+            })}
+          </View>
+        )}
       </View>
 
       <View style={styles.section}>

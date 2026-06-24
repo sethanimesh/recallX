@@ -9,6 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
   PanResponder,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -124,6 +125,30 @@ function EditableField({ label, value, onSave, multiline = false, italic = false
     );
   }
 
+  const content = value ? (
+    <TextWithLinks 
+      text={value} 
+      style={[styles.fieldText, { color: italic ? colors.textSecondary : colors.text }]} 
+      italic={italic} 
+    />
+  ) : (
+    <Text style={[styles.fieldText, { color: colors.textSecondary, fontStyle: 'italic' }]}>
+      {placeholder || `Tap to add ${label.toLowerCase()}`}
+    </Text>
+  );
+
+  if (Platform.isTV) {
+    return (
+      <View style={styles.fieldContainer}>
+        <View style={styles.fieldLabelRow}>
+          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{label}</Text>
+          {rightAccessory}
+        </View>
+        <TVFocusable onPress={handlePress} activeOpacity={1}>{content}</TVFocusable>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.fieldContainer}>
       <View style={styles.fieldLabelRow}>
@@ -131,17 +156,7 @@ function EditableField({ label, value, onSave, multiline = false, italic = false
         {rightAccessory}
       </View>
       <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
-        {value ? (
-          <TextWithLinks 
-            text={value} 
-            style={[styles.fieldText, { color: italic ? colors.textSecondary : colors.text }]} 
-            italic={italic} 
-          />
-        ) : (
-          <Text style={[styles.fieldText, { color: colors.textSecondary, fontStyle: 'italic' }]}>
-            {placeholder || `Tap to add ${label.toLowerCase()}`}
-          </Text>
-        )}
+        {content}
       </TouchableOpacity>
     </View>
   );
@@ -288,14 +303,14 @@ export default function WordDetailScreen() {
 
   const renderHeaderRight = useCallback(
     () => (
-      <TouchableOpacity
+      <TVFocusable
         onPress={handleDelete}
         accessibilityLabel="Delete word"
         hitSlop={8}
         style={styles.headerDeleteButton}
       >
         <Ionicons name="trash-outline" size={22} color="#FF3B30" />
-      </TouchableOpacity>
+      </TVFocusable>
     ),
     [handleDelete],
   );
@@ -408,17 +423,7 @@ export default function WordDetailScreen() {
     if (nextId) router.setParams({ id: nextId });
   }, []);
 
-  // @ts-ignore
-  const useTVEventHandler = require('react-native').useTVEventHandler;
 
-  useTVEventHandler((event: any) => {
-    if (!navState.active) return;
-    if (event && event.eventType === 'right') {
-      goToAdjacentWord(1);
-    } else if (event && event.eventType === 'left') {
-      goToAdjacentWord(-1);
-    }
-  });
 
   const panResponder = useMemo(
     () =>
@@ -503,16 +508,25 @@ export default function WordDetailScreen() {
               selectTextOnFocus
             />
           ) : (
-            <TouchableOpacity
-              onPress={handleWordPress}
-              activeOpacity={0.7}
-              style={{ flexShrink: 1 }}
-            >
-              <Text style={[styles.wordHeading, { color: colors.text }]}>{wordData.word}</Text>
-            </TouchableOpacity>
+            Platform.isTV ? (
+              <TVFocusable
+                onPress={handleWordPress}
+                style={{ flexShrink: 1 }}
+              >
+                <Text style={[styles.wordHeading, { color: colors.text }]}>{wordData.word}</Text>
+              </TVFocusable>
+            ) : (
+              <TouchableOpacity
+                onPress={handleWordPress}
+                activeOpacity={0.7}
+                style={{ flexShrink: 1 }}
+              >
+                <Text style={[styles.wordHeading, { color: colors.text }]}>{wordData.word}</Text>
+              </TouchableOpacity>
+            )
           )}
 
-          <TouchableOpacity
+          <TVFocusable
             testID="pronunciation-button"
             accessibilityLabel={`Play pronunciation for ${wordData.word}`}
             accessibilityRole="button"
@@ -525,7 +539,7 @@ export default function WordDetailScreen() {
               size={24}
               color={colors.primary}
             />
-          </TouchableOpacity>
+          </TVFocusable>
         </View>
         {pronunciationState === 'error' && (
           <Text testID="pronunciation-status" style={[styles.pronunciationStatus, { color: colors.error }]}>
@@ -602,22 +616,24 @@ export default function WordDetailScreen() {
             {tags.map((tag) => (
               <View key={tag.id} style={[styles.chip, { backgroundColor: colors.accent }]}>
                 <Text style={[styles.chipText, { color: colors.primary }]}>{tag.name}</Text>
-                <TouchableOpacity
-                  onPress={async () => {
-                    await removeTagFromWord(id!, tag.id);
-                    setTags((prev) => prev.filter((t) => t.id !== tag.id));
-                  }}
-                  hitSlop={6}
-                  style={styles.chipDelete}
-                >
-                  <Ionicons name="close" size={14} color={colors.primary} />
-                </TouchableOpacity>
+                {!Platform.isTV && (
+                  <TouchableOpacity
+                    onPress={async () => {
+                      await removeTagFromWord(id!, tag.id);
+                      setTags((prev) => prev.filter((t) => t.id !== tag.id));
+                    }}
+                    hitSlop={6}
+                    style={styles.chipDelete}
+                  >
+                    <Ionicons name="close" size={14} color={colors.primary} />
+                  </TouchableOpacity>
+                )}
               </View>
             ))}
-            <TouchableOpacity style={[styles.chipAdd, { borderColor: colors.primary }]} onPress={() => setTagPickerVisible(true)}>
+            <TVFocusable style={[styles.chipAdd, { borderColor: colors.primary }]} onPress={() => setTagPickerVisible(true)}>
               <Ionicons name="add" size={16} color={colors.primary} />
               <Text style={[styles.chipAddText, { color: colors.primary }]}>Add tag</Text>
-            </TouchableOpacity>
+            </TVFocusable>
           </View>
           {tags.length === 0 && (
             <Text style={[styles.noTagsText, { color: colors.textSecondary }]}>No tags — tap + to add</Text>

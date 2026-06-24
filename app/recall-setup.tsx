@@ -3,10 +3,11 @@ import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
+  Platform,
   StyleSheet,
   ListRenderItemInfo,
 } from 'react-native';
+import { TVFocusable } from '@/src/components/TVFocusable';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import { Ionicons } from '@expo/vector-icons';
@@ -102,14 +103,14 @@ export default function RecallSetupScreen() {
     ({ item }: ListRenderItemInfo<DeckOption>) => {
       const isSelected = item.id === selectedTagId;
       return (
-        <TouchableOpacity
+        <TVFocusable
           style={[styles.row, { backgroundColor: colors.card }, isSelected && { backgroundColor: colors.primary }]}
           onPress={() => setSelectedTagId(item.id)}
           accessibilityRole="radio"
           accessibilityState={{ selected: isSelected }}
         >
           <Text style={[styles.rowText, { color: colors.text }, isSelected && { color: '#fff', fontWeight: '600' }]}>{item.name}</Text>
-        </TouchableOpacity>
+        </TVFocusable>
       );
     },
     [selectedTagId, colors],
@@ -129,7 +130,7 @@ export default function RecallSetupScreen() {
 
       <Text style={[styles.subHeading, { color: colors.textSecondary }]}>Review Mode</Text>
       <View style={styles.modeGrid}>
-        {(['adaptive', 'classic', 'flashcard', 'tutor'] as Mode[]).map(m => {
+        {(['adaptive', 'classic', 'flashcard', 'tutor'] as Mode[]).map((m, index) => {
           const isActive = mode === m;
           let iconName: keyof typeof Ionicons.glyphMap = 'sparkles-outline';
           let label = 'Adaptive';
@@ -145,7 +146,7 @@ export default function RecallSetupScreen() {
           }
 
           return (
-            <TouchableOpacity
+            <TVFocusable
               key={m}
               style={[
                 styles.modeCard,
@@ -153,7 +154,10 @@ export default function RecallSetupScreen() {
                 isActive && { backgroundColor: colors.accent, borderColor: colors.primary }
               ]}
               onPress={() => setMode(m)}
+              hasTVPreferredFocus={index === 0}
               testID={`mode-${m}`}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: isActive }}
             >
               <Ionicons
                 name={iconName}
@@ -168,7 +172,7 @@ export default function RecallSetupScreen() {
               ]}>
                 {label}
               </Text>
-            </TouchableOpacity>
+            </TVFocusable>
           );
         })}
       </View>
@@ -176,7 +180,7 @@ export default function RecallSetupScreen() {
       {mode === 'flashcard' && (
         <View style={[styles.fcModeToggle, { backgroundColor: colors.inputBackground }]}>
           {(['passive', 'self-rated'] as FcMode[]).map(fm => (
-            <TouchableOpacity
+            <TVFocusable
               key={fm}
               style={[
                 styles.modeButton,
@@ -185,6 +189,8 @@ export default function RecallSetupScreen() {
               ]}
               onPress={() => setFcMode(fm)}
               testID={`fcmode-${fm}`}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: fcMode === fm }}
             >
               <Text style={[
                 styles.modeButtonText,
@@ -193,7 +199,7 @@ export default function RecallSetupScreen() {
               ]}>
                 {fm === 'passive' ? 'Passive' : 'Self-Rated'}
               </Text>
-            </TouchableOpacity>
+            </TVFocusable>
           ))}
         </View>
       )}
@@ -201,7 +207,7 @@ export default function RecallSetupScreen() {
       <Text style={[styles.subHeading, { color: colors.textSecondary }]}>Sort Order</Text>
       <View style={[styles.sortToggle, { backgroundColor: colors.inputBackground }]}>
         {(['jumbled', 'alphabetical', 'newest'] as const).map(so => (
-          <TouchableOpacity
+          <TVFocusable
             key={so}
             style={[
               styles.modeButton,
@@ -210,6 +216,8 @@ export default function RecallSetupScreen() {
             ]}
             onPress={() => setSortOrder(so)}
             testID={`sort-${so}`}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: sortOrder === so }}
           >
             <Text style={[
               styles.modeButtonText,
@@ -218,7 +226,7 @@ export default function RecallSetupScreen() {
             ]}>
               {so === 'jumbled' ? 'Jumbled' : so === 'alphabetical' ? 'Alphabetical' : 'Newest'}
             </Text>
-          </TouchableOpacity>
+          </TVFocusable>
         ))}
       </View>
 
@@ -229,6 +237,10 @@ export default function RecallSetupScreen() {
         ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: colors.border }]} />}
         style={styles.list}
         contentContainerStyle={[styles.listContent, { borderColor: colors.border }]}
+        removeClippedSubviews={true}
+        initialNumToRender={10}
+        maxToRenderPerBatch={5}
+        windowSize={5}
       />
 
       <Text style={[styles.wordCount, { color: colors.textSecondary }]} testID="word-count-label">
@@ -253,7 +265,7 @@ export default function RecallSetupScreen() {
         </Text>
       )}
 
-      <TouchableOpacity
+      <TVFocusable
         style={[
           styles.todayButton,
           { backgroundColor: '#8B5CF6' },
@@ -269,9 +281,9 @@ export default function RecallSetupScreen() {
         ]}>
           Today's Words ({todayCount})
         </Text>
-      </TouchableOpacity>
+      </TVFocusable>
 
-      <TouchableOpacity
+      <TVFocusable
         style={[
           styles.startButton,
           { backgroundColor: colors.primary },
@@ -289,7 +301,7 @@ export default function RecallSetupScreen() {
         ]}>
           Start
         </Text>
-      </TouchableOpacity>
+      </TVFocusable>
     </View>
   );
 }

@@ -8,6 +8,7 @@ import {
   ListRenderItemInfo,
   Alert,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -222,71 +223,128 @@ export default function LibraryScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-      {/* Search bar */}
-      <View testID="library-search-row" style={[styles.searchRow, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}>
-        <Ionicons name="search-outline" size={18} color={colors.textSecondary} style={styles.searchIcon} />
-        <TextInput
-          testID="library-search-input"
-          style={[styles.searchInput, { color: colors.text }]}
-          placeholder="Search words..."
-          placeholderTextColor={colors.textSecondary}
-          value={query}
-          onChangeText={setQuery}
-          autoCorrect={false}
-          clearButtonMode="while-editing"
-        />
+      {/* Search bar — hidden on TV */}
+      {!Platform.isTV && (
+        <View testID="library-search-row" style={[styles.searchRow, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}>
+          <Ionicons name="search-outline" size={18} color={colors.textSecondary} style={styles.searchIcon} />
+          <TextInput
+            testID="library-search-input"
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Search words..."
+            placeholderTextColor={colors.textSecondary}
+            value={query}
+            onChangeText={setQuery}
+            autoCorrect={false}
+            clearButtonMode="while-editing"
+          />
+          <TVFocusable
+            testID="library-sort-button"
+            style={styles.sortButton}
+            onPress={handleSortPress}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name={getSortIcon()} size={20} color={colors.textSecondary} />
+          </TVFocusable>
+        </View>
+      )}
+
+      {/* Inline Add Word button for TV */}
+      {Platform.isTV && (
         <TVFocusable
-          testID="library-sort-button"
-          style={styles.sortButton}
-          onPress={handleSortPress}
-          activeOpacity={0.7}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          testID="library-add-button-tv"
+          style={[styles.tvAddButton, { backgroundColor: colors.primary }]}
+          onPress={handleAddPress}
+          hasTVPreferredFocus={sortedAndFiltered.length === 0}
         >
-          <Ionicons name={getSortIcon()} size={20} color={colors.textSecondary} />
+          <Ionicons name="add" size={22} color="#fff" />
+          <Text style={styles.tvAddButtonText}>Add Word</Text>
         </TVFocusable>
-      </View>
+      )}
 
       {/* Tag filter strip */}
       {filterTags.length > 0 && (
-        <View testID="library-tag-wrap" style={styles.tagWrap}>
-          <TVFocusable
-            testID="library-tag-chip-all"
-            style={[
-              styles.tagChip,
-              { backgroundColor: colors.card, borderColor: colors.border },
-              activeTagId === null && { backgroundColor: colors.text, borderColor: colors.text }
-            ]}
-            onPress={() => { setActiveTagId(null); setQuery(''); }}
-          >
-            <Text style={[
-              styles.tagChipText,
-              { color: colors.textSecondary },
-              activeTagId === null && { color: colors.card }
-            ]}>
-              All
-            </Text>
-          </TVFocusable>
-          {filterTags.map((tag) => (
+        Platform.isTV ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={[styles.tagWrap, { flexWrap: 'nowrap' }]}>
             <TVFocusable
-              key={tag.id}
-              testID={`library-tag-chip-${tag.id}`}
+              testID="library-tag-chip-all"
               style={[
                 styles.tagChip,
                 { backgroundColor: colors.card, borderColor: colors.border },
-                activeTagId === tag.id && { backgroundColor: colors.text, borderColor: colors.text }
+                activeTagId === null && { backgroundColor: colors.text, borderColor: colors.text }
               ]}
-              onPress={() => handleTagPress(tag.id)}
+              onPress={() => { setActiveTagId(null); setQuery(''); }}
             >
               <Text style={[
                 styles.tagChipText,
                 { color: colors.textSecondary },
-                activeTagId === tag.id && { color: colors.card }
+                activeTagId === null && { color: colors.card }
               ]}>
-                {tag.name}
+                All
               </Text>
             </TVFocusable>
-          ))}
-        </View>
+            {filterTags.map((tag) => (
+              <TVFocusable
+                key={tag.id}
+                testID={`library-tag-chip-${tag.id}`}
+                style={[
+                  styles.tagChip,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                  activeTagId === tag.id && { backgroundColor: colors.text, borderColor: colors.text }
+                ]}
+                onPress={() => handleTagPress(tag.id)}
+              >
+                <Text style={[
+                  styles.tagChipText,
+                  { color: colors.textSecondary },
+                  activeTagId === tag.id && { color: colors.card }
+                ]}>
+                  {tag.name}
+                </Text>
+              </TVFocusable>
+            ))}
+          </ScrollView>
+        ) : (
+          <View testID="library-tag-wrap" style={styles.tagWrap}>
+            <TVFocusable
+              testID="library-tag-chip-all"
+              style={[
+                styles.tagChip,
+                { backgroundColor: colors.card, borderColor: colors.border },
+                activeTagId === null && { backgroundColor: colors.text, borderColor: colors.text }
+              ]}
+              onPress={() => { setActiveTagId(null); setQuery(''); }}
+            >
+              <Text style={[
+                styles.tagChipText,
+                { color: colors.textSecondary },
+                activeTagId === null && { color: colors.card }
+              ]}>
+                All
+              </Text>
+            </TVFocusable>
+            {filterTags.map((tag) => (
+              <TVFocusable
+                key={tag.id}
+                testID={`library-tag-chip-${tag.id}`}
+                style={[
+                  styles.tagChip,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                  activeTagId === tag.id && { backgroundColor: colors.text, borderColor: colors.text }
+                ]}
+                onPress={() => handleTagPress(tag.id)}
+              >
+                <Text style={[
+                  styles.tagChipText,
+                  { color: colors.textSecondary },
+                  activeTagId === tag.id && { color: colors.card }
+                ]}>
+                  {tag.name}
+                </Text>
+              </TVFocusable>
+            ))}
+          </View>
+        )
       )}
 
       <FlatList
@@ -297,16 +355,23 @@ export default function LibraryScreen() {
         ItemSeparatorComponent={ItemSeparator}
         contentContainerStyle={sortedAndFiltered.length === 0 ? styles.listEmpty : undefined}
         keyboardShouldPersistTaps="handled"
+        removeClippedSubviews={true}
+        initialNumToRender={12}
+        maxToRenderPerBatch={8}
+        windowSize={5}
       />
-      <TVFocusable
-        testID="library-add-button"
-        style={[styles.fab, { bottom: 24 + insets.bottom, backgroundColor: colors.text }]}
-        onPress={handleAddPress}
-      >
-        <Ionicons name="add" size={28} color={colors.card} />
-      </TVFocusable>
+      {/* FAB — hidden on TV */}
+      {!Platform.isTV && (
+        <TVFocusable
+          testID="library-add-button"
+          style={[styles.fab, { bottom: 24 + insets.bottom, backgroundColor: colors.text }]}
+          onPress={handleAddPress}
+        >
+          <Ionicons name="add" size={28} color={colors.card} />
+        </TVFocusable>
+      )}
 
-      {showSortMenu && (
+      {!Platform.isTV && showSortMenu && (
         <>
           <TVFocusable
             style={styles.sortMenuBackdrop}
@@ -520,5 +585,22 @@ const styles = StyleSheet.create({
   sortMenuItemText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  tvAddButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 12,
+    marginTop: 8,
+    marginBottom: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    gap: 8,
+  },
+  tvAddButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
   },
 });

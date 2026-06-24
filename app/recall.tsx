@@ -293,6 +293,7 @@ export default function RecallScreen() {
             onPress={() => handleSubmit()}
             disabled={loading}
             testID="submit-button"
+            hasTVPreferredFocus={phase === 'input'}
           >
             <Text style={styles.submitButtonText}>Submit</Text>
           </TVFocusable>
@@ -332,6 +333,7 @@ export default function RecallScreen() {
             style={[styles.nextButton, { backgroundColor: colors.primary }]}
             onPress={() => { setCountdown(null); handleNext(); }}
             testID="next-button"
+            hasTVPreferredFocus={phase === 'result'}
           >
             <Text style={styles.nextButtonText}>
               {isLastCard ? 'See Results' : countdown !== null ? `Next in ${countdown}s` : 'Next Word →'}

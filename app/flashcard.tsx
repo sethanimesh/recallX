@@ -2,12 +2,13 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
+  Platform,
   ActivityIndicator,
   StyleSheet,
   ScrollView,
   PanResponder,
 } from 'react-native';
+import { TVFocusable } from '@/src/components/TVFocusable';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import { fetchAllWords, fetchWordsByTag, type WordRow } from '@/src/db/operations/tags';
@@ -62,8 +63,8 @@ export default function FlashcardScreen() {
   const [score, setScore] = useState(0);
   const [total, setTotal] = useState(0);
 
-  const handlersRef = useRef({ handleNext, handleReveal, handleBack, phase, fcMode });
-  handlersRef.current = { handleNext, handleReveal, handleBack, phase, fcMode };
+  const handlersRef = useRef({ handleNext, handleReveal, handleBack, phase, fcMode, lastEventTime: 0 });
+  handlersRef.current = { handleNext, handleReveal, handleBack, phase, fcMode, lastEventTime: handlersRef.current.lastEventTime };
 
   const panResponder = useMemo(
     () =>
@@ -93,6 +94,8 @@ export default function FlashcardScreen() {
       }),
     [],
   );
+
+
 
   useEffect(() => {
     async function loadDeck() {
@@ -255,9 +258,9 @@ export default function FlashcardScreen() {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No words to review</Text>
-        <TouchableOpacity style={[styles.backButton, { backgroundColor: colors.primary }]} onPress={() => router.back()}>
+        <TVFocusable style={[styles.backButton, { backgroundColor: colors.primary }]} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>Go Back</Text>
-        </TouchableOpacity>
+        </TVFocusable>
       </View>
     );
   }
@@ -277,91 +280,96 @@ export default function FlashcardScreen() {
         contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={[styles.progress, { color: colors.textSecondary }]}>{progressText}</Text>
+        <TVFocusable activeOpacity={1} style={{ width: '100%' }}>
+          <Text style={[styles.progress, { color: colors.textSecondary }]}>{progressText}</Text>
 
-        <Text style={[styles.wordText, { color: colors.text }]}>{currentWord!.word}</Text>
+          <Text style={[styles.wordText, { color: colors.text }]}>{currentWord!.word}</Text>
 
-        {fcMode === 'self-rated' && card && card.wrongCount > 0 && (
-          <Text style={[
-            styles.difficultyBadge,
-            card.wrongCount >= 6 ? styles.badgeRed :
-            card.wrongCount >= 3 ? styles.badgeOrange :
-            styles.badgeAmber,
-          ]}>
-            Struggled {card.wrongCount}×
-          </Text>
-        )}
+          {fcMode === 'self-rated' && card && card.wrongCount > 0 && (
+            <Text style={[
+              styles.difficultyBadge,
+              card.wrongCount >= 6 ? styles.badgeRed :
+              card.wrongCount >= 3 ? styles.badgeOrange :
+              styles.badgeAmber,
+            ]}>
+              Struggled {card.wrongCount}×
+            </Text>
+          )}
 
-        {phase === 'revealed' && (
-          <View style={styles.revealedSection}>
-            <View style={[styles.infoBlock, { backgroundColor: colors.inputBackground }]}>
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Definition</Text>
-              <TextWithLinks text={currentWord!.definition} style={[styles.infoText, { color: colors.text }]} />
+          {phase === 'revealed' && (
+            <View style={styles.revealedSection}>
+              <View style={[styles.infoBlock, { backgroundColor: colors.inputBackground }]}>
+                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Definition</Text>
+                <TextWithLinks text={currentWord!.definition} style={[styles.infoText, { color: colors.text }]} />
+              </View>
+              <View style={[styles.infoBlock, { backgroundColor: colors.inputBackground }]}>
+                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Example</Text>
+                <TextWithLinks text={currentWord!.example_sentence} style={[styles.infoText, { color: colors.textSecondary }]} italic />
+              </View>
             </View>
-            <View style={[styles.infoBlock, { backgroundColor: colors.inputBackground }]}>
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Example</Text>
-              <TextWithLinks text={currentWord!.example_sentence} style={[styles.infoText, { color: colors.textSecondary }]} italic />
-            </View>
-          </View>
-        )}
+          )}
+        </TVFocusable>
       </ScrollView>
 
       <View style={[styles.actionFooter, { paddingBottom: insets.bottom + 24, backgroundColor: colors.card, borderTopColor: colors.border }]}>
         {fcMode === 'passive' ? (
           <View style={styles.passiveRow}>
             {currentIndex > 0 && (
-              <TouchableOpacity
+              <TVFocusable
                 style={[styles.navButton, styles.backButtonInline, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
                 onPress={handleBack}
                 testID="prev-button"
               >
                 <Text style={[styles.backButtonInlineText, { color: colors.textSecondary }]}>← Back</Text>
-              </TouchableOpacity>
+              </TVFocusable>
             )}
 
             {phase === 'question' ? (
               <>
-                <TouchableOpacity
+                <TVFocusable
                   style={[styles.navButton, styles.revealButtonInline, { backgroundColor: colors.primary }]}
                   onPress={handleReveal}
                   testID="reveal-button"
+                  hasTVPreferredFocus={phase === 'question'}
+                  accessibilityRole="button"
                 >
                   <Text style={styles.revealButtonInlineText}>Reveal Answer</Text>
-                </TouchableOpacity>
+                </TVFocusable>
                 {currentIndex + 1 < deck.length && (
-                  <TouchableOpacity
+                  <TVFocusable
                     style={[styles.navButton, styles.skipButtonInline, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
                     onPress={handleNext}
                     testID="skip-button"
                   >
                     <Text style={[styles.skipButtonInlineText, { color: colors.textSecondary }]}>Skip →</Text>
-                  </TouchableOpacity>
+                  </TVFocusable>
                 )}
               </>
             ) : (
-              <TouchableOpacity
+              <TVFocusable
                 style={[styles.navButton, styles.nextButtonInline, { backgroundColor: colors.success }]}
                 onPress={handleNext}
                 testID="next-button"
+                hasTVPreferredFocus={phase === 'revealed'}
               >
                 <Text style={styles.nextButtonInlineText}>
                   {isLastCard ? 'Next — See Results' : 'Next Word →'}
                 </Text>
-              </TouchableOpacity>
+              </TVFocusable>
             )}
           </View>
         ) : phase === 'question' ? (
-          <TouchableOpacity style={[styles.revealButton, { backgroundColor: colors.primary }]} onPress={handleReveal} testID="reveal-button">
+          <TVFocusable style={[styles.revealButton, { backgroundColor: colors.primary }]} onPress={handleReveal} testID="reveal-button" hasTVPreferredFocus={phase === 'question'} accessibilityRole="button">
             <Text style={styles.revealButtonText}>Reveal Answer</Text>
-          </TouchableOpacity>
+          </TVFocusable>
         ) : (
           <View style={styles.ratingRow}>
-            <TouchableOpacity style={[styles.missedButton, { backgroundColor: colors.error + '22' }]} onPress={handleMissedIt} testID="missed-it-button">
+            <TVFocusable style={[styles.missedButton, { backgroundColor: colors.error + '22' }]} onPress={handleMissedIt} testID="missed-it-button" accessibilityRole="button">
               <Text style={[styles.missedButtonText, { color: colors.error }]}>Missed it ✗</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.gotItButton, { backgroundColor: colors.success + '22' }]} onPress={handleGotIt} testID="got-it-button">
+            </TVFocusable>
+            <TVFocusable style={[styles.gotItButton, { backgroundColor: colors.success + '22' }]} onPress={handleGotIt} testID="got-it-button" hasTVPreferredFocus={phase === 'revealed'} accessibilityRole="button">
               <Text style={[styles.gotItButtonText, { color: colors.success }]}>Got it ✓</Text>
-            </TouchableOpacity>
+            </TVFocusable>
           </View>
         )}
       </View>

@@ -21,6 +21,7 @@ export default function PracticeScreen() {
           onPress={() => router.push('/recall-setup' as any)}
           accessibilityRole="button"
           testID="begin-button"
+          hasTVPreferredFocus={true}
         >
           <Text style={styles.buttonText}>Start Review</Text>
         </TVFocusable>

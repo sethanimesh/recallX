@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '@/src/utils/theme';
-import { Platform, View, Text, StyleSheet } from 'react-native';
+import { Platform, View, Text, StyleSheet, TVFocusGuideView } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { TVFocusable } from '@/src/components/TVFocusable';
 
@@ -9,7 +9,7 @@ function TVTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const colors = useThemeColors();
 
   return (
-    <View style={[styles.tvTabBar, { backgroundColor: colors.card, borderRightColor: colors.border }]}>
+    <TVFocusGuideView autoFocus style={[styles.tvTabBar, { backgroundColor: colors.card, borderRightColor: colors.border }]}>
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const label =
@@ -41,16 +41,16 @@ function TVTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             accessibilityLabel={options.tabBarAccessibilityLabel}
             testID={(options as any).tabBarTestID}
             onPress={onPress}
-            style={[styles.tvTabItem, isFocused && { backgroundColor: colors.inputBackground }]}
+            style={[styles.tvTabItem, isFocused && { backgroundColor: colors.primary + '20', borderLeftWidth: 3, borderLeftColor: colors.primary }]}
           >
-            {options.tabBarIcon && options.tabBarIcon({ focused: isFocused, color: isFocused ? colors.primary! : colors.textSecondary!, size: 24 })}
+            {options.tabBarIcon && options.tabBarIcon({ focused: isFocused, color: isFocused ? colors.primary! : colors.textSecondary!, size: 28 })}
             <Text style={[styles.tvTabLabel, { color: isFocused ? colors.primary : colors.textSecondary }]}>
               {label as string}
             </Text>
           </TVFocusable>
         );
       })}
-    </View>
+    </TVFocusGuideView>
   );
 }
 
@@ -61,7 +61,7 @@ export default function TabLayout() {
     <Tabs 
       {...({
         tabBar: Platform.isTV ? (props: BottomTabBarProps) => <TVTabBar {...props} /> : undefined,
-        sceneContainerStyle: Platform.isTV ? { marginLeft: 90 } : undefined,
+        sceneContainerStyle: Platform.isTV ? { marginLeft: 120 } : undefined,
       } as any)}
       screenOptions={{
         headerShown: false,
@@ -119,9 +119,9 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    width: 90,
+    width: 120,
     borderRightWidth: 1,
-    paddingTop: 40,
+    paddingTop: 60,
     alignItems: 'center',
     gap: 20,
     zIndex: 100,
@@ -129,12 +129,12 @@ const styles = StyleSheet.create({
   tvTabItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 70,
-    height: 70,
+    width: 100,
+    height: 80,
     borderRadius: 8,
   },
   tvTabLabel: {
-    fontSize: 12,
+    fontSize: 14,
     marginTop: 4,
     fontWeight: '600',
   },

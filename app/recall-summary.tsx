@@ -2,12 +2,11 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   FlatList,
-  ScrollView,
   StyleSheet,
   ListRenderItemInfo,
 } from 'react-native';
+import { TVFocusable } from '@/src/components/TVFocusable';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { fetchAllWords, type WordRow } from '@/src/db/operations/tags';
 import { useThemeColors } from '@/src/utils/theme';
@@ -73,78 +72,85 @@ export default function RecallSummaryScreen() {
   }
 
   const renderMissedItem = useCallback(({ item }: ListRenderItemInfo<WordRow>) => (
-    <View style={styles.missedRow} testID={`missed-row-${item.id}`}>
+    <TVFocusable activeOpacity={1} style={styles.missedRow} testID={`missed-row-${item.id}`}>
       <Text style={[styles.missedWord, { color: colors.text }]}>{item.word}</Text>
       <Text style={[styles.missedDefinition, { color: colors.textSecondary }]}>{item.definition}</Text>
-    </View>
+    </TVFocusable>
   ), [colors]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
-        <Text style={[styles.heading, { color: colors.text }]}>Session Complete</Text>
+      <FlatList
+        style={styles.scrollArea}
+        contentContainerStyle={styles.scrollContent}
+        data={missedWords}
+        keyExtractor={item => item.id}
+        renderItem={renderMissedItem}
+        ItemSeparatorComponent={() => <View style={[styles.missedSeparator, { backgroundColor: colors.border }]} />}
+        ListHeaderComponent={
+          <>
+            <Text style={[styles.heading, { color: colors.text }]}>Session Complete</Text>
 
-        <Text style={[styles.fraction, { color: colors.text }]} testID="score-fraction">{score} / {total}</Text>
+            <Text style={[styles.fraction, { color: colors.text }]} testID="score-fraction">{score} / {total}</Text>
 
-        <View style={[styles.barTrack, { backgroundColor: colors.border }]} testID="progress-bar">
-          <View style={[styles.barFill, { backgroundColor: colors.success, width: `${Math.round(pct * 100)}%` as any }]} />
-        </View>
+            <View style={[styles.barTrack, { backgroundColor: colors.border }]} testID="progress-bar">
+              <View style={[styles.barFill, { backgroundColor: colors.success, width: `${Math.round(pct * 100)}%` as any }]} />
+            </View>
 
-        <Text style={[styles.pctText, { color: colors.textSecondary }]}>{total > 0 ? `${Math.round(pct * 100)}%` : '—'}</Text>
+            <Text style={[styles.pctText, { color: colors.textSecondary }]}>{total > 0 ? `${Math.round(pct * 100)}%` : '—'}</Text>
 
-        {missedWords.length > 0 && (
-          <View style={styles.missedSection}>
-            <Text style={[styles.missedHeading, { color: colors.text }]} testID="missed-heading">
-              Missed Words ({missedWords.length})
-            </Text>
-            <FlatList
-              data={missedWords}
-              keyExtractor={item => item.id}
-              renderItem={renderMissedItem}
-              ItemSeparatorComponent={() => <View style={[styles.missedSeparator, { backgroundColor: colors.border }]} />}
-              scrollEnabled={false}
-            />
-          </View>
-        )}
-
-        {(clearedWords.length > 0 || stillStrugglingWords.length > 0) && (
-          <View style={styles.lastSessionSection}>
-            <Text style={[styles.lastSessionHeading, { color: colors.text }]}>From last session</Text>
-            {clearedWords.map(w => (
-              <View key={w.id} style={styles.lastSessionRow} testID={`cleared-row-${w.id}`}>
-                <Text style={[styles.lastSessionCheck, { color: colors.success }]}>✓</Text>
-                <Text style={[styles.lastSessionWord, { color: colors.text }]}>{w.word}</Text>
+            {missedWords.length > 0 && (
+              <View style={styles.missedSection}>
+                <Text style={[styles.missedHeading, { color: colors.text }]} testID="missed-heading">
+                  Missed Words ({missedWords.length})
+                </Text>
               </View>
-            ))}
-            {stillStrugglingWords.map(w => (
-              <View key={w.id} style={styles.lastSessionRow} testID={`struggling-row-${w.id}`}>
-                <Text style={[styles.lastSessionCross, { color: colors.error }]}>✗</Text>
-                <Text style={[styles.lastSessionWord, { color: colors.text }]}>{w.word}</Text>
+            )}
+          </>
+        }
+        ListFooterComponent={
+          <>
+            {(clearedWords.length > 0 || stillStrugglingWords.length > 0) && (
+              <View style={styles.lastSessionSection}>
+                <Text style={[styles.lastSessionHeading, { color: colors.text }]}>From last session</Text>
+                {clearedWords.map(w => (
+                  <View key={w.id} style={styles.lastSessionRow} testID={`cleared-row-${w.id}`}>
+                    <Text style={[styles.lastSessionCheck, { color: colors.success }]}>✓</Text>
+                    <Text style={[styles.lastSessionWord, { color: colors.text }]}>{w.word}</Text>
+                  </View>
+                ))}
+                {stillStrugglingWords.map(w => (
+                  <View key={w.id} style={styles.lastSessionRow} testID={`struggling-row-${w.id}`}>
+                    <Text style={[styles.lastSessionCross, { color: colors.error }]}>✗</Text>
+                    <Text style={[styles.lastSessionWord, { color: colors.text }]}>{w.word}</Text>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
+            )}
 
-      <View style={styles.buttons}>
-        <TouchableOpacity
-          style={[styles.restartButton, { backgroundColor: colors.success }]}
-          onPress={handleRestart}
-          testID="restart-button"
-          accessibilityRole="button"
-        >
-          <Text style={styles.restartText}>Restart</Text>
-        </TouchableOpacity>
+            <View style={styles.buttons}>
+              <TVFocusable
+                style={[styles.restartButton, { backgroundColor: colors.success }]}
+                onPress={handleRestart}
+                testID="restart-button"
+                accessibilityRole="button"
+                hasTVPreferredFocus={true}
+              >
+                <Text style={styles.restartText}>Restart</Text>
+              </TVFocusable>
 
-        <TouchableOpacity
-          style={[styles.doneButton, { borderColor: colors.border, backgroundColor: colors.card }]}
-          onPress={handleDone}
-          testID="done-button"
-          accessibilityRole="button"
-        >
-          <Text style={[styles.doneText, { color: colors.textSecondary }]}>Done</Text>
-        </TouchableOpacity>
-      </View>
+              <TVFocusable
+                style={[styles.doneButton, { borderColor: colors.border, backgroundColor: colors.card }]}
+                onPress={handleDone}
+                testID="done-button"
+                accessibilityRole="button"
+              >
+                <Text style={[styles.doneText, { color: colors.textSecondary }]}>Done</Text>
+              </TVFocusable>
+            </View>
+          </>
+        }
+      />
     </View>
   );
 }

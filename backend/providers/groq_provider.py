@@ -8,10 +8,27 @@ logger = logging.getLogger(__name__)
 
 
 def _strict_schema(schema: dict) -> dict:
-    """Recursively add additionalProperties: false to all object nodes."""
+    """Recursively add additionalProperties: false to all object nodes and make properties required."""
     schema = dict(schema)
+    
+    for key in ("title", "default"):
+        if key in schema:
+            del schema[key]
+
     if schema.get("type") == "object":
         schema["additionalProperties"] = False
+        if "properties" in schema:
+            schema["required"] = list(schema["properties"].keys())
+
+    if "anyOf" in schema:
+        types = []
+        for choice in schema["anyOf"]:
+            if "type" in choice:
+                types.append(choice["type"])
+        if types and len(types) == len(schema["anyOf"]):
+            schema["type"] = types if len(types) > 1 else types[0]
+            del schema["anyOf"]
+
     for key in ("properties", "$defs"):
         if key in schema:
             schema[key] = {k: _strict_schema(v) for k, v in schema[key].items()}

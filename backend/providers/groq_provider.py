@@ -1,7 +1,7 @@
 import logging
 from openai import AsyncOpenAI, RateLimitError  # noqa: F401 — re-exported for callers
 from providers.base import LLMProvider, ExtractionRequest, ExtractedWord, ExtractionResult
-from providers._parse import parse_llm_response
+
 from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, TEXT_SYSTEM_PROMPT, WORD_LOOKUP_SYSTEM_PROMPT, build_prompt
 from config import get_provider_config
 
@@ -69,13 +69,24 @@ class GroqProvider:
         if not self._api_key:
             raise ValueError("GROQ_API_KEY not set")
         if req.input_type == "image":
-            model = self._vision_model
-            messages = [
+            vision_messages = [
                 {"role": "system", "content": build_prompt(IMAGE_SYSTEM_PROMPT, req.instructions)},
                 {"role": "user", "content": [
                     {"type": "image_url", "image_url": {"url": f"data:{req.mime_type};base64,{req.content}"}},
                     {"type": "text", "text": IMAGE_USER_PROMPT},
                 ]},
+            ]
+            vision_response = await self._client.chat.completions.create(
+                model=self._vision_model,
+                messages=vision_messages,
+                temperature=0.1,
+            )
+            raw_content = vision_response.choices[0].message.content or ""
+            
+            model = self._text_model
+            messages = [
+                {"role": "system", "content": "You are a formatting assistant. Convert the following extracted vocabulary words into the exact strict JSON schema required. Make sure to preserve the word, definition, and example_sentence."},
+                {"role": "user", "content": raw_content},
             ]
         elif req.input_type == "word":
             model = self._text_model
@@ -89,17 +100,13 @@ class GroqProvider:
                 {"role": "system", "content": build_prompt(TEXT_SYSTEM_PROMPT, req.instructions)},
                 {"role": "user", "content": req.content},
             ]
-        kwargs = {
-            "model": model,
-            "messages": messages,
-            "temperature": 0.1,
-        }
-        if req.input_type != "image":
-            kwargs["response_format"] = _RESPONSE_FORMAT
-
-        response = await self._client.chat.completions.create(**kwargs)
+            
+        response = await self._client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=0.1,
+            response_format=_RESPONSE_FORMAT,
+        )
 
         content = response.choices[0].message.content or "{}"
-        if req.input_type == "image":
-            return parse_llm_response(content)
         return ExtractionResult.model_validate_json(content).words

@@ -64,8 +64,8 @@ export default function FlashcardScreen() {
   const [score, setScore] = useState(0);
   const [total, setTotal] = useState(0);
 
-  const handlersRef = useRef({ handleNext, handleReveal, handleBack, handleGotIt, handleMissedIt, phase, fcMode, lastEventTime: 0 });
-  handlersRef.current = { handleNext, handleReveal, handleBack, handleGotIt, handleMissedIt, phase, fcMode, lastEventTime: handlersRef.current.lastEventTime };
+  const handlersRef = useRef({ handleNext, handleReveal, handleBack, phase, fcMode, lastEventTime: 0 });
+  handlersRef.current = { handleNext, handleReveal, handleBack, phase, fcMode, lastEventTime: handlersRef.current.lastEventTime };
 
   const [isCardFocused, setIsCardFocused] = useState(false);
 
@@ -74,16 +74,17 @@ export default function FlashcardScreen() {
     const now = Date.now();
     if (now - handlersRef.current.lastEventTime < 300) return;
 
-    const { fcMode: currentFcMode, phase: currentPhase, handleNext: currentHandleNext, handleReveal: currentHandleReveal, handleBack: currentHandleBack, handleGotIt: currentHandleGotIt, handleMissedIt: currentHandleMissedIt } = handlersRef.current;
+    const { fcMode: currentFcMode, phase: currentPhase, handleNext: currentHandleNext, handleReveal: currentHandleReveal, handleBack: currentHandleBack } = handlersRef.current;
     
+    // Only support passive mode navigation shortcuts
+    if (currentFcMode !== 'passive') return;
+
     let handled = false;
     if (evt.eventType === 'right') {
-      if (currentFcMode === 'passive') currentHandleNext();
-      else if (currentPhase === 'revealed') currentHandleGotIt();
+      currentHandleNext();
       handled = true;
     } else if (evt.eventType === 'left') {
-      if (currentFcMode === 'passive') currentHandleBack();
-      else if (currentPhase === 'revealed') currentHandleMissedIt();
+      currentHandleBack();
       handled = true;
     } else if (evt.eventType === 'up' || evt.eventType === 'select') {
       if (currentPhase === 'question') {

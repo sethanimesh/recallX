@@ -26,7 +26,6 @@
       "bundleIdentifier": "com.animesh.RecallX"
     },
     "android": {
-      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -53,6 +52,14 @@
         {
           "isTV": true,
           "androidTVBanner": "./assets/images/tv-banner.png"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
         }
       ]
     ],

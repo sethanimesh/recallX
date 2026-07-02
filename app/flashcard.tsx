@@ -64,31 +64,26 @@ export default function FlashcardScreen() {
   const [score, setScore] = useState(0);
   const [total, setTotal] = useState(0);
 
-  const handlersRef = useRef({ handleNext, handleReveal, handleBack, phase, fcMode, lastEventTime: 0 });
-  handlersRef.current = { handleNext, handleReveal, handleBack, phase, fcMode, lastEventTime: handlersRef.current.lastEventTime };
+  const handlersRef = useRef({ handleNext, handleReveal, handleBack, handleGotIt, handleMissedIt, phase, fcMode, lastEventTime: 0 });
+  handlersRef.current = { handleNext, handleReveal, handleBack, handleGotIt, handleMissedIt, phase, fcMode, lastEventTime: handlersRef.current.lastEventTime };
 
   const [isCardFocused, setIsCardFocused] = useState(false);
 
   useTVEventHandler((evt) => {
-    if (!isCardFocused) return;
-    
-    // Throttle events slightly to avoid double firing
+    // We act globally on the screen to ensure navigation works robustly.
     const now = Date.now();
     if (now - handlersRef.current.lastEventTime < 300) return;
 
-    // We want to act on key down. eventKeyAction === 0 is KEY_DOWN on Android.
-    if (evt.eventKeyAction !== undefined && evt.eventKeyAction !== 0) return;
-
-    const { fcMode: currentFcMode, phase: currentPhase, handleNext: currentHandleNext, handleReveal: currentHandleReveal, handleBack: currentHandleBack } = handlersRef.current;
+    const { fcMode: currentFcMode, phase: currentPhase, handleNext: currentHandleNext, handleReveal: currentHandleReveal, handleBack: currentHandleBack, handleGotIt: currentHandleGotIt, handleMissedIt: currentHandleMissedIt } = handlersRef.current;
     
-    if (currentFcMode !== 'passive') return;
-
     let handled = false;
     if (evt.eventType === 'right') {
-      currentHandleNext();
+      if (currentFcMode === 'passive') currentHandleNext();
+      else if (currentPhase === 'revealed') currentHandleGotIt();
       handled = true;
     } else if (evt.eventType === 'left') {
-      currentHandleBack();
+      if (currentFcMode === 'passive') currentHandleBack();
+      else if (currentPhase === 'revealed') currentHandleMissedIt();
       handled = true;
     } else if (evt.eventType === 'up' || evt.eventType === 'select') {
       if (currentPhase === 'question') {
@@ -319,6 +314,7 @@ export default function FlashcardScreen() {
         <TVFocusable 
           activeOpacity={1} 
           style={{ width: '100%' }}
+          hasTVPreferredFocus={true}
           onFocus={() => setIsCardFocused(true)}
           onBlur={() => setIsCardFocused(false)}
         >
@@ -371,7 +367,6 @@ export default function FlashcardScreen() {
                   style={[styles.navButton, styles.revealButtonInline, { backgroundColor: colors.primary }]}
                   onPress={handleReveal}
                   testID="reveal-button"
-                  hasTVPreferredFocus={phase === 'question'}
                   accessibilityRole="button"
                 >
                   <Text style={styles.revealButtonInlineText}>Reveal Answer</Text>
@@ -391,7 +386,6 @@ export default function FlashcardScreen() {
                 style={[styles.navButton, styles.nextButtonInline, { backgroundColor: colors.success }]}
                 onPress={handleNext}
                 testID="next-button"
-                hasTVPreferredFocus={phase === 'revealed'}
               >
                 <Text style={styles.nextButtonInlineText}>
                   {isLastCard ? 'Next — See Results' : 'Next Word →'}
@@ -400,7 +394,7 @@ export default function FlashcardScreen() {
             )}
           </View>
         ) : phase === 'question' ? (
-          <TVFocusable style={[styles.revealButton, { backgroundColor: colors.primary }]} onPress={handleReveal} testID="reveal-button" hasTVPreferredFocus={phase === 'question'} accessibilityRole="button">
+          <TVFocusable style={[styles.revealButton, { backgroundColor: colors.primary }]} onPress={handleReveal} testID="reveal-button" accessibilityRole="button">
             <Text style={styles.revealButtonText}>Reveal Answer</Text>
           </TVFocusable>
         ) : (
@@ -408,7 +402,7 @@ export default function FlashcardScreen() {
             <TVFocusable style={[styles.missedButton, { backgroundColor: colors.error + '22' }]} onPress={handleMissedIt} testID="missed-it-button" accessibilityRole="button">
               <Text style={[styles.missedButtonText, { color: colors.error }]}>Missed it ✗</Text>
             </TVFocusable>
-            <TVFocusable style={[styles.gotItButton, { backgroundColor: colors.success + '22' }]} onPress={handleGotIt} testID="got-it-button" hasTVPreferredFocus={phase === 'revealed'} accessibilityRole="button">
+            <TVFocusable style={[styles.gotItButton, { backgroundColor: colors.success + '22' }]} onPress={handleGotIt} testID="got-it-button" accessibilityRole="button">
               <Text style={[styles.gotItButtonText, { color: colors.success }]}>Got it ✓</Text>
             </TVFocusable>
           </View>

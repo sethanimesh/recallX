@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ScrollView,
   PanResponder,
+  useTVEventHandler,
 } from 'react-native';
 import { TVFocusable } from '@/src/components/TVFocusable';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -65,6 +66,41 @@ export default function FlashcardScreen() {
 
   const handlersRef = useRef({ handleNext, handleReveal, handleBack, phase, fcMode, lastEventTime: 0 });
   handlersRef.current = { handleNext, handleReveal, handleBack, phase, fcMode, lastEventTime: handlersRef.current.lastEventTime };
+
+  const [isCardFocused, setIsCardFocused] = useState(false);
+
+  useTVEventHandler((evt) => {
+    if (!isCardFocused) return;
+    
+    // Throttle events slightly to avoid double firing
+    const now = Date.now();
+    if (now - handlersRef.current.lastEventTime < 300) return;
+
+    // We want to act on key down. eventKeyAction === 0 is KEY_DOWN on Android.
+    if (evt.eventKeyAction !== undefined && evt.eventKeyAction !== 0) return;
+
+    const { fcMode: currentFcMode, phase: currentPhase, handleNext: currentHandleNext, handleReveal: currentHandleReveal, handleBack: currentHandleBack } = handlersRef.current;
+    
+    if (currentFcMode !== 'passive') return;
+
+    let handled = false;
+    if (evt.eventType === 'right') {
+      currentHandleNext();
+      handled = true;
+    } else if (evt.eventType === 'left') {
+      currentHandleBack();
+      handled = true;
+    } else if (evt.eventType === 'up' || evt.eventType === 'select') {
+      if (currentPhase === 'question') {
+        currentHandleReveal();
+        handled = true;
+      }
+    }
+
+    if (handled) {
+      handlersRef.current.lastEventTime = now;
+    }
+  });
 
   const panResponder = useMemo(
     () =>
@@ -280,7 +316,12 @@ export default function FlashcardScreen() {
         contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}
         keyboardShouldPersistTaps="handled"
       >
-        <TVFocusable activeOpacity={1} style={{ width: '100%' }}>
+        <TVFocusable 
+          activeOpacity={1} 
+          style={{ width: '100%' }}
+          onFocus={() => setIsCardFocused(true)}
+          onBlur={() => setIsCardFocused(false)}
+        >
           <Text style={[styles.progress, { color: colors.textSecondary }]}>{progressText}</Text>
 
           <Text style={[styles.wordText, { color: colors.text }]}>{currentWord!.word}</Text>

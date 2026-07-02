@@ -13,8 +13,8 @@ _PROVIDER_CONFIGS: dict[str, dict[str, Any]] = {
     "groq": {
         "api_key_env": "GROQ_API_KEY",
         "base_url": "https://api.groq.com/openai/v1",
-        "vision_model": "meta-llama/llama-4-scout-17b-16e-instruct",
-        "text_model": "openai/gpt-oss-20b",
+        "vision_model": "llama-3.2-11b-vision-preview",
+        "text_model": "llama-3.3-70b-versatile",
     },
     "openrouter": {
         "api_key_env": "OPENROUTER_API_KEY",

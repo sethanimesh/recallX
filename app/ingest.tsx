@@ -91,7 +91,7 @@ export default function IngestScreen() {
       setPendingExtraction({ words: extracted, sourceUri, sourceType, defaultTags: defaultTagsRef.current });
       if (isMountedRef.current) setModalState({ phase: 'done' });
       lastActivePhaseRef.current = 'done';
-      timerRef.current = setTimeout(() => router.replace('/review'), DONE_DISPLAY_MS);
+      timerRef.current = setTimeout(() => router.push('/review'), DONE_DISPLAY_MS);
     } catch (err) {
       if (isMountedRef.current)
         setModalState({ phase: 'error', message: err instanceof Error ? err.message : 'Unknown error' });

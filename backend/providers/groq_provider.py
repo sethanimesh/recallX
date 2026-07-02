@@ -89,11 +89,15 @@ class GroqProvider:
                 {"role": "system", "content": build_prompt(TEXT_SYSTEM_PROMPT, req.instructions)},
                 {"role": "user", "content": req.content},
             ]
-        fmt = {"type": "json_object"} if req.input_type == "image" else _RESPONSE_FORMAT
-        response = await self._client.chat.completions.create(
-            model=model, messages=messages, temperature=0.1,
-            response_format=fmt,
-        )
+        kwargs = {
+            "model": model,
+            "messages": messages,
+            "temperature": 0.1,
+        }
+        if req.input_type != "image":
+            kwargs["response_format"] = _RESPONSE_FORMAT
+
+        response = await self._client.chat.completions.create(**kwargs)
 
         content = response.choices[0].message.content or "{}"
         if req.input_type == "image":

@@ -81,8 +81,9 @@ export default function ReviewScreen() {
           .map((_, i) => i)
           .filter((i) => finalDecisions[i]);
 
-        const { insertedIds, duplicates } = await insertExtraction(uri, type, accepted);
+        const results = await insertExtraction(uri, type, accepted);
 
+        const duplicates = results.filter((r) => !r.isNew).map((r) => r.word);
         if (duplicates.length > 0) {
           Alert.alert(
             'Already in your library',
@@ -90,18 +91,14 @@ export default function ReviewScreen() {
           );
         }
 
-        // Filter out indices for words that were skipped as duplicates so the
-        // list aligns 1-to-1 with insertedIds.
-        const acceptedAndInsertedOriginalIndices = acceptedOriginalIndices.filter(
-          (_, j) => !duplicates.includes(accepted[j].word),
-        );
-
-        // Apply per-word tags: accepted[j] corresponds to insertedIds[j] and acceptedAndInsertedOriginalIndices[j]
+        // Apply per-word tags: results[j] corresponds to accepted[j] and acceptedOriginalIndices[j]
         const tagOps: Promise<void>[] = [];
-        insertedIds.forEach((wordId, j) => {
-          const originalIndex = acceptedAndInsertedOriginalIndices[j];
-          const wordTags = tags.get(originalIndex) ?? [];
-          wordTags.forEach((tag) => tagOps.push(addTagToWord(wordId, tag.id)));
+        results.forEach((result, j) => {
+          if (result.id) {
+            const originalIndex = acceptedOriginalIndices[j];
+            const wordTags = tags.get(originalIndex) ?? [];
+            wordTags.forEach((tag) => tagOps.push(addTagToWord(result.id, tag.id)));
+          }
         });
         await Promise.all(tagOps);
 

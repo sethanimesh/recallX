@@ -1,6 +1,7 @@
 import logging
 from openai import AsyncOpenAI, RateLimitError  # noqa: F401 — re-exported for callers
 from providers.base import LLMProvider, ExtractionRequest, ExtractedWord, ExtractionResult
+from providers._parse import parse_llm_response
 from providers._prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, TEXT_SYSTEM_PROMPT, WORD_LOOKUP_SYSTEM_PROMPT, build_prompt
 from config import get_provider_config
 
@@ -88,11 +89,13 @@ class GroqProvider:
                 {"role": "system", "content": build_prompt(TEXT_SYSTEM_PROMPT, req.instructions)},
                 {"role": "user", "content": req.content},
             ]
+        fmt = {"type": "json_object"} if req.input_type == "image" else _RESPONSE_FORMAT
         response = await self._client.chat.completions.create(
             model=model, messages=messages, temperature=0.1,
-            response_format=_RESPONSE_FORMAT,
+            response_format=fmt,
         )
 
-        return ExtractionResult.model_validate_json(
-            response.choices[0].message.content or "{}"
-        ).words
+        content = response.choices[0].message.content or "{}"
+        if req.input_type == "image":
+            return parse_llm_response(content)
+        return ExtractionResult.model_validate_json(content).words

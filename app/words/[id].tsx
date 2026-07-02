@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   PanResponder,
   Platform,
+  useTVEventHandler,
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -440,6 +441,26 @@ export default function WordDetailScreen() {
     [goToAdjacentWord, navState.active],
   );
 
+  const lastTvEventRef = useRef(0);
+  useTVEventHandler((evt) => {
+    if (!navState.active) return;
+    const now = Date.now();
+    if (now - lastTvEventRef.current < 300) return;
+
+    let handled = false;
+    if (evt.eventType === 'right' && navState.index < navState.ids.length - 1) {
+      goToAdjacentWord(1);
+      handled = true;
+    } else if (evt.eventType === 'left' && navState.index > 0) {
+      goToAdjacentWord(-1);
+      handled = true;
+    }
+
+    if (handled) {
+      lastTvEventRef.current = now;
+    }
+  });
+
   // ── Loading ─────────────────────────────────────────────────────────────────
 
   if (loading) {
@@ -471,6 +492,94 @@ export default function WordDetailScreen() {
   const canPrev = navActive && navIndex > 0;
   const canNext = navActive && navIndex < ids.length - 1;
 
+  // ── TV: simplified read-only card ──────────────────────────────────────────
+  if (Platform.isTV) {
+    return (
+      <View style={[styles.screenContainer, { backgroundColor: colors.background }]}>
+        <Stack.Screen
+          options={{
+            title: '',
+            headerBackTitle: 'Library',
+          }}
+        />
+        <ScrollView
+          style={[styles.scrollView, { backgroundColor: colors.background }]}
+          contentContainerStyle={[styles.content, { paddingBottom: 32 }]}
+        >
+          {/* Word heading (read-only) */}
+          <Text style={[styles.wordHeading, { color: colors.text, marginBottom: 16 }]}>{wordData.word}</Text>
+
+          {/* Definition */}
+          <View style={styles.fieldContainer}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Definition</Text>
+            <Text style={[styles.fieldText, { color: colors.text }]}>{wordData.definition}</Text>
+          </View>
+
+          {/* Example sentence */}
+          {wordData.example_sentence ? (
+            <View style={styles.fieldContainer}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Example Sentence</Text>
+              <Text style={[styles.fieldText, { color: colors.textSecondary, fontStyle: 'italic' }]}>{wordData.example_sentence}</Text>
+            </View>
+          ) : null}
+
+          {/* Mnemonic */}
+          {wordData.mnemonic ? (
+            <View style={styles.fieldContainer}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Mnemonic</Text>
+              <Text style={[styles.fieldText, { color: colors.text }]}>{wordData.mnemonic}</Text>
+            </View>
+          ) : null}
+
+          {/* Tags (display only) */}
+          {tags.length > 0 && (
+            <View style={styles.fieldContainer}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Tags</Text>
+              <View style={styles.chipsRow}>
+                {tags.map((tag) => (
+                  <View key={tag.id} style={[styles.chip, { backgroundColor: colors.accent }]}>
+                    <Text style={[styles.chipText, { color: colors.primary }]}>{tag.name}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Left / Right nav bar */}
+        {navActive && (
+          <View
+            testID="word-detail-nav-bar"
+            style={[styles.navBar, { paddingBottom: 16, borderTopColor: colors.border, backgroundColor: colors.card }]}
+          >
+            <TVFocusable
+              testID="word-detail-nav-prev"
+              disabled={!canPrev}
+              onPress={() => goToAdjacentWord(-1)}
+              hitSlop={12}
+              style={[styles.navChevron, !canPrev && styles.navChevronDisabled]}
+            >
+              <Ionicons name="chevron-back" size={28} color={colors.primary} />
+            </TVFocusable>
+
+            <Text style={[styles.navCounter, { color: colors.textSecondary }]}>{navIndex + 1} / {ids.length}</Text>
+
+            <TVFocusable
+              testID="word-detail-nav-next"
+              disabled={!canNext}
+              onPress={() => goToAdjacentWord(1)}
+              hitSlop={12}
+              style={[styles.navChevron, !canNext && styles.navChevronDisabled]}
+            >
+              <Ionicons name="chevron-forward" size={28} color={colors.primary} />
+            </TVFocusable>
+          </View>
+        )}
+      </View>
+    );
+  }
+
+  // ── Phone / Tablet: full interactive UI ────────────────────────────────────
   return (
     <View
       style={[styles.screenContainer, { backgroundColor: colors.background }]}
@@ -508,22 +617,13 @@ export default function WordDetailScreen() {
               selectTextOnFocus
             />
           ) : (
-            Platform.isTV ? (
-              <TVFocusable
-                onPress={handleWordPress}
-                style={{ flexShrink: 1 }}
-              >
-                <Text style={[styles.wordHeading, { color: colors.text }]}>{wordData.word}</Text>
-              </TVFocusable>
-            ) : (
-              <TouchableOpacity
-                onPress={handleWordPress}
-                activeOpacity={0.7}
-                style={{ flexShrink: 1 }}
-              >
-                <Text style={[styles.wordHeading, { color: colors.text }]}>{wordData.word}</Text>
-              </TouchableOpacity>
-            )
+            <TouchableOpacity
+              onPress={handleWordPress}
+              activeOpacity={0.7}
+              style={{ flexShrink: 1 }}
+            >
+              <Text style={[styles.wordHeading, { color: colors.text }]}>{wordData.word}</Text>
+            </TouchableOpacity>
           )}
 
           <TVFocusable
@@ -616,18 +716,16 @@ export default function WordDetailScreen() {
             {tags.map((tag) => (
               <View key={tag.id} style={[styles.chip, { backgroundColor: colors.accent }]}>
                 <Text style={[styles.chipText, { color: colors.primary }]}>{tag.name}</Text>
-                {!Platform.isTV && (
-                  <TouchableOpacity
-                    onPress={async () => {
-                      await removeTagFromWord(id!, tag.id);
-                      setTags((prev) => prev.filter((t) => t.id !== tag.id));
-                    }}
-                    hitSlop={6}
-                    style={styles.chipDelete}
-                  >
-                    <Ionicons name="close" size={14} color={colors.primary} />
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  onPress={async () => {
+                    await removeTagFromWord(id!, tag.id);
+                    setTags((prev) => prev.filter((t) => t.id !== tag.id));
+                  }}
+                  hitSlop={6}
+                  style={styles.chipDelete}
+                >
+                  <Ionicons name="close" size={14} color={colors.primary} />
+                </TouchableOpacity>
               </View>
             ))}
             <TVFocusable style={[styles.chipAdd, { borderColor: colors.primary }]} onPress={() => setTagPickerVisible(true)}>
@@ -640,24 +738,24 @@ export default function WordDetailScreen() {
           )}
         </View>
 
-        {/* Review history */}
-        <View style={[styles.historySection, { borderTopColor: colors.border }]}>
-          <Text style={[styles.historyLabel, { color: colors.textSecondary }]}>Review history</Text>
-          {history.length === 0 ? (
-            <Text style={[styles.historyEmpty, { color: colors.textSecondary }]}>Not reviewed yet</Text>
-          ) : (
-            history.map((r, i) => (
-              <View key={i} style={styles.historyRow}>
-                <Text style={r.correct === 1 ? styles.historyCheck : styles.historyCross}>
-                  {r.correct === 1 ? '✓' : '✗'}
-                </Text>
-                <Text style={[styles.historyDate, { color: colors.textSecondary }]}>
-                  {new Date(r.answered_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </Text>
-              </View>
-            ))
-          )}
-        </View>
+          {/* Review history */}
+          <View style={[styles.historySection, { borderTopColor: colors.border }]}>
+            <Text style={[styles.historyLabel, { color: colors.textSecondary }]}>Review history</Text>
+            {history.length === 0 ? (
+              <Text style={[styles.historyEmpty, { color: colors.textSecondary }]}>Not reviewed yet</Text>
+            ) : (
+              history.map((r, i) => (
+                <View key={i} style={styles.historyRow}>
+                  <Text style={r.correct === 1 ? styles.historyCheck : styles.historyCross}>
+                    {r.correct === 1 ? '✓' : '✗'}
+                  </Text>
+                  <Text style={[styles.historyDate, { color: colors.textSecondary }]}>
+                    {new Date(r.answered_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
       </ScrollView>
 
       {navActive && (

@@ -186,6 +186,9 @@ export default function WordDetailScreen() {
   const [generatingMnemonic, setGeneratingMnemonic] = useState(false);
   const wordInputRef = useRef<TextInput>(null);
 
+  // TV reveal mode: hide meanings by default on TV, always revealed on phone
+  const [isRevealed, setIsRevealed] = useState(!Platform.isTV);
+
   // Keep draftWord in sync if wordData changes externally
   useEffect(() => {
     if (!editingWord && wordData) {
@@ -443,16 +446,26 @@ export default function WordDetailScreen() {
 
   const lastTvEventRef = useRef(0);
   useDpadNavigation((evt) => {
-    if (!navState.active) return;
     const now = Date.now();
     if (now - lastTvEventRef.current < 300) return;
+
+    // Center/select button: toggle reveal on TV
+    if (evt.eventType === 'select') {
+      setIsRevealed((prev) => !prev);
+      lastTvEventRef.current = now;
+      return;
+    }
+
+    if (!navState.active) return;
 
     let handled = false;
     if (evt.eventType === 'right' && navState.index < navState.ids.length - 1) {
       goToAdjacentWord(1);
+      setIsRevealed(false); // Reset reveal for next word
       handled = true;
     } else if (evt.eventType === 'left' && navState.index > 0) {
       goToAdjacentWord(-1);
+      setIsRevealed(false); // Reset reveal for next word
       handled = true;
     }
 
@@ -506,47 +519,65 @@ export default function WordDetailScreen() {
           style={[styles.scrollView, { backgroundColor: colors.background }]}
           contentContainerStyle={[styles.content, { paddingBottom: 32 }]}
         >
-          {/* Word heading (read-only) */}
+          {/* Word heading (always visible) */}
           <Text style={[styles.wordHeading, { color: colors.text, marginBottom: 16 }]}>{wordData.word}</Text>
 
-          {/* Definition */}
-          <View style={styles.fieldContainer}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Definition</Text>
-            <Text style={[styles.fieldText, { color: colors.text }]}>{wordData.definition}</Text>
-          </View>
-
-          {/* Example sentence */}
-          {wordData.example_sentence ? (
-            <View style={styles.fieldContainer}>
-              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Example Sentence</Text>
-              <Text style={[styles.fieldText, { color: colors.textSecondary, fontStyle: 'italic' }]}>{wordData.example_sentence}</Text>
-            </View>
-          ) : null}
-
-          {/* Mnemonic */}
-          {wordData.mnemonic ? (
-            <View style={styles.fieldContainer}>
-              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Mnemonic</Text>
-              <Text style={[styles.fieldText, { color: colors.text }]}>{wordData.mnemonic}</Text>
-            </View>
-          ) : null}
-
-          {/* Tags (display only) */}
-          {tags.length > 0 && (
-            <View style={styles.fieldContainer}>
-              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Tags</Text>
-              <View style={styles.chipsRow}>
-                {tags.map((tag) => (
-                  <View key={tag.id} style={[styles.chip, { backgroundColor: colors.accent }]}>
-                    <Text style={[styles.chipText, { color: colors.primary }]}>{tag.name}</Text>
-                  </View>
-                ))}
+          {isRevealed ? (
+            <>
+              {/* Definition */}
+              <View style={styles.fieldContainer}>
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Definition</Text>
+                <Text style={[styles.fieldText, { color: colors.text }]}>{wordData.definition}</Text>
               </View>
+
+              {/* Example sentence */}
+              {wordData.example_sentence ? (
+                <View style={styles.fieldContainer}>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Example Sentence</Text>
+                  <Text style={[styles.fieldText, { color: colors.textSecondary, fontStyle: 'italic' }]}>{wordData.example_sentence}</Text>
+                </View>
+              ) : null}
+
+              {/* Mnemonic */}
+              {wordData.mnemonic ? (
+                <View style={styles.fieldContainer}>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Mnemonic</Text>
+                  <Text style={[styles.fieldText, { color: colors.text }]}>{wordData.mnemonic}</Text>
+                </View>
+              ) : null}
+
+              {/* Tags (display only) */}
+              {tags.length > 0 && (
+                <View style={styles.fieldContainer}>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Tags</Text>
+                  <View style={styles.chipsRow}>
+                    {tags.map((tag) => (
+                      <View key={tag.id} style={[styles.chip, { backgroundColor: colors.accent }]}>
+                        <Text style={[styles.chipText, { color: colors.primary }]}>{tag.name}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </>
+          ) : (
+            <View style={styles.tvRevealContainer}>
+              <TVFocusable
+                testID="word-detail-reveal-btn"
+                onPress={() => setIsRevealed(true)}
+                style={[styles.tvRevealButton, { backgroundColor: colors.primary }]}
+              >
+                <Ionicons name="eye-outline" size={20} color="#fff" />
+                <Text style={styles.tvRevealButtonText}>Reveal</Text>
+              </TVFocusable>
+              <Text style={[styles.tvRevealHint, { color: colors.textSecondary }]}>
+                Press center button to reveal
+              </Text>
             </View>
           )}
         </ScrollView>
 
-        {/* Left / Right nav bar */}
+        {/* Reveal / Hide toggle + Left / Right nav bar */}
         {navActive && (
           <View
             testID="word-detail-nav-bar"
@@ -555,11 +586,29 @@ export default function WordDetailScreen() {
             <TVFocusable
               testID="word-detail-nav-prev"
               disabled={!canPrev}
-              onPress={() => goToAdjacentWord(-1)}
+              onPress={() => { goToAdjacentWord(-1); setIsRevealed(false); }}
               hitSlop={12}
               style={[styles.navChevron, !canPrev && styles.navChevronDisabled]}
             >
               <Ionicons name="chevron-back" size={28} color={colors.primary} />
+            </TVFocusable>
+
+            <TVFocusable
+              testID="word-detail-toggle-reveal"
+              onPress={() => setIsRevealed((prev) => !prev)}
+              style={[styles.tvNavToggle, { backgroundColor: isRevealed ? colors.inputBackground : colors.primary }]}
+            >
+              <Ionicons
+                name={isRevealed ? 'eye-off-outline' : 'eye-outline'}
+                size={18}
+                color={isRevealed ? colors.textSecondary : '#fff'}
+              />
+              <Text style={[
+                styles.tvNavToggleText,
+                { color: isRevealed ? colors.textSecondary : '#fff' }
+              ]}>
+                {isRevealed ? 'Hide' : 'Reveal'}
+              </Text>
             </TVFocusable>
 
             <Text style={[styles.navCounter, { color: colors.textSecondary }]}>{navIndex + 1} / {ids.length}</Text>
@@ -567,7 +616,7 @@ export default function WordDetailScreen() {
             <TVFocusable
               testID="word-detail-nav-next"
               disabled={!canNext}
-              onPress={() => goToAdjacentWord(1)}
+              onPress={() => { goToAdjacentWord(1); setIsRevealed(false); }}
               hitSlop={12}
               style={[styles.navChevron, !canNext && styles.navChevronDisabled]}
             >
@@ -1050,5 +1099,42 @@ const styles = StyleSheet.create({
   historyDate: {
     fontSize: 14,
     color: '#6B7280',
+  },
+  // TV reveal mode styles
+  tvRevealContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    gap: 16,
+  },
+  tvRevealButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#3B82F6',
+  },
+  tvRevealButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  tvRevealHint: {
+    fontSize: 13,
+    color: '#9CA3AF',
+  },
+  tvNavToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  tvNavToggleText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

@@ -10,8 +10,8 @@ import {
   ActivityIndicator,
   PanResponder,
   Platform,
-  useTVEventHandler,
 } from 'react-native';
+import { useDpadNavigation } from '@/src/hooks/useDpadNavigation';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
@@ -442,7 +442,7 @@ export default function WordDetailScreen() {
   );
 
   const lastTvEventRef = useRef(0);
-  useTVEventHandler((evt) => {
+  useDpadNavigation((evt) => {
     if (!navState.active) return;
     const now = Date.now();
     if (now - lastTvEventRef.current < 300) return;

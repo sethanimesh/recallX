@@ -7,8 +7,8 @@ import {
   StyleSheet,
   ScrollView,
   PanResponder,
-  useTVEventHandler,
 } from 'react-native';
+import { useDpadNavigation } from '@/src/hooks/useDpadNavigation';
 import { TVFocusable } from '@/src/components/TVFocusable';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
@@ -69,7 +69,7 @@ export default function FlashcardScreen() {
 
   const [isCardFocused, setIsCardFocused] = useState(false);
 
-  useTVEventHandler((evt) => {
+  useDpadNavigation((evt) => {
     // We act globally on the screen to ensure navigation works robustly.
     const now = Date.now();
     if (now - handlersRef.current.lastEventTime < 300) return;

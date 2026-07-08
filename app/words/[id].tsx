@@ -449,13 +449,6 @@ export default function WordDetailScreen() {
     const now = Date.now();
     if (now - lastTvEventRef.current < 300) return;
 
-    // Center/select button: toggle reveal on TV
-    if (evt.eventType === 'select') {
-      setIsRevealed((prev) => !prev);
-      lastTvEventRef.current = now;
-      return;
-    }
-
     if (!navState.active) return;
 
     let handled = false;
@@ -565,6 +558,7 @@ export default function WordDetailScreen() {
               <TVFocusable
                 testID="word-detail-reveal-btn"
                 onPress={() => setIsRevealed(true)}
+                hasTVPreferredFocus={true}
                 style={[styles.tvRevealButton, { backgroundColor: colors.primary }]}
               >
                 <Ionicons name="eye-outline" size={20} color="#fff" />
@@ -577,7 +571,7 @@ export default function WordDetailScreen() {
           )}
         </ScrollView>
 
-        {/* Reveal / Hide toggle + Left / Right nav bar */}
+        {/* Left / Right nav bar */}
         {navActive && (
           <View
             testID="word-detail-nav-bar"
@@ -591,24 +585,6 @@ export default function WordDetailScreen() {
               style={[styles.navChevron, !canPrev && styles.navChevronDisabled]}
             >
               <Ionicons name="chevron-back" size={28} color={colors.primary} />
-            </TVFocusable>
-
-            <TVFocusable
-              testID="word-detail-toggle-reveal"
-              onPress={() => setIsRevealed((prev) => !prev)}
-              style={[styles.tvNavToggle, { backgroundColor: isRevealed ? colors.inputBackground : colors.primary }]}
-            >
-              <Ionicons
-                name={isRevealed ? 'eye-off-outline' : 'eye-outline'}
-                size={18}
-                color={isRevealed ? colors.textSecondary : '#fff'}
-              />
-              <Text style={[
-                styles.tvNavToggleText,
-                { color: isRevealed ? colors.textSecondary : '#fff' }
-              ]}>
-                {isRevealed ? 'Hide' : 'Reveal'}
-              </Text>
             </TVFocusable>
 
             <Text style={[styles.navCounter, { color: colors.textSecondary }]}>{navIndex + 1} / {ids.length}</Text>

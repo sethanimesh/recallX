@@ -8,7 +8,6 @@ node_modules/
 
 .claude
 specs/
-docs/
 .vscode
 __pycache__/
 
@@ -49,9 +48,36 @@ yarn-error.*
 /ios
 /android
 
-# tests
-**/__tests__/
-
-
 backend/db.sqlite
 *.sqlite
+*.sqlite3
+*.db
+
+# Local runtimes, source assets and model checkpoints
+.python/
+backend/.venv*/
+backend/venv/
+backend/data/
+models/
+*.sqlite-*
+*.lock.tmp
+*.migrate.lock
+
+# Existing private design notes remain local
+docs/superpowers/
+
+# Private credentials and local captures
+.env
+.env.*
+!.env.example
+!**/.env.example
+*.secret
+*.log
+
+# Generated local experiments and scratch diagnostics
+evaluation/local/
+app copy.json
+/test_json_schema_support.py
+/test_json_schema_support2.py
+/test_schema4.py
+/loading-page-handoff.md

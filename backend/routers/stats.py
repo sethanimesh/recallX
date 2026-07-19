@@ -53,7 +53,7 @@ def get_llm_stats(period: Period = "all") -> LlmStatsResponse:
     where = "WHERE called_at >= ?" if cutoff is not None else ""
     params: tuple = (cutoff,) if cutoff is not None else ()
 
-    with sqlite3.connect(db_path) as conn:
+    with database.connect(db_path) as conn:
         agg_rows = conn.execute(
             f"SELECT provider, model, COUNT(*) as cnt FROM llm_calls {where} "
             "GROUP BY provider, model ORDER BY cnt DESC",

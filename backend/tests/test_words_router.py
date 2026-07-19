@@ -1,5 +1,6 @@
 """Tests for /words endpoints."""
 import sqlite3
+import uuid
 import pytest
 from fastapi.testclient import TestClient
 import database
@@ -104,7 +105,7 @@ def test_patch_word_duplicate_word_returns_409():
     assert resp.status_code == 409
 
 
-def test_patch_word_duplicate_soft_deleted_word_hard_deletes_and_updates():
+def test_patch_word_deleted_sense_preserves_tombstone_and_updates():
     client.post("/words", json=_word_payload(id="w1", word="first"))
     client.delete("/words/w1")  # soft-delete w1
     client.post("/words", json=_word_payload(id="w2", word="second"))
@@ -113,10 +114,10 @@ def test_patch_word_duplicate_soft_deleted_word_hard_deletes_and_updates():
     assert resp.status_code == 200
     assert resp.json()["word"] == "First"
 
-    # Check that w1 was hard deleted
+    # Historical item identity must survive reuse of its spelling.
     with sqlite3.connect(database._DEFAULT_DB_PATH) as conn:
-        rows = conn.execute("SELECT id FROM words WHERE id = ?", ("w1",)).fetchall()
-    assert len(rows) == 0
+        rows = conn.execute("SELECT deleted_at FROM words WHERE id = ?", ("w1",)).fetchall()
+    assert len(rows) == 1 and rows[0][0] is not None
 
 
 def test_patch_word_updates_definition():
@@ -156,3 +157,74 @@ def test_delete_word_sets_deleted_at():
 def test_delete_word_not_found_returns_404():
     resp = client.delete("/words/nonexistent")
     assert resp.status_code == 404
+
+
+def test_word_edit_lost_ack_replays_original_receipt_without_overwriting_later_edit():
+    client.post('/words', json=_word_payload())
+    headers={'X-Operation-ID':str(uuid.uuid4())}
+    edit={'definition':'Short-lived.', 'expected_content_revision':1}
+    first=client.patch('/words/w1', json=edit, headers=headers)
+    assert first.status_code==200
+    later=client.patch('/words/w1', json={'definition':'Lasting only briefly.', 'expected_content_revision':2})
+    assert later.json()['content_revision']==3
+    assert client.patch('/words/w1', json=edit, headers=headers).json()==first.json()
+    assert client.get('/words').json()[0]['definition']=='Lasting only briefly.'
+    assert client.patch('/words/w1', json={**edit,'definition':'Different.'}, headers=headers).status_code==409
+    assert client.patch('/words/missing', json=edit, headers=headers).status_code==409
+    with database.connect() as conn:
+        assert conn.execute('SELECT COUNT(*) FROM item_revisions WHERE item_id=?',('w1',)).fetchone()[0]==3
+        operation=conn.execute('SELECT payload_json FROM operations WHERE id=?',(headers['X-Operation-ID'],)).fetchone()[0]
+        assert 'sha256' in operation
+
+
+def test_word_delete_is_revision_checked_and_uuid_idempotent():
+    client.post('/words', json=_word_payload())
+    client.patch('/words/w1', json={'definition':'Updated definition.'})
+    headers={'X-Operation-ID':str(uuid.uuid4())}
+    assert client.delete('/words/w1?expected_content_revision=1', headers=headers).status_code==409
+    first=client.delete('/words/w1?expected_content_revision=2', headers=headers)
+    assert first.status_code==200
+    assert client.delete('/words/w1?expected_content_revision=2', headers=headers).json()==first.json()
+    assert client.delete('/words/w1?expected_content_revision=1', headers=headers).status_code==409
+    assert client.delete('/words/missing?expected_content_revision=2', headers=headers).status_code==409
+
+
+def test_word_edit_and_operation_receipt_roll_back_together(monkeypatch):
+    from services.library_operations import LibraryOperation
+    client.post('/words', json=_word_payload())
+    def interrupted(*_):
+        raise RuntimeError('Interrupted receipt write')
+    monkeypatch.setattr(LibraryOperation,'remember',interrupted)
+    with pytest.raises(RuntimeError, match='Interrupted receipt write'):
+        client.patch('/words/w1', json={'definition':'Should roll back.'}, headers={'X-Operation-ID':str(uuid.uuid4())})
+    with database.connect() as conn:
+        current=conn.execute('SELECT * FROM words WHERE id=?',('w1',)).fetchone()
+        assert current['content_revision']==1
+        assert current['definition']==_word_payload()['definition']
+        assert conn.execute('SELECT COUNT(*) FROM item_revisions WHERE item_id=?',('w1',)).fetchone()[0]==1
+        assert conn.execute('SELECT COUNT(*) FROM rubrics WHERE item_id=?',('w1',)).fetchone()[0]==1
+
+
+def test_word_create_uuid_replays_original_payload_and_rejects_reuse():
+    headers={'X-Operation-ID':str(uuid.uuid4())}
+    first=client.post('/words', json=_word_payload(), headers=headers)
+    assert first.status_code==201
+    assert client.post('/words', json=_word_payload(), headers=headers).json()==first.json()
+    assert client.post('/words', json=_word_payload(mnemonic='Changed request'), headers=headers).status_code==409
+    assert client.post('/words', json=_word_payload(id='w2'), headers=headers).status_code==409
+
+
+def test_mnemonic_lost_ack_reuses_receipt_without_repeating_generation(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    from routers import words
+    client.post('/words', json=_word_payload())
+    generate=AsyncMock(return_value='A brief rainbow.')
+    monkeypatch.setattr(words,'get_chain',lambda:SimpleNamespace(generate_mnemonic=generate))
+    headers={'X-Operation-ID':str(uuid.uuid4())}
+    first=client.post('/words/w1/generate-mnemonic',headers=headers)
+    assert first.status_code==200
+    client.patch('/words/w1',json={'mnemonic':'My own memory aid.'})
+    assert client.post('/words/w1/generate-mnemonic',headers=headers).json()==first.json()
+    assert client.get('/words').json()[0]['mnemonic']=='My own memory aid.'
+    assert generate.await_count==1

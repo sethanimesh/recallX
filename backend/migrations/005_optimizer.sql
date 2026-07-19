@@ -1,0 +1,2 @@
+CREATE TABLE optimization_jobs(id TEXT PRIMARY KEY,learner_id TEXT NOT NULL REFERENCES learners(id),mode TEXT NOT NULL CHECK(mode IN ('recall','flashcard')),status TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 0,error TEXT,result_json TEXT,parameter_version TEXT);
+CREATE TABLE parameter_activations(id TEXT PRIMARY KEY,learner_id TEXT NOT NULL,mode TEXT NOT NULL,previous_id TEXT,new_id TEXT NOT NULL,created_at TEXT NOT NULL,reason TEXT NOT NULL);

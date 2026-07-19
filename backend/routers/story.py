@@ -50,7 +50,7 @@ async def generate_story_endpoint(request: GenerateStoryRequest) -> StoryRespons
 import sqlite3
 import time
 from typing import Optional
-from database import _DEFAULT_DB_PATH
+import database
 
 class SavedStory(BaseModel):
     id: str
@@ -63,7 +63,7 @@ class SavedStory(BaseModel):
 @router.get("/story", response_model=list[SavedStory])
 def get_stories(tag_id: Optional[str] = None):
     try:
-        with sqlite3.connect(_DEFAULT_DB_PATH) as conn:
+        with database.connect() as conn:
             conn.row_factory = sqlite3.Row
             if tag_id:
                 if tag_id == "null":
@@ -81,7 +81,7 @@ def get_stories(tag_id: Optional[str] = None):
 @router.get("/story/{story_id}", response_model=SavedStory)
 def get_story(story_id: str):
     try:
-        with sqlite3.connect(_DEFAULT_DB_PATH) as conn:
+        with database.connect() as conn:
             conn.row_factory = sqlite3.Row
             row = conn.execute("SELECT * FROM stories WHERE id = ?", (story_id,)).fetchone()
             if not row:
@@ -96,7 +96,7 @@ def get_story(story_id: str):
 @router.post("/story", response_model=SavedStory)
 def save_story(story: SavedStory):
     try:
-        with sqlite3.connect(_DEFAULT_DB_PATH) as conn:
+        with database.connect() as conn:
             conn.execute(
                 "INSERT INTO stories (id, tag_id, prompt, title, content, created_at) VALUES (?, ?, ?, ?, ?, ?)",
                 (story.id, story.tag_id, story.prompt, story.title, story.content, story.created_at)
@@ -112,7 +112,7 @@ def save_story(story: SavedStory):
 @router.delete("/story/{story_id}")
 def delete_story(story_id: str):
     try:
-        with sqlite3.connect(_DEFAULT_DB_PATH) as conn:
+        with database.connect() as conn:
             conn.execute("DELETE FROM stories WHERE id = ?", (story_id,))
             conn.commit()
             return {"status": "ok"}

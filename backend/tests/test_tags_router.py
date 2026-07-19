@@ -1,5 +1,6 @@
 """Tests for /tags endpoints."""
 import sqlite3
+import uuid
 import pytest
 from fastapi.testclient import TestClient
 import database
@@ -201,3 +202,71 @@ def test_remove_tag_from_word_removes_association():
     client.delete("/words/w1/tags/t1")
     words = client.get("/words").json()
     assert words[0]["tags"] == []
+
+
+def test_tag_rename_lost_ack_does_not_undo_later_name():
+    client.post('/tags', json={'id':'t1','name':'Original'})
+    headers={'X-Operation-ID':str(uuid.uuid4())}
+    first=client.patch('/tags/t1', json={'name':'Renamed'}, headers=headers)
+    assert first.status_code==200
+    client.patch('/tags/t1', json={'name':'Latest'})
+    assert client.patch('/tags/t1', json={'name':'Renamed'}, headers=headers).json()==first.json()
+    assert client.get('/tags').json()[0]['name']=='Latest'
+    assert client.patch('/tags/t1', json={'name':'Collision'}, headers=headers).status_code==409
+
+
+def test_tag_merge_receipt_survives_source_deletion_and_target_edit():
+    _create_word()
+    for tag in ('source','target'):
+        client.post('/tags', json={'id':tag,'name':tag})
+    client.post('/words/w1/tags/source')
+    headers={'X-Operation-ID':str(uuid.uuid4())}
+    payload={'target_tag_id':'target'}
+    first=client.post('/tags/source/merge', json=payload, headers=headers)
+    assert first.status_code==200
+    client.patch('/tags/target', json={'name':'Later name'})
+    assert client.post('/tags/source/merge', json=payload, headers=headers).json()==first.json()
+    assert client.post('/tags/source/merge', json={'target_tag_id':'other'}, headers=headers).status_code==409
+    assert client.post('/tags/other/merge', json=payload, headers=headers).status_code==409
+    assert client.get('/words').json()[0]['tags']==[{'id':'target','name':'Later name'}]
+
+
+def test_tag_membership_retry_does_not_reverse_a_subsequent_removal():
+    _create_word()
+    client.post('/tags', json={'id':'t1','name':'Test'})
+    add={'X-Operation-ID':str(uuid.uuid4())}
+    remove={'X-Operation-ID':str(uuid.uuid4())}
+    assert client.post('/words/w1/tags/t1', headers=add).status_code==204
+    assert client.delete('/words/w1/tags/t1', headers=remove).status_code==204
+    assert client.post('/words/w1/tags/t1', headers=add).status_code==204
+    assert client.get('/words').json()[0]['tags']==[]
+    assert client.delete('/words/w1/tags/t1', headers=add).status_code==409
+
+
+def test_tag_creation_and_deletion_replay_uuid_receipts():
+    create={'X-Operation-ID':str(uuid.uuid4())}
+    remove={'X-Operation-ID':str(uuid.uuid4())}
+    payload={'id':'t1','name':'Test'}
+    first=client.post('/tags', json=payload, headers=create)
+    assert first.status_code==201
+    assert client.post('/tags', json=payload, headers=create).json()==first.json()
+    assert client.post('/tags', json={**payload,'name':'Other'}, headers=create).status_code==409
+    assert client.delete('/tags/t1', headers=remove).status_code==204
+    assert client.delete('/tags/t1', headers=remove).status_code==204
+    assert client.delete('/tags/missing', headers=remove).status_code==409
+    assert client.post('/tags', json=payload, headers={'X-Operation-ID':'not-a-uuid'}).status_code==422
+
+
+def test_tag_merge_and_receipt_roll_back_together(monkeypatch):
+    from services.library_operations import LibraryOperation
+    _create_word()
+    for tag in ('source','target'):
+        client.post('/tags', json={'id':tag,'name':tag})
+    client.post('/words/w1/tags/source')
+    def interrupted(*_):
+        raise RuntimeError('Interrupted receipt write')
+    monkeypatch.setattr(LibraryOperation,'remember',interrupted)
+    with pytest.raises(RuntimeError,match='Interrupted receipt write'):
+        client.post('/tags/source/merge', json={'target_tag_id':'target'}, headers={'X-Operation-ID':str(uuid.uuid4())})
+    assert {tag['id'] for tag in client.get('/tags').json()}=={'source','target'}
+    assert client.get('/words').json()[0]['tags']==[{'id':'source','name':'source'}]

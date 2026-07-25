@@ -1,6 +1,6 @@
 import logging
 from openai import RateLimitError
-from providers.base import ExtractionRequest, ExtractedWord, GradeResult, LLMProvider, TutorChatResponse, StoryResponse
+from providers.base import ExtractionRequest, ExtractedWord, LLMProvider, StoryResponse
 from config import get_provider_order
 import database
 
@@ -79,229 +79,13 @@ class ProviderChain:
                 failures.append(msg)
         raise ExtractionFailedError(failures)
 
-    async def grade(
-        self,
-        word: str,
-        user_answer: str,
-        stored_definition: str,
-    ) -> GradeResult:
-        """Grade a user's definition answer using the first available text provider."""
-        from openai import AsyncOpenAI
-        from config import get_provider_config
+    async def grade(self, *args, **kwargs):
+        """Legacy entrypoint deliberately disabled; use the canonical assessment service."""
+        raise RuntimeError("Generative grading is disabled. Use /assessments with an approved rubric.")
 
-        _GRADE_RESPONSE_FORMAT = {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "GradeResult",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "correct": {"type": "boolean"},
-                        "feedback": {"type": "string"},
-                    },
-                    "required": ["correct", "feedback"],
-                    "additionalProperties": False,
-                },
-                "strict": True,
-            },
-        }
-
-        template = database.get_system_prompt("grade")
-        try:
-            prompt = template.format(word=word, stored_definition=stored_definition, user_answer=user_answer)
-        except Exception:
-            prompt = template
-
-        failures: list[str] = []
-        for provider in self._providers:
-            # Skip providers that don't have a text model (vision-only providers)
-            cfg = {}
-            try:
-                cfg = get_provider_config(provider.name)
-            except Exception:
-                pass
-
-            # Build a minimal OpenAI-compatible client from the provider's config.
-            # Only providers with a text_model and api_key are usable here.
-            text_model = cfg.get("text_model")
-            base_url = cfg.get("base_url")
-            api_key = cfg.get("api_key")
-
-            if not text_model:
-                logger.debug("Skipping %s for grading — no text_model", provider.name)
-                continue
-
-            try:
-                logger.info("Trying provider %s for grading", provider.name)
-                client = AsyncOpenAI(
-                    api_key=api_key or "missing",
-                    base_url=base_url,
-                )
-                response = await client.chat.completions.create(
-                    model=text_model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.1,
-                    response_format=_GRADE_RESPONSE_FORMAT,
-                )
-                raw = response.choices[0].message.content or "{}"
-                logger.info(
-                    "LLM inference succeeded provider=%s model=%s task=grade",
-                    provider.name,
-                    text_model,
-                )
-                try:
-                    database.record_llm_call(provider.name, text_model, "grade")
-                except Exception:
-                    logger.warning("Failed to record LLM call for provider=%s", provider.name, exc_info=True)
-                return GradeResult.model_validate_json(raw)
-            except (RateLimitError, ValueError) as e:
-                msg = f"{provider.name}: {type(e).__name__}: {e}"
-                logger.warning("Provider %s skipped for grading — %s", provider.name, e)
-                failures.append(msg)
-            except Exception as e:
-                msg = f"{provider.name}: {type(e).__name__}: {e}"
-                logger.error("Provider %s error during grading — %s", provider.name, e)
-                failures.append(msg)
-
-        raise ExtractionFailedError(failures)
-
-    async def tutor_chat(
-        self,
-        word: str,
-        stored_definition: str,
-        stored_example: str,
-        user_answer: str,
-        history: list[dict],
-        is_retry: bool = False,
-    ) -> TutorChatResponse:
-        """Perform a conversational AI tutor turn using the first available text provider."""
-        from openai import AsyncOpenAI
-        from config import get_provider_config
-
-        _TUTOR_RESPONSE_FORMAT = {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "TutorChatResponse",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "response": {"type": "string"},
-                        "evaluation": {"type": "string", "enum": ["correct", "close", "incorrect"]},
-                        "hint_provided": {"type": "boolean"},
-                    },
-                    "required": ["response", "evaluation", "hint_provided"],
-                    "additionalProperties": False,
-                },
-                "strict": True,
-            },
-        }
-
-        template = database.get_system_prompt("tutor")
-        try:
-            system_prompt = template.format(word=word, stored_definition=stored_definition, stored_example=stored_example)
-        except Exception:
-            system_prompt = template
-
-        failures: list[str] = []
-        for provider in self._providers:
-            if provider.name == "gemini" and getattr(provider, "_client", None) is not None:
-                try:
-                    logger.info("Trying Gemini native SDK for tutoring")
-                    from google.genai import types as genai_types
-                    
-                    contents = []
-                    for msg in history:
-                        role = "user" if msg["role"] == "user" else "model"
-                        contents.append(
-                            genai_types.Content(
-                                role=role,
-                                parts=[genai_types.Part.from_text(text=msg["content"])]
-                            )
-                        )
-                    contents.append(
-                        genai_types.Content(
-                            role="user",
-                            parts=[genai_types.Part.from_text(text=user_answer)]
-                        )
-                    )
-
-                    response = await provider._client.aio.models.generate_content(
-                        model=provider._model,
-                        contents=contents,
-                        config=genai_types.GenerateContentConfig(
-                            system_instruction=system_prompt,
-                            response_mime_type="application/json",
-                            response_schema=TutorChatResponse,
-                            temperature=0.7,
-                        ),
-                    )
-                    raw = response.text or "{}"
-                    logger.info("LLM inference succeeded provider=gemini task=tutor")
-                    try:
-                        database.record_llm_call("gemini", provider._model, "tutor")
-                    except Exception:
-                        logger.warning("Failed to record LLM call for gemini", exc_info=True)
-                    return TutorChatResponse.model_validate_json(raw)
-                except Exception as e:
-                    msg = f"gemini: {type(e).__name__}: {e}"
-                    logger.error("Gemini native SDK error during tutoring — %s", e)
-                    failures.append(msg)
-                continue
-
-            # Standard OpenAI compatible path (groq, openrouter, ollama, mistral, huggingface)
-            cfg = {}
-            try:
-                cfg = get_provider_config(provider.name)
-            except Exception:
-                pass
-
-            text_model = cfg.get("text_model")
-            base_url = cfg.get("base_url")
-            api_key = cfg.get("api_key")
-
-            if not text_model:
-                logger.debug("Skipping %s for tutoring — no text_model", provider.name)
-                continue
-
-            try:
-                logger.info("Trying provider %s for tutoring", provider.name)
-                client = AsyncOpenAI(
-                    api_key=api_key or "missing",
-                    base_url=base_url,
-                )
-                
-                messages = [{"role": "system", "content": system_prompt}]
-                for msg in history:
-                    messages.append({"role": msg["role"], "content": msg["content"]})
-                messages.append({"role": "user", "content": user_answer})
-
-                response = await client.chat.completions.create(
-                    model=text_model,
-                    messages=messages,
-                    temperature=0.7,
-                    response_format=_TUTOR_RESPONSE_FORMAT,
-                )
-                raw = response.choices[0].message.content or "{}"
-                logger.info(
-                    "LLM inference succeeded provider=%s model=%s task=tutor",
-                    provider.name,
-                    text_model,
-                )
-                try:
-                    database.record_llm_call(provider.name, text_model, "tutor")
-                except Exception:
-                    logger.warning("Failed to record LLM call for provider=%s", provider.name, exc_info=True)
-                return TutorChatResponse.model_validate_json(raw)
-            except (RateLimitError, ValueError) as e:
-                msg = f"{provider.name}: {type(e).__name__}: {e}"
-                logger.warning("Provider %s skipped for tutoring — %s", provider.name, e)
-                failures.append(msg)
-            except Exception as e:
-                msg = f"{provider.name}: {type(e).__name__}: {e}"
-                logger.error("Provider %s error during tutoring — %s", provider.name, e)
-                failures.append(msg)
-
-        raise ExtractionFailedError(failures)
+    async def tutor_chat(self, *args, **kwargs):
+        """Legacy generative judgment deliberately disabled in every provider branch."""
+        raise RuntimeError("Generative tutor assessment is disabled. Use /tutor/chat.")
 
     async def generate_mnemonic(self, word: str, definition: str) -> str:
         """Generate a funny or bizarre mnemonic for a given word."""
@@ -329,6 +113,16 @@ class ProviderChain:
 
         failures: list[str] = []
         for provider in self._providers:
+            if provider.name == "ollama":
+                try:
+                    result = await provider.generate_json(
+                        [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
+                        _MNEMONIC_RESPONSE_FORMAT["json_schema"]["schema"], temperature=0.9,
+                    )
+                    return result.get("mnemonic", "")
+                except Exception as exc:
+                    failures.append(f"ollama: {exc}")
+                continue
             if provider.name == "gemini" and getattr(provider, "_client", None) is not None:
                 try:
                     from google.genai import types as genai_types
@@ -432,6 +226,21 @@ class ProviderChain:
 
         failures: list[str] = []
         for provider in self._providers:
+            if provider.name == "ollama":
+                try:
+                    result = await provider.generate_json(
+                        [{"role": "system", "content": system_prompt}, {"role": "user", "content": "Please write the story."}],
+                        _STORY_RESPONSE_FORMAT["json_schema"]["schema"], temperature=0.7,
+                    )
+                    story = StoryResponse.model_validate(result)
+                    try:
+                        database.record_llm_call("ollama", provider._text_model, "story")
+                    except Exception:
+                        logger.warning("Failed to record Ollama story call", exc_info=True)
+                    return story
+                except Exception as exc:
+                    failures.append(f"ollama: {type(exc).__name__}: {exc}")
+                continue
             if provider.name == "gemini" and getattr(provider, "_client", None) is not None:
                 try:
                     logger.info("Trying Gemini native SDK for story generation")

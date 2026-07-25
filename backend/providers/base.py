@@ -14,17 +14,6 @@ class ExtractionResult(BaseModel):
     words: list[ExtractedWord]
 
 
-class GradeResult(BaseModel):
-    correct: bool
-    feedback: str
-
-
-class TutorChatResponse(BaseModel):
-    response: str
-    evaluation: Literal["correct", "close", "incorrect"]
-    hint_provided: bool
-
-
 class StoryResponse(BaseModel):
     title: str
     content: str

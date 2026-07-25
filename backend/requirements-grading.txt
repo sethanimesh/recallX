@@ -1,0 +1,9 @@
+# Isolated native arm64 Python 3.11 grading environment. No generative inference.
+torch==2.7.1
+transformers==4.51.3
+sentence-transformers==4.1.0
+sentencepiece==0.2.0
+safetensors==0.5.3
+numpy==2.2.6
+scipy==1.16.3
+scikit-learn==1.6.1

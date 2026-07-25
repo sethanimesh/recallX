@@ -127,29 +127,12 @@ async def test_chain_does_not_record_on_extract_failure():
 
 
 @pytest.mark.asyncio
-async def test_chain_records_llm_call_on_grade_success():
-    from providers.base import GradeResult
-    import json
-
-    p1 = MagicMock()
-    p1.name = "groq"
-    p1.supports_vision = True
-    chain = make_chain([p1])
-
-    grade_result = GradeResult(correct=True, feedback="Good.")
-    mock_response = MagicMock()
-    mock_response.choices = [MagicMock()]
-    mock_response.choices[0].message.content = grade_result.model_dump_json()
-
-    mock_client = MagicMock()
-    mock_client.chat = MagicMock()
-    mock_client.chat.completions = MagicMock()
-    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
-
-    with patch("config.get_provider_config", return_value={"text_model": "llama-3.3-70b", "base_url": "https://api.groq.com/openai/v1", "api_key": "test-key"}), \
-         patch("openai.AsyncOpenAI", return_value=mock_client), \
-         patch("providers.chain.database.record_llm_call") as mock_record:
-        result = await chain.grade("ephemeral", "lasting a short time", "lasting for a very short time")
-
-    mock_record.assert_called_once_with("groq", "llama-3.3-70b", "grade")
-    assert result.correct is True
+async def test_chain_cannot_grade_with_a_generative_provider():
+    chain = make_chain([])
+    with patch("openai.AsyncOpenAI") as factory, patch("providers.chain.database.record_llm_call") as record:
+        with pytest.raises(RuntimeError, match="Generative grading is disabled"):
+            await chain.grade("ephemeral", "temporary", "brief")
+        with pytest.raises(RuntimeError, match="Generative tutor assessment is disabled"):
+            await chain.tutor_chat()
+    factory.assert_not_called()
+    record.assert_not_called()

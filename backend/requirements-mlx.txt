@@ -1,0 +1,5 @@
+# Local VLM service; the full PaddleOCR layout pipeline remains required.
+mlx-vlm==0.7.3
+# The pinned Paddle processor imports Torch/TorchVision for image preprocessing.
+torch==2.7.1
+torchvision==0.22.1

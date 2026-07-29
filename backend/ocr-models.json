@@ -1,0 +1,7 @@
+{
+  "pipeline": "PaddleOCRVL-v1.6",
+  "models": {
+    "PP-DocLayoutV3": {"repository": "PaddlePaddle/PP-DocLayoutV3", "revision": "7b48a7566925fa464281f930c58eee04fe2c862a"},
+    "PaddleOCR-VL-1.6": {"repository": "PaddlePaddle/PaddleOCR-VL-1.6", "revision": "c5630abae1d940eafe0697512a0325494b02ab42"}
+  }
+}

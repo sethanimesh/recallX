@@ -1,0 +1,4 @@
+# Isolated native arm64 Python 3.11 environment. Run real-model smoke tests before claiming support.
+paddlepaddle==3.2.1
+paddleocr[doc-parser]==3.7.0
+Pillow==11.3.0

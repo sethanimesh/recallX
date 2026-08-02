@@ -1,9 +1,7 @@
-import logging
+"""Single-word lookup compatibility. Documents use durable ingestion jobs."""
 import asyncio
-from io import BytesIO, StringIO
-
+import logging
 from fastapi import APIRouter, HTTPException, UploadFile, File
-
 from providers.base import ExtractionRequest, ExtractedWord
 from providers.chain import ProviderChain, ExtractionFailedError
 
@@ -21,52 +19,18 @@ def get_chain() -> ProviderChain:
 
 @router.post("/extract", response_model=list[ExtractedWord])
 async def extract_words(request: ExtractionRequest) -> list[ExtractedWord]:
+    if request.input_type != "word":
+        raise HTTPException(410, "Document extraction moved to POST /ingestion/jobs. Upload original file bytes as multipart data.")
+    if not request.content.strip() or len(request.content) > 200:
+        raise HTTPException(422, "Word lookup requires 1 to 200 characters")
     try:
-        words = await get_chain().extract(request)
-        async def fetch_mnemonic(w: ExtractedWord):
-            try:
-                w.mnemonic = await get_chain().generate_mnemonic(w.word, w.definition)
-            except Exception as e:
-                logger.error(f"Failed to generate mnemonic for {w.word}: {e}")
-        await asyncio.gather(*(fetch_mnemonic(w) for w in words))
-        return words
-    except ExtractionFailedError as e:
-        raise HTTPException(
-            status_code=503,
-            detail={"error": "All providers failed", "failures": e.failures},
-        )
+        return (await asyncio.wait_for(get_chain().extract(request), timeout=90))[:5]
+    except asyncio.TimeoutError as exc:
+        raise HTTPException(503, "Word lookup timed out") from exc
+    except ExtractionFailedError as exc:
+        raise HTTPException(503, detail={"error": "All providers failed", "failures": exc.failures}) from exc
 
 
-@router.post("/extract/pdf", response_model=list[ExtractedWord])
-async def extract_pdf(file: UploadFile = File(...)) -> list[ExtractedWord]:
-    from pdfminer.high_level import extract_text_to_fp
-    from pdfminer.layout import LAParams
-
-    try:
-        content = await file.read()
-        output = StringIO()
-        extract_text_to_fp(
-            BytesIO(content), output, laparams=LAParams(), output_type="text", codec=None,
-        )
-        text = output.getvalue().strip()
-    except Exception as e:
-        raise HTTPException(status_code=422, detail=f"PDF parsing failed: {e}")
-
-    if not text:
-        raise HTTPException(status_code=422, detail="No text extracted from PDF")
-
-    req = ExtractionRequest(input_type="text", content=text)
-    try:
-        words = await get_chain().extract(req)
-        async def fetch_mnemonic(w: ExtractedWord):
-            try:
-                w.mnemonic = await get_chain().generate_mnemonic(w.word, w.definition)
-            except Exception as e:
-                logger.error(f"Failed to generate mnemonic for {w.word}: {e}")
-        await asyncio.gather(*(fetch_mnemonic(w) for w in words))
-        return words
-    except ExtractionFailedError as e:
-        raise HTTPException(
-            status_code=503,
-            detail={"error": "All providers failed", "failures": e.failures},
-        )
+@router.post("/extract/pdf")
+async def extract_pdf(file: UploadFile = File(...)):
+    raise HTTPException(410, "PDF extraction moved to POST /ingestion/jobs. Upload original PDF bytes as multipart data.")

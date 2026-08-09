@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "seed": 20260928,
+  "families": 200,
+  "rows": 4800,
+  "languages": [
+    "en",
+    "hi",
+    "hi-Latn"
+  ],
+  "types": [
+    "clean",
+    "paraphrase",
+    "typo",
+    "word_order",
+    "partial",
+    "negation",
+    "unrelated",
+    "mixed"
+  ],
+  "split_families": {
+    "train": 80,
+    "development": 40,
+    "calibration": 40,
+    "test": 40
+  },
+  "sha256": "0f6fb76feb8a5193e8cc788aefce1ec243b94d4a35ed2ab08c1098ff253f1141",
+  "source": "project-authored synthetic vocabulary fixtures",
+  "human_reviewed": false,
+  "limitation": "Constructed labels are hypotheses; neither multilingual validity nor real learner quality is established."
+}

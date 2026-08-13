@@ -1,0 +1,87 @@
+{
+  "source": "Temporary-database HTTP contract check using the actual frozen calibration artifact; model invocation and generative grading were prohibited. No learner data modified.",
+  "experimental_opt_in": true,
+  "approved_rubric": true,
+  "generative_provider_credentials_disabled": [
+    "OPENAI_API_KEY",
+    "GROQ_API_KEY",
+    "OPENROUTER_API_KEY",
+    "OLLAMA_API_KEY",
+    "GEMINI_API_KEY",
+    "GOOGLE_API_KEY",
+    "MISTRAL_API_KEY",
+    "HF_API_KEY",
+    "HF_TOKEN"
+  ],
+  "provider_chain_constructions": 0,
+  "chat_completion_calls": 0,
+  "model_calls": 0,
+  "outcomes": [
+    {
+      "route": "/assessments",
+      "language": "en",
+      "decision": "uncertain",
+      "reason": "calibration_unavailable",
+      "calibration_id": "5572ac4e546b40ae3a7800f7"
+    },
+    {
+      "route": "/assessments",
+      "language": "hi",
+      "decision": "uncertain",
+      "reason": "calibration_unavailable",
+      "calibration_id": "5572ac4e546b40ae3a7800f7"
+    },
+    {
+      "route": "/assessments",
+      "language": "hi-Latn",
+      "decision": "uncertain",
+      "reason": "calibration_unavailable",
+      "calibration_id": "5572ac4e546b40ae3a7800f7"
+    },
+    {
+      "route": "/tutor/chat",
+      "language": "en",
+      "decision": "uncertain",
+      "reason": "calibration_unavailable",
+      "calibration_id": "5572ac4e546b40ae3a7800f7"
+    },
+    {
+      "route": "/tutor/chat",
+      "language": "hi",
+      "decision": "uncertain",
+      "reason": "calibration_unavailable",
+      "calibration_id": "5572ac4e546b40ae3a7800f7"
+    },
+    {
+      "route": "/tutor/chat",
+      "language": "hi-Latn",
+      "decision": "uncertain",
+      "reason": "calibration_unavailable",
+      "calibration_id": "5572ac4e546b40ae3a7800f7"
+    },
+    {
+      "route": "/tutor/chat_and_speak",
+      "language": "en",
+      "decision": "uncertain",
+      "reason": "calibration_unavailable",
+      "calibration_id": "5572ac4e546b40ae3a7800f7"
+    },
+    {
+      "route": "/tutor/chat_and_speak",
+      "language": "hi",
+      "decision": "uncertain",
+      "reason": "calibration_unavailable",
+      "calibration_id": "5572ac4e546b40ae3a7800f7"
+    },
+    {
+      "route": "/tutor/chat_and_speak",
+      "language": "hi-Latn",
+      "decision": "uncertain",
+      "reason": "calibration_unavailable",
+      "calibration_id": "5572ac4e546b40ae3a7800f7"
+    }
+  ],
+  "assessments": 9,
+  "review_events": 0,
+  "audio_failure_checks": 3
+}

@@ -1,0 +1,122 @@
+{
+  "source": "actual production worker with local pinned checkpoints",
+  "device": "cpu",
+  "requests": [
+    {
+      "id": "abundant:en:clean",
+      "language": "en",
+      "wall_seconds": 11.390227875031997,
+      "concept_results": [
+        {
+          "concept_id": "core",
+          "text": "available",
+          "required": true,
+          "weight": 1,
+          "alignment": 0.7689486742019653,
+          "entailment": 0.9941001534461975,
+          "neutrality": 0.005636804737150669,
+          "contradiction": 0.00026298820739611983,
+          "support": 0.7644119950164239,
+          "evidence_span": "available, in large quantities",
+          "contradiction_span": null,
+          "qualifier_support": [],
+          "misconception_support": []
+        },
+        {
+          "concept_id": "qualifier",
+          "text": "available, specifically in large quantities",
+          "required": true,
+          "weight": 1,
+          "alignment": 0.8006981611251831,
+          "entailment": 0.9179436564445496,
+          "neutrality": 0.0815342366695404,
+          "contradiction": 0.0005220395396463573,
+          "support": 0.7349957977316777,
+          "evidence_span": "available, in large quantities",
+          "contradiction_span": null,
+          "qualifier_support": [],
+          "misconception_support": []
+        }
+      ]
+    },
+    {
+      "id": "abundant:hi:clean",
+      "language": "hi",
+      "wall_seconds": 0.6437449170043692,
+      "concept_results": [
+        {
+          "concept_id": "core",
+          "text": "available",
+          "required": true,
+          "weight": 1,
+          "alignment": 0.5486400723457336,
+          "entailment": 0.9869762063026428,
+          "neutrality": 0.01078643649816513,
+          "contradiction": 0.0022373837418854237,
+          "support": 0.5414946972293997,
+          "evidence_span": "उपलब्ध, बड़ी मात्रा में",
+          "contradiction_span": null,
+          "qualifier_support": [],
+          "misconception_support": []
+        },
+        {
+          "concept_id": "qualifier",
+          "text": "available, specifically in large quantities",
+          "required": true,
+          "weight": 1,
+          "alignment": 0.7518725395202637,
+          "entailment": 0.944638729095459,
+          "neutrality": 0.054767996072769165,
+          "contradiction": 0.000593304808717221,
+          "support": 0.7102479201741971,
+          "evidence_span": "उपलब्ध, बड़ी मात्रा में",
+          "contradiction_span": null,
+          "qualifier_support": [],
+          "misconception_support": []
+        }
+      ]
+    },
+    {
+      "id": "abundant:hi-Latn:clean",
+      "language": "hi-Latn",
+      "wall_seconds": 0.3222678340389393,
+      "concept_results": [
+        {
+          "concept_id": "core",
+          "text": "available",
+          "required": true,
+          "weight": 1,
+          "alignment": 0.50433748960495,
+          "entailment": 0.9216277599334717,
+          "neutrality": 0.04326580837368965,
+          "contradiction": 0.03510645031929016,
+          "support": 0.4648114307950806,
+          "evidence_span": "uplabdh, badi matra mein",
+          "contradiction_span": null,
+          "qualifier_support": [],
+          "misconception_support": []
+        },
+        {
+          "concept_id": "qualifier",
+          "text": "available, specifically in large quantities",
+          "required": true,
+          "weight": 1,
+          "alignment": 0.43669649958610535,
+          "entailment": 0.8682820200920105,
+          "neutrality": 0.130118727684021,
+          "contradiction": 0.0015993292909115553,
+          "support": 0.3791757188277334,
+          "evidence_span": "uplabdh, badi matra mein",
+          "contradiction_span": null,
+          "qualifier_support": [],
+          "misconception_support": []
+        }
+      ]
+    }
+  ],
+  "child_peak_rss_bytes": 2541731840,
+  "child_cpu_user_seconds": 4.037983,
+  "child_cpu_system_seconds": 4.338491,
+  "method": "First request includes process creation and model load; subsequent requests reuse the worker. OS RUSAGE_CHILDREN high-water RSS is the single model worker, not an aggregate of simultaneous processes. The worker is killed and reaped before this report is written.",
+  "limitation": "Three constructed clean examples prove execution only; quality gates are measured separately."
+}

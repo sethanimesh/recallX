@@ -1,0 +1,26 @@
+{
+  "records": 4800,
+  "cold_load_seconds": 8.352363709011115,
+  "peak_process_rss_bytes": 3591077888,
+  "model_versions": {
+    "embedding": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+    "nli": "b5113eb38ab63efdd7f280f8c144ea8b13f978ce",
+    "precision": "float32",
+    "encoding": "qwen-reference-query-v1"
+  },
+  "device": "cpu",
+  "source": "actual local checkpoint inference",
+  "limitation": "Synthetic examples; smoke is not calibration or proof of learner quality.",
+  "resumed_records": 702,
+  "processed_this_invocation": 4098,
+  "invocation_elapsed_seconds": 1643.0999567920226,
+  "sum_record_compute_seconds": 1837.1791496829828,
+  "latency_seconds": {
+    "mean": 0.38274565618395473,
+    "median": 0.24300824999227189,
+    "p95": 0.6729426291451095,
+    "p99": 1.5777413730364063,
+    "max": 134.00213229097426
+  },
+  "measurement_note": "Final invocation resumed unchanged records from interrupted earlier invocations; final-invocation wall time is not total experiment wall time. Row compute times cover all4800 examples; cold load includes shared-lease acquisition. OS RSS high-water mark describes this inference process. Reference embeddings were cached; latency was measured under ordinary shared-machine load."
+}

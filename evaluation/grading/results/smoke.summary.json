@@ -1,0 +1,14 @@
+{
+  "records": 24,
+  "source": "Exact first24 canonical records extracted from the completed real-model fullrun; not a separate post-correction smoke invocation.",
+  "model_versions": {
+    "embedding": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+    "nli": "b5113eb38ab63efdd7f280f8c144ea8b13f978ce",
+    "precision": "float32",
+    "encoding": "qwen-reference-query-v1"
+  },
+  "device": "cpu",
+  "dataset_sha256": "0f6fb76feb8a5193e8cc788aefce1ec243b94d4a35ed2ab08c1098ff253f1141",
+  "sum_record_compute_seconds": 8.6973647911218,
+  "limitation": "Subset confirms model execution; it cannot fit calibration or establish learner quality."
+}

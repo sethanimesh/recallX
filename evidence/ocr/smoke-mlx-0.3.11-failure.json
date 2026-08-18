@@ -1,0 +1,17 @@
+{
+  "model_revisions": {
+    "PP-DocLayoutV3": "7b48a7566925fa464281f930c58eee04fe2c862a",
+    "PaddleOCR-VL-1.6": "c5630abae1d940eafe0697512a0325494b02ab42"
+  },
+  "pipeline": "full PaddleOCRVL v1.6",
+  "device": "CPU layout + local MLX recognition",
+  "reference": "Ephemeral means lasting for a very short time.\nThe ephemeral rainbow vanished after the rain.",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "machine": "arm64",
+  "status": "failed",
+  "error": "Local PaddleOCR failed; check model paths and worker logs, then retry",
+  "elapsed_including_queue_seconds": 460.421,
+  "child_peak_rss_bytes": 1242021888,
+  "sampled_process_tree_peak_rss_bytes": 1941553152,
+  "memory_note": "Sampled RSS sums the smoke process and owned children; shared pages can be counted more than once. It is not a system-wide memory measurement."
+}

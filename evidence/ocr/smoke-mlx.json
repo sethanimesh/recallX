@@ -1,0 +1,208 @@
+{
+  "model_revisions": {
+    "PP-DocLayoutV3": "7b48a7566925fa464281f930c58eee04fe2c862a",
+    "PaddleOCR-VL-1.6": "c5630abae1d940eafe0697512a0325494b02ab42"
+  },
+  "pipeline": "full PaddleOCRVL v1.6",
+  "device": "CPU layout + local MLX recognition",
+  "reference": "Ephemeral means lasting for a very short time.\nThe ephemeral rainbow vanished after the rain.",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "machine": "arm64",
+  "status": "passed",
+  "character_error_rate": 0.0,
+  "provenance_boxes_valid": true,
+  "text": "Ephemeral means lasting for a very short time.\nThe ephemeral rainbow vanished after the rain.",
+  "result": {
+    "blocks": [
+      {
+        "text": "Ephemeral means lasting for a very short time.",
+        "kind": "text",
+        "bbox": [
+          40,
+          57,
+          672,
+          93
+        ],
+        "confidence": null
+      },
+      {
+        "text": "The ephemeral rainbow vanished after the rain.",
+        "kind": "text",
+        "bbox": [
+          41,
+          117,
+          683,
+          152
+        ],
+        "confidence": null
+      }
+    ],
+    "width": 1100,
+    "height": 320,
+    "raw": [
+      {
+        "input_path": "/var/folders/69/qdzv4_6n7vvcbx7bnb5syht00000gn/T/recallx-ocr-96rd8fo7/page.png",
+        "page_index": null,
+        "page_count": null,
+        "width": 1100,
+        "height": 320,
+        "model_settings": {
+          "use_doc_preprocessor": false,
+          "use_layout_detection": true,
+          "use_chart_recognition": false,
+          "use_seal_recognition": false,
+          "use_ocr_for_image_block": false,
+          "format_block_content": false,
+          "merge_layout_blocks": true,
+          "markdown_ignore_labels": [
+            "number",
+            "footnote",
+            "header",
+            "header_image",
+            "footer",
+            "footer_image",
+            "aside_text"
+          ],
+          "return_layout_polygon_points": true
+        },
+        "parsing_res_list": [
+          {
+            "block_label": "text",
+            "block_content": "Ephemeral means lasting for a very short time.",
+            "block_bbox": [
+              40,
+              57,
+              672,
+              93
+            ],
+            "block_id": 0,
+            "block_order": 1,
+            "group_id": 0,
+            "block_polygon_points": [
+              [
+                40.0,
+                57.0
+              ],
+              [
+                672.0,
+                57.0
+              ],
+              [
+                672.0,
+                93.0
+              ],
+              [
+                40.0,
+                93.0
+              ]
+            ]
+          },
+          {
+            "block_label": "text",
+            "block_content": "The ephemeral rainbow vanished after the rain.",
+            "block_bbox": [
+              41,
+              117,
+              683,
+              152
+            ],
+            "block_id": 1,
+            "block_order": 2,
+            "group_id": 1,
+            "block_polygon_points": [
+              [
+                41.0,
+                117.0
+              ],
+              [
+                683.0,
+                117.0
+              ],
+              [
+                683.0,
+                152.0
+              ],
+              [
+                41.0,
+                152.0
+              ]
+            ]
+          }
+        ],
+        "layout_det_res": {
+          "input_path": null,
+          "page_index": null,
+          "boxes": [
+            {
+              "cls_id": 22,
+              "label": "text",
+              "score": 0.8764544725418091,
+              "coordinate": [
+                40,
+                57,
+                672,
+                93
+              ],
+              "order": 1,
+              "polygon_points": [
+                [
+                  40.0,
+                  57.0
+                ],
+                [
+                  672.0,
+                  57.0
+                ],
+                [
+                  672.0,
+                  93.0
+                ],
+                [
+                  40.0,
+                  93.0
+                ]
+              ]
+            },
+            {
+              "cls_id": 22,
+              "label": "text",
+              "score": 0.8794549703598022,
+              "coordinate": [
+                41,
+                117,
+                683,
+                152
+              ],
+              "order": 2,
+              "polygon_points": [
+                [
+                  41.0,
+                  117.0
+                ],
+                [
+                  683.0,
+                  117.0
+                ],
+                [
+                  683.0,
+                  152.0
+                ],
+                [
+                  41.0,
+                  152.0
+                ]
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "recognition_backend": "mlx-vlm-server"
+  },
+  "elapsed_including_queue_seconds": 22.719,
+  "child_peak_rss_bytes": 1479426048,
+  "sampled_process_tree_peak_rss_bytes": 2243002368,
+  "memory_note": "Sampled RSS sums the smoke process and owned children; shared pages can be counted more than once. Separately accounted Metal allocations are not measured. It is not total unified-memory use or a system-wide memory measurement.",
+  "runtime_lockfile": "backend/requirements-mlx.lock.txt",
+  "mlx_vlm_version": "0.7.3"
+}

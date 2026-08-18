@@ -1,0 +1,46 @@
+{
+  "model_revisions": {
+    "PP-DocLayoutV3": "7b48a7566925fa464281f930c58eee04fe2c862a",
+    "PaddleOCR-VL-1.6": "c5630abae1d940eafe0697512a0325494b02ab42"
+  },
+  "pipeline": "full PaddleOCRVL v1.6",
+  "device": "cpu",
+  "reference": "Ephemeral means lasting for a very short time.\nThe ephemeral rainbow vanished after the rain.",
+  "status": "passed",
+  "text": "Ephemeral means lasting for a very short time.\nThe ephemeral rainbow vanished after the rain.",
+  "result": {
+    "blocks": [
+      {
+        "text": "Ephemeral means lasting for a very short time.",
+        "kind": "text",
+        "bbox": [
+          40,
+          57,
+          672,
+          93
+        ],
+        "confidence": null
+      },
+      {
+        "text": "The ephemeral rainbow vanished after the rain.",
+        "kind": "text",
+        "bbox": [
+          41,
+          117,
+          683,
+          152
+        ],
+        "confidence": null
+      }
+    ],
+    "width": 1100,
+    "height": 320
+  },
+  "child_peak_rss_bytes": 9759653888,
+  "elapsed_including_queue_seconds": 63.644,
+  "latency_note": "Elapsed includes waiting for shared inference lease; not an isolated parser latency measurement.",
+  "character_error_rate": 0.0,
+  "provenance_boxes_valid": true,
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "machine": "arm64"
+}

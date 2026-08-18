@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "transport": "real localhost Redis + Celery solo worker",
+  "parser": "real PyMuPDF native PDF",
+  "draft_provider": "deterministic test fixture; no model inference",
+  "lease_seconds_for_test": 3,
+  "broker_outage_preserved_outbox": true,
+  "worker_killed_after_native_page_checkpoint": true,
+  "replacement_worker_recovered_job": true,
+  "checkpoint_preserved": true,
+  "duplicate_delivery_idempotent": true,
+  "pages": 1,
+  "candidates": 1,
+  "elapsed_seconds": 11.624
+}

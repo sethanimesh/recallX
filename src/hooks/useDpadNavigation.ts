@@ -1,55 +1,15 @@
-import { useEffect, useRef } from 'react';
-import { Platform, DeviceEventEmitter } from 'react-native';
-
-/**
- * D-pad event types emitted by the native withTVKeyEvents config plugin.
- * Maps to Android KeyEvent codes:
- *   left   → KEYCODE_DPAD_LEFT
- *   right  → KEYCODE_DPAD_RIGHT
- *   up     → KEYCODE_DPAD_UP
- *   down   → KEYCODE_DPAD_DOWN
- *   select → KEYCODE_DPAD_CENTER / KEYCODE_ENTER
- */
+import { useRef } from 'react';
+import { Platform } from 'react-native';
+import { useTVEventHandlerSafe } from './useTVEventHandlerSafe';
 export type DpadEventType = 'left' | 'right' | 'up' | 'down' | 'select';
-
-export interface DpadEvent {
-  eventType: DpadEventType;
-  keyCode: number;
-}
-
-/**
- * Hook to listen for global D-pad key events on Android TV.
- *
- * On non-TV platforms (iPhone, Android phone) this is a complete no-op —
- * no listeners are registered and no native code runs.
- *
- * Usage:
- * ```ts
- * useDpadNavigation((evt) => {
- *   if (evt.eventType === 'right') goNext();
- *   if (evt.eventType === 'left')  goPrev();
- * });
- * ```
- */
-export function useDpadNavigation(
-  handler: (event: DpadEvent) => void,
-): void {
-  const handlerRef = useRef(handler);
-  handlerRef.current = handler;
-
-  useEffect(() => {
-    // Only subscribe on TV platforms — complete no-op on phones
-    if (!Platform.isTV) return;
-
-    const subscription = DeviceEventEmitter.addListener(
-      'onTVKeyEvent',
-      (event: DpadEvent) => {
-        handlerRef.current(event);
-      },
-    );
-
-    return () => {
-      subscription.remove();
-    };
-  }, []);
+export interface DpadEvent { eventType: DpadEventType; keyCode?: number }
+/** Select remains owned by focused Pressables. The official TV runtime is the
+ * only native event source, avoiding custom dispatch plus native double actions. */
+export function useDpadNavigation(handler: (event: DpadEvent) => void): void {
+  const callback = useRef(handler); callback.current = handler;
+  useTVEventHandlerSafe(event => {
+    if (!Platform.isTV || event.eventType === 'select') return;
+    if (event.eventKeyAction !== undefined && event.eventKeyAction !== 1) return;
+    if (['left', 'right', 'up', 'down'].includes(event.eventType)) callback.current({ eventType: event.eventType as DpadEventType });
+  });
 }

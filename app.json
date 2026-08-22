@@ -60,8 +60,7 @@
             "usesCleartextTraffic": true
           }
         }
-      ],
-      "./plugins/withTVKeyEvents"
+      ]
     ],
     "experiments": {
       "typedRoutes": true

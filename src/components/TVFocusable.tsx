@@ -104,7 +104,6 @@ const styles = StyleSheet.create({
     borderColor: '#60A5FA',
     borderWidth: 3,
     borderRadius: 8,
-    transform: [{ scale: 1.06 }],
     backgroundColor: 'rgba(59, 130, 246, 0.08)',
   },
 });

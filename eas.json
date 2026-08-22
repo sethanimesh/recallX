@@ -17,6 +17,15 @@
         "EXPO_TV": "1"
       }
     },
+    "preview-phone": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_TV": "0"
+      }
+    },
     "production": {
       "autoIncrement": true
     }

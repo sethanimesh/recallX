@@ -1,105 +1,68 @@
 import { drizzle } from 'drizzle-orm/sql-js';
-import initSqlJs from 'sql.js';
+import initSqlJs, { Database, SqlJsStatic } from 'sql.js';
 import * as schema from './schema';
+import { migrate } from './migrations';
+import { serialQueue, serializedDatabase } from './serialized';
 
-let sqljsDb: any = null;
-let drizzleDb: any = null;
-
-// Proxy to dynamically resolve the initialized drizzle database instance
-export const db = new Proxy({} as any, {
-  get(target, prop) {
-    if (!drizzleDb) {
-      throw new Error(`[DB] Drizzle client accessed on web before runMigrations() completed.`);
-    }
-    return Reflect.get(drizzleDb, prop);
-  }
-});
-
-export async function runMigrations(): Promise<void> {
-  console.log('[DB] Initializing sql.js on Web...');
-  const SQL = await initSqlJs({
-    locateFile: (file) => `https://unpkg.com/sql.js@1.14.1/dist/${file}`,
+let SQL: SqlJsStatic;
+let engine: Database;
+let raw: ReturnType<typeof drizzle<typeof schema>>;
+let storage: IDBDatabase;
+const enqueue = serialQueue();
+const DATABASE_KEY = 'recallx';
+function snapshot(write?: Uint8Array): Promise<Uint8Array | undefined> {
+  return new Promise((resolve, reject) => {
+    const transaction = storage.transaction('databases', write ? 'readwrite' : 'readonly');
+    const request = write ? transaction.objectStore('databases').put(write, DATABASE_KEY) : transaction.objectStore('databases').get(DATABASE_KEY);
+    transaction.oncomplete = () => resolve(write ?? request.result);
+    transaction.onabort = transaction.onerror = () => reject(transaction.error ?? new Error('Browser storage write failed'));
   });
-  
-  sqljsDb = new SQL.Database();
-  drizzleDb = drizzle(sqljsDb, { schema });
-
-  // Patch transaction support to bypass BEGIN/COMMIT/ROLLBACK on web (sql.js limitation)
-  drizzleDb.transaction = async function (callback: any) {
-    return callback(drizzleDb);
-  };
-
-
-  // Execute schema definitions on in-memory SQLite database
-  sqljsDb.run('PRAGMA journal_mode=WAL;');
-  sqljsDb.run(`
-    CREATE TABLE IF NOT EXISTS sources (
-      id TEXT PRIMARY KEY,
-      type TEXT NOT NULL CHECK(type IN ('image', 'pdf', 'video')),
-      uri TEXT NOT NULL,
-      created_at INTEGER NOT NULL
-    );
-  `);
-  sqljsDb.run(`
-    CREATE TABLE IF NOT EXISTS words (
-      id TEXT PRIMARY KEY,
-      word TEXT NOT NULL,
-      definition TEXT NOT NULL,
-      example_sentence TEXT NOT NULL,
-      source_id TEXT REFERENCES sources(id),
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL,
-      deleted_at INTEGER
-    );
-  `);
-  sqljsDb.run(`
-    CREATE TABLE IF NOT EXISTS tags (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL UNIQUE
-    );
-  `);
-  sqljsDb.run(`
-    CREATE TABLE IF NOT EXISTS word_tags (
-      word_id TEXT NOT NULL REFERENCES words(id),
-      tag_id TEXT NOT NULL REFERENCES tags(id),
-      PRIMARY KEY (word_id, tag_id)
-    );
-  `);
-  sqljsDb.run(`
-    CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
-      mode TEXT NOT NULL CHECK(mode IN ('recall', 'flashcard')),
-      tag_id TEXT REFERENCES tags(id),
-      started_at INTEGER NOT NULL,
-      ended_at INTEGER
-    );
-  `);
-  sqljsDb.run(`
-    CREATE TABLE IF NOT EXISTS session_results (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL REFERENCES sessions(id),
-      word_id TEXT NOT NULL REFERENCES words(id),
-      correct INTEGER NOT NULL CHECK(correct IN (0, 1)),
-      attempt_number INTEGER NOT NULL,
-      answered_at INTEGER NOT NULL
-    );
-  `);
-
-  try { sqljsDb.run('CREATE INDEX IF NOT EXISTS idx_sr_word_at ON session_results(word_id, answered_at);'); } catch {}
-  
-  // SRS columns
-  try { sqljsDb.run('ALTER TABLE words ADD COLUMN srs_interval INTEGER NOT NULL DEFAULT 0;'); } catch {}
-  try { sqljsDb.run('ALTER TABLE words ADD COLUMN srs_ease_factor REAL NOT NULL DEFAULT 2.5;'); } catch {}
-  try { sqljsDb.run('ALTER TABLE words ADD COLUMN srs_next_review_at INTEGER;'); } catch {}
-  try { sqljsDb.run('ALTER TABLE words ADD COLUMN srs_wrong_count INTEGER NOT NULL DEFAULT 0;'); } catch {}
-  try { sqljsDb.run('ALTER TABLE words ADD COLUMN srs_consecutive_correct INTEGER NOT NULL DEFAULT 0;'); } catch {}
-  
-  // Flashcard columns
-  try { sqljsDb.run('ALTER TABLE words ADD COLUMN fc_interval INTEGER NOT NULL DEFAULT 0;'); } catch {}
-  try { sqljsDb.run('ALTER TABLE words ADD COLUMN fc_ease_factor REAL NOT NULL DEFAULT 2.5;'); } catch {}
-  try { sqljsDb.run('ALTER TABLE words ADD COLUMN fc_next_review_at INTEGER;'); } catch {}
-  try { sqljsDb.run('ALTER TABLE words ADD COLUMN fc_wrong_count INTEGER NOT NULL DEFAULT 0;'); } catch {}
-  try { sqljsDb.run('ALTER TABLE words ADD COLUMN fc_consecutive_correct INTEGER NOT NULL DEFAULT 0;'); } catch {}
-
-  console.log('[DB] Web SQLite Ready (In-memory via sql.js)');
+}
+function load(bytes?: Uint8Array) {
+  engine?.close();
+  engine = bytes ? new SQL.Database(bytes) : new SQL.Database();
+  raw = drizzle(engine, { schema });
+}
+function locked<T>(work: () => Promise<T>): Promise<T> {
+  if (!navigator.locks) return Promise.reject(new Error('This browser does not support durable cross-tab storage. Use a current Safari or Chrome.'));
+  return navigator.locks.request('recallx-database', work) as unknown as Promise<T>;
+}
+export const db = serializedDatabase(() => {
+  if (!raw) throw new Error('Database is not ready');
+  return raw;
+}, (work, write) => enqueue(() => locked(async () => {
+  const before = await snapshot();
+  load(before);
+  if (write) engine.run('BEGIN IMMEDIATE');
+  try {
+    const result = await work(raw);
+    if (write) {
+      engine.run('COMMIT');
+      await snapshot(engine.export());
+    }
+    return result;
+  } catch (error) {
+    // Restore the last durable snapshot even when IndexedDB failed after SQL COMMIT.
+    load(before);
+    throw error;
+  }
+})));
+export async function runMigrations(): Promise<void> {
+  if (typeof window === 'undefined') return; // Expo static rendering does not execute storage operations.
+  SQL = await initSqlJs({ locateFile: file => `/${file}` });
+  storage = await new Promise((resolve, reject) => {
+    const request = indexedDB.open('recallx-storage', 1);
+    request.onupgradeneeded = () => request.result.createObjectStore('databases');
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  await enqueue(() => locked(async () => {
+    load(await snapshot());
+    migrate({ exec: sql => engine.run(sql), rows: sql => {
+      const statement = engine.prepare(sql); const rows = [];
+      try { while (statement.step()) rows.push(statement.getAsObject()); } finally { statement.free(); }
+      return rows;
+    }});
+    await snapshot(engine.export());
+  }));
 }

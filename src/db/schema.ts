@@ -10,6 +10,9 @@ export const sources = sqliteTable('sources', {
 export const words = sqliteTable('words', {
   id: text('id').primaryKey(),
   word: text('word').notNull(),
+  content_revision: integer('content_revision').notNull().default(1),
+  sense_id: text('sense_id'),
+  etymology: text('etymology'),
   definition: text('definition').notNull(),
   example_sentence: text('example_sentence').notNull(),
   mnemonic: text('mnemonic'),
@@ -56,3 +59,15 @@ export const sessionResults = sqliteTable('session_results', {
   answered_at: integer('answered_at', { mode: 'timestamp' }).notNull(),
 });
 
+
+export const cacheRecords = sqliteTable('cache_records', {
+  key: text('key').primaryKey(),
+  payload: text('payload').notNull(),
+});
+export const pendingOperations = sqliteTable('pending_operations', {
+  id: text('id').primaryKey(),
+  payload: text('payload').notNull(),
+  status: text('status').notNull().default('pending'),
+  error: text('error'),
+  created_at: integer('created_at').notNull(),
+});

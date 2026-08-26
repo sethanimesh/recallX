@@ -1,4 +1,5 @@
 import { getBackendUrl, getCommonHeaders } from '@/src/config/settings';
+import { allLibraryMutations, prepareLibraryMutation, settleLibraryMutation, type LibraryMutation } from '@/src/db/operations/libraryMutations';
 
 export interface ServerTagRecord {
   id: string;
@@ -7,6 +8,7 @@ export interface ServerTagRecord {
 }
 
 export interface ServerWordRecord {
+  content_revision?: number;
   id: string;
   word: string;
   definition: string;
@@ -41,9 +43,9 @@ function baseFor(override?: string): string {
   return (override ?? getBackendUrl()).replace(/\/$/, '');
 }
 
-async function request<T>(url: string, options: RequestInit): Promise<T> {
+async function performRequest<T>(url: string, options: RequestInit): Promise<T> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000);
+  const timeoutId = setTimeout(() => controller.abort(), url.includes('generate-mnemonic') ? 120000 : 15000);
 
   let response: Response;
   try {
@@ -80,8 +82,43 @@ async function request<T>(url: string, options: RequestInit): Promise<T> {
   try {
     return (await response.json()) as T;
   } catch {
-    return undefined as T;
+    throw new WordServerError('The response was interrupted. The saved request will retry with the same identity.', 0);
   }
+}
+
+const sending = new Map<string, Promise<unknown>>();
+const mutationListeners = new Set<() => void>();
+export function subscribeLibraryMutations(listener: () => void): () => void { mutationListeners.add(listener); return () => { mutationListeners.delete(listener); }; }
+function sendMutation<T>(operation: LibraryMutation): Promise<T> {
+  const underway = sending.get(operation.id); if (underway) return underway as Promise<T>;
+  const task = (async () => {
+    try {
+      const response = await performRequest<T>(operation.url, { method: operation.method, body: operation.body, headers: { 'X-Operation-ID': operation.id } });
+      await settleLibraryMutation(operation, 'acknowledged', response); mutationListeners.forEach(listener => listener()); return response;
+    } catch (error) {
+      const permanent = error instanceof WordServerError && [400, 404, 409, 410, 422].includes(error.statusCode);
+      await settleLibraryMutation(operation, permanent ? 'failed' : 'pending', undefined, error instanceof Error ? error.message : String(error));
+      throw error;
+    }
+  })().finally(() => sending.delete(operation.id));
+  sending.set(operation.id, task); return task;
+}
+async function request<T>(url: string, options: RequestInit): Promise<T> {
+  if (!options.method || options.method === 'GET') return performRequest<T>(url, options);
+  const operation = await prepareLibraryMutation(options.method, url, typeof options.body === 'string' ? options.body : undefined);
+  return sendMutation<T>(operation);
+}
+let flushing: Promise<void> | null = null;
+export function flushPendingLibraryMutations(): Promise<void> {
+  if (flushing) return flushing;
+  flushing = (async () => {
+    for (const operation of await allLibraryMutations()) {
+      if (operation.status !== 'pending' || !operation.url.startsWith(`${baseFor()}/`)) continue;
+      try { await sendMutation(operation); }
+      catch (error) { if (!(error instanceof WordServerError) || ![400, 404, 409, 410, 422].includes(error.statusCode)) throw error; }
+    }
+  })().finally(() => { flushing = null; });
+  return flushing;
 }
 
 export function postWord(payload: CreateWordPayload, baseUrl?: string) {
@@ -97,7 +134,7 @@ export function getWords(baseUrl?: string) {
 
 export function patchWord(
   id: string,
-  updates: { word?: string; definition?: string; example_sentence?: string; mnemonic?: string },
+  updates: { expected_content_revision?: number; word?: string; definition?: string; example_sentence?: string; mnemonic?: string },
   baseUrl?: string,
 ) {
   return request<ServerWordRecord>(`${baseFor(baseUrl)}/words/${id}`, {
@@ -106,8 +143,8 @@ export function patchWord(
   });
 }
 
-export function deleteWord(id: string, baseUrl?: string) {
-  return request<ServerWordRecord>(`${baseFor(baseUrl)}/words/${id}`, { method: 'DELETE' });
+export function deleteWord(id: string, baseUrl?: string, expectedRevision?: number) {
+  return request<ServerWordRecord>(`${baseFor(baseUrl)}/words/${id}${expectedRevision === undefined ? '' : `?expected_content_revision=${expectedRevision}`}`, { method: 'DELETE' });
 }
 
 export function generateMnemonic(id: string, baseUrl?: string) {

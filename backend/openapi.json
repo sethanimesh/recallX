@@ -1,0 +1,5285 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "RecallX API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/pairing/bootstrap": {
+      "post": {
+        "tags": [
+          "pairing"
+        ],
+        "summary": "Bootstrap",
+        "operationId": "bootstrap_pairing_bootstrap_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Bootstrap"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pairing/start": {
+      "post": {
+        "tags": [
+          "pairing"
+        ],
+        "summary": "Start",
+        "operationId": "start_pairing_start_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Start"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pairing/approve": {
+      "post": {
+        "tags": [
+          "pairing"
+        ],
+        "summary": "Approve",
+        "operationId": "approve_pairing_approve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Approve"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pairing/devices": {
+      "get": {
+        "tags": [
+          "pairing"
+        ],
+        "summary": "Devices",
+        "operationId": "devices_pairing_devices_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pairing/devices/{device_id}": {
+      "delete": {
+        "tags": [
+          "pairing"
+        ],
+        "summary": "Revoke",
+        "operationId": "revoke_pairing_devices__device_id__delete",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Device Id"
+            }
+          },
+          {
+            "name": "X-Operation-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Operation-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pairing/{id}": {
+      "get": {
+        "tags": [
+          "pairing"
+        ],
+        "summary": "Poll",
+        "operationId": "poll_pairing__id__get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "poll_token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Poll Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/extract": {
+      "post": {
+        "summary": "Extract Words",
+        "operationId": "extract_words_extract_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ExtractedWord"
+                  },
+                  "type": "array",
+                  "title": "Response Extract Words Extract Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/extract/pdf": {
+      "post": {
+        "summary": "Extract Pdf",
+        "operationId": "extract_pdf_extract_pdf_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_extract_pdf_extract_pdf_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assessments": {
+      "post": {
+        "summary": "Grade Answer",
+        "operationId": "grade_answer_assessments_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/grade": {
+      "post": {
+        "summary": "Grade Answer",
+        "operationId": "grade_answer_grade_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assessments/{assessment_id}": {
+      "get": {
+        "summary": "Get Assessment",
+        "operationId": "get_assessment_assessments__assessment_id__get",
+        "parameters": [
+          {
+            "name": "assessment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Assessment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assessments/{assessment_id}/answer": {
+      "delete": {
+        "summary": "Delete Raw Response",
+        "operationId": "delete_raw_response_assessments__assessment_id__answer_delete",
+        "parameters": [
+          {
+            "name": "assessment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Assessment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/grading/readiness": {
+      "get": {
+        "summary": "Readiness",
+        "operationId": "readiness_grading_readiness_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/{item_id}/rubrics": {
+      "get": {
+        "summary": "Get Rubrics",
+        "operationId": "get_rubrics_items__item_id__rubrics_get",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RubricRecord"
+                  },
+                  "title": "Response Get Rubrics Items  Item Id  Rubrics Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/{item_id}/rubric": {
+      "put": {
+        "summary": "Put Rubric",
+        "operationId": "put_rubric_items__item_id__rubric_put",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RubricInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RubricRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/{item_id}/rubrics/{revision}/approve": {
+      "post": {
+        "summary": "Approve Rubric",
+        "operationId": "approve_rubric_items__item_id__rubrics__revision__approve_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Revision"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApprovalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RubricRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/words": {
+      "post": {
+        "tags": [
+          "items"
+        ],
+        "summary": "Create Word",
+        "operationId": "create_word_words_post",
+        "parameters": [
+          {
+            "name": "X-Operation-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Operation-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WordRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "items"
+        ],
+        "summary": "Get Words",
+        "operationId": "get_words_words_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WordRecord"
+                  },
+                  "title": "Response Get Words Words Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/words/{word_id}": {
+      "patch": {
+        "tags": [
+          "items"
+        ],
+        "summary": "Update Word",
+        "operationId": "update_word_words__word_id__patch",
+        "parameters": [
+          {
+            "name": "word_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Word Id"
+            }
+          },
+          {
+            "name": "X-Operation-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Operation-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WordRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "items"
+        ],
+        "summary": "Delete Word",
+        "operationId": "delete_word_words__word_id__delete",
+        "parameters": [
+          {
+            "name": "word_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Word Id"
+            }
+          },
+          {
+            "name": "expected_content_revision",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Expected Content Revision"
+            }
+          },
+          {
+            "name": "X-Operation-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Operation-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WordRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/words/{word_id}/generate-mnemonic": {
+      "post": {
+        "tags": [
+          "items"
+        ],
+        "summary": "Generate Word Mnemonic",
+        "operationId": "generate_word_mnemonic_words__word_id__generate_mnemonic_post",
+        "parameters": [
+          {
+            "name": "word_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Word Id"
+            }
+          },
+          {
+            "name": "X-Operation-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Operation-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WordRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tags": {
+      "post": {
+        "summary": "Create Tag",
+        "operationId": "create_tag_tags_post",
+        "parameters": [
+          {
+            "name": "X-Operation-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Operation-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTagRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get Tags",
+        "operationId": "get_tags_tags_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TagRecord"
+                  },
+                  "title": "Response Get Tags Tags Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tags/{tag_id}": {
+      "patch": {
+        "summary": "Update Tag",
+        "operationId": "update_tag_tags__tag_id__patch",
+        "parameters": [
+          {
+            "name": "tag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tag Id"
+            }
+          },
+          {
+            "name": "X-Operation-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Operation-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTagRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Tag",
+        "operationId": "delete_tag_tags__tag_id__delete",
+        "parameters": [
+          {
+            "name": "tag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tag Id"
+            }
+          },
+          {
+            "name": "X-Operation-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Operation-Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tags/{source_tag_id}/merge": {
+      "post": {
+        "summary": "Merge Tag",
+        "operationId": "merge_tag_tags__source_tag_id__merge_post",
+        "parameters": [
+          {
+            "name": "source_tag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Tag Id"
+            }
+          },
+          {
+            "name": "X-Operation-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Operation-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergeTagRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/words/{word_id}/tags/{tag_id}": {
+      "post": {
+        "summary": "Add Tag To Word",
+        "operationId": "add_tag_to_word_words__word_id__tags__tag_id__post",
+        "parameters": [
+          {
+            "name": "word_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Word Id"
+            }
+          },
+          {
+            "name": "tag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tag Id"
+            }
+          },
+          {
+            "name": "X-Operation-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Operation-Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove Tag From Word",
+        "operationId": "remove_tag_from_word_words__word_id__tags__tag_id__delete",
+        "parameters": [
+          {
+            "name": "word_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Word Id"
+            }
+          },
+          {
+            "name": "tag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tag Id"
+            }
+          },
+          {
+            "name": "X-Operation-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Operation-Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats/llm": {
+      "get": {
+        "summary": "Get Llm Stats",
+        "operationId": "get_llm_stats_stats_llm_get",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "today",
+                "week",
+                "month",
+                "all"
+              ],
+              "type": "string",
+              "default": "all",
+              "title": "Period"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LlmStatsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers": {
+      "get": {
+        "summary": "List Providers",
+        "operationId": "list_providers_providers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvidersResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tutor/chat": {
+      "post": {
+        "summary": "Tutor Chat",
+        "operationId": "tutor_chat_tutor_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TutorChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TutorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tutor/chat_and_speak": {
+      "post": {
+        "summary": "Tutor Chat And Speak",
+        "operationId": "tutor_chat_and_speak_tutor_chat_and_speak_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TutorChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TutorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tutor/speak": {
+      "get": {
+        "summary": "Tutor Speak",
+        "operationId": "tutor_speak_tutor_speak_get",
+        "parameters": [
+          {
+            "name": "text",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Text"
+            }
+          },
+          {
+            "name": "voice",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "en-US-AvaNeural",
+              "title": "Voice"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/story/generate": {
+      "post": {
+        "summary": "Generate Story Endpoint",
+        "operationId": "generate_story_endpoint_story_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateStoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/story": {
+      "get": {
+        "summary": "Get Stories",
+        "operationId": "get_stories_story_get",
+        "parameters": [
+          {
+            "name": "tag_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tag Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SavedStory"
+                  },
+                  "title": "Response Get Stories Story Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Save Story",
+        "operationId": "save_story_story_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedStory"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedStory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/story/{story_id}": {
+      "get": {
+        "summary": "Get Story",
+        "operationId": "get_story_story__story_id__get",
+        "parameters": [
+          {
+            "name": "story_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Story Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedStory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Story",
+        "operationId": "delete_story_story__story_id__delete",
+        "parameters": [
+          {
+            "name": "story_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Story Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prompts": {
+      "get": {
+        "summary": "Get Prompts",
+        "operationId": "get_prompts_prompts_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PromptRecord"
+                  },
+                  "type": "array",
+                  "title": "Response Get Prompts Prompts Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prompts/{prompt_id}": {
+      "put": {
+        "summary": "Update Prompt",
+        "operationId": "update_prompt_prompts__prompt_id__put",
+        "parameters": [
+          {
+            "name": "prompt_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Prompt Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromptUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prompts/{prompt_id}/reset": {
+      "post": {
+        "summary": "Reset Prompt",
+        "operationId": "reset_prompt_prompts__prompt_id__reset_post",
+        "parameters": [
+          {
+            "name": "prompt_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Prompt Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reviews": {
+      "post": {
+        "tags": [
+          "reviews"
+        ],
+        "summary": "Submit",
+        "operationId": "submit_reviews_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewSubmission"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reviews/{id}": {
+      "get": {
+        "tags": [
+          "reviews"
+        ],
+        "summary": "Get Review",
+        "operationId": "get_review_reviews__id__get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/progress/reset": {
+      "post": {
+        "tags": [
+          "reviews"
+        ],
+        "summary": "Reset",
+        "operationId": "reset_progress_reset_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Reset"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reviews/{id}/corrections": {
+      "post": {
+        "tags": [
+          "reviews"
+        ],
+        "summary": "Correct",
+        "operationId": "correct_reviews__id__corrections_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Correction"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings": {
+      "get": {
+        "tags": [
+          "sync"
+        ],
+        "summary": "Get Settings",
+        "operationId": "get_settings_settings_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settings"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "sync"
+        ],
+        "summary": "Update Settings",
+        "operationId": "update_settings_settings_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settings"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sync/snapshot": {
+      "get": {
+        "tags": [
+          "sync"
+        ],
+        "summary": "Snapshot",
+        "operationId": "snapshot_sync_snapshot_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Snapshot"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sync/legacy-archive": {
+      "post": {
+        "tags": [
+          "sync"
+        ],
+        "summary": "Archive",
+        "operationId": "archive_sync_legacy_archive_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegacyArchive"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/export": {
+      "get": {
+        "tags": [
+          "sync"
+        ],
+        "summary": "Export History",
+        "description": "Consistent personal learning archive; device credentials are never exported.",
+        "operationId": "export_history_export_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/optimizations": {
+      "get": {
+        "tags": [
+          "optimization"
+        ],
+        "summary": "Status",
+        "operationId": "status_optimizations_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "optimization"
+        ],
+        "summary": "Enqueue",
+        "operationId": "enqueue_optimizations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/optimizations/{parameter_version}/report": {
+      "get": {
+        "tags": [
+          "optimization"
+        ],
+        "summary": "Prospective Report",
+        "description": "The next 100 outcomes after frozen validation are for reporting only.",
+        "operationId": "prospective_report_optimizations__parameter_version__report_get",
+        "parameters": [
+          {
+            "name": "parameter_version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Parameter Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/optimizations/activate": {
+      "post": {
+        "tags": [
+          "optimization"
+        ],
+        "summary": "Activate",
+        "operationId": "activate_optimizations_activate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Activation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ingestion/jobs": {
+      "get": {
+        "tags": [
+          "ingestion"
+        ],
+        "summary": "Jobs",
+        "operationId": "jobs_ingestion_jobs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ingestion"
+        ],
+        "summary": "Upload",
+        "operationId": "upload_ingestion_jobs_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_ingestion_jobs_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ingestion/text": {
+      "post": {
+        "tags": [
+          "ingestion"
+        ],
+        "summary": "Text Upload",
+        "operationId": "text_upload_ingestion_text_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TextUpload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ingestion/jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "ingestion"
+        ],
+        "summary": "Job",
+        "operationId": "job_ingestion_jobs__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ingestion/jobs/{job_id}/cancel": {
+      "post": {
+        "tags": [
+          "ingestion"
+        ],
+        "summary": "Cancel",
+        "operationId": "cancel_ingestion_jobs__job_id__cancel_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobMutation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ingestion/jobs/{job_id}/retry": {
+      "post": {
+        "tags": [
+          "ingestion"
+        ],
+        "summary": "Retry",
+        "operationId": "retry_ingestion_jobs__job_id__retry_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobMutation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ingestion/jobs/{job_id}/approve": {
+      "post": {
+        "tags": [
+          "ingestion"
+        ],
+        "summary": "Approve",
+        "operationId": "approve_ingestion_jobs__job_id__approve_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Approval"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ingestion/jobs/{job_id}/draft": {
+      "put": {
+        "tags": [
+          "ingestion"
+        ],
+        "summary": "Save Draft",
+        "operationId": "save_draft_ingestion_jobs__job_id__draft_put",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftSave"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "ingestion"
+        ],
+        "summary": "Get Draft",
+        "operationId": "get_draft_ingestion_jobs__job_id__draft_get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ingestion/sources/{source_id}": {
+      "get": {
+        "tags": [
+          "ingestion"
+        ],
+        "summary": "Source",
+        "operationId": "source_ingestion_sources__source_id__get",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ingestion/items/{item_id}/sources": {
+      "get": {
+        "tags": [
+          "ingestion"
+        ],
+        "summary": "Item Sources",
+        "description": "Accepted passage citations, with stable authenticated source and preview links.",
+        "operationId": "item_sources_ingestion_items__item_id__sources_get",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ingestion/jobs/{job_id}/pages/{page_number}": {
+      "get": {
+        "tags": [
+          "ingestion"
+        ],
+        "summary": "Page",
+        "operationId": "page_ingestion_jobs__job_id__pages__page_number__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "page_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Page Number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ingestion/jobs/{job_id}/pages/{page_number}/preview": {
+      "get": {
+        "tags": [
+          "ingestion"
+        ],
+        "summary": "Page Preview",
+        "operationId": "page_preview_ingestion_jobs__job_id__pages__page_number__preview_get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "page_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Page Number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ingestion/jobs/{job_id}/blocks/{block_id}": {
+      "patch": {
+        "tags": [
+          "ingestion"
+        ],
+        "summary": "Correct Block",
+        "operationId": "correct_block_ingestion_jobs__job_id__blocks__block_id__patch",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockCorrection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Activation": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "parameter_version": {
+            "type": "string",
+            "title": "Parameter Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "parameter_version"
+        ],
+        "title": "Activation"
+      },
+      "Approval": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Request Id"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/CandidateDecision"
+            },
+            "type": "array",
+            "maxItems": 300,
+            "minItems": 1,
+            "title": "Candidates"
+          },
+          "expected_draft_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Draft Revision"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "candidates"
+        ],
+        "title": "Approval"
+      },
+      "ApprovalRequest": {
+        "properties": {
+          "operation_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operation Id"
+          },
+          "content_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Content Revision"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content_revision"
+        ],
+        "title": "ApprovalRequest"
+      },
+      "Approve": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 6,
+            "minLength": 6,
+            "title": "Code"
+          },
+          "operation_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operation Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "Approve"
+      },
+      "AssessmentRequest": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Item Id"
+          },
+          "answer": {
+            "type": "string",
+            "maxLength": 12000,
+            "title": "Answer"
+          },
+          "attempt_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Attempt Id"
+          },
+          "content_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Content Revision"
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 30,
+            "title": "Language",
+            "default": "en"
+          },
+          "assisted": {
+            "type": "boolean",
+            "title": "Assisted",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_id",
+          "answer",
+          "attempt_id",
+          "content_revision"
+        ],
+        "title": "AssessmentRequest"
+      },
+      "AssessmentResult": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "assessment_id": {
+            "type": "string",
+            "title": "Assessment Id"
+          },
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "recall",
+              "tutor"
+            ],
+            "title": "Mode",
+            "default": "recall"
+          },
+          "content_revision": {
+            "type": "integer",
+            "title": "Content Revision"
+          },
+          "rubric_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rubric Revision"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "correct",
+              "partial",
+              "incorrect",
+              "uncertain"
+            ],
+            "title": "Decision",
+            "default": "uncertain"
+          },
+          "feedback": {
+            "type": "string",
+            "title": "Feedback"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "coverage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "experimental": {
+            "type": "boolean",
+            "title": "Experimental",
+            "default": false
+          },
+          "assisted": {
+            "type": "boolean",
+            "title": "Assisted",
+            "default": false
+          },
+          "concept_results": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptResult"
+            },
+            "type": "array",
+            "title": "Concept Results"
+          },
+          "versions": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Versions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "assessment_id",
+          "item_id",
+          "content_revision",
+          "feedback",
+          "reason",
+          "versions"
+        ],
+        "title": "AssessmentResult"
+      },
+      "BlockCorrection": {
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Operation Id"
+          },
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Revision"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "operation_id",
+          "expected_revision",
+          "text"
+        ],
+        "title": "BlockCorrection"
+      },
+      "Body_extract_pdf_extract_pdf_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_extract_pdf_extract_pdf_post"
+      },
+      "Body_upload_ingestion_jobs_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "request_id": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Request Id"
+          },
+          "instructions": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Instructions",
+            "default": ""
+          },
+          "crop": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop"
+          },
+          "extraction_mode": {
+            "type": "string",
+            "title": "Extraction Mode",
+            "default": "general_document"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "request_id"
+        ],
+        "title": "Body_upload_ingestion_jobs_post"
+      },
+      "Bootstrap": {
+        "properties": {
+          "bootstrap_secret": {
+            "type": "string",
+            "title": "Bootstrap Secret"
+          },
+          "device_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Device Name"
+          },
+          "operation_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operation Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bootstrap_secret",
+          "device_name"
+        ],
+        "title": "Bootstrap"
+      },
+      "CandidateDecision": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "accept": {
+            "type": "boolean",
+            "title": "Accept"
+          },
+          "reviewed": {
+            "type": "boolean",
+            "title": "Reviewed",
+            "default": true
+          },
+          "word": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Word"
+          },
+          "definition": {
+            "type": "string",
+            "maxLength": 6000,
+            "minLength": 1,
+            "title": "Definition"
+          },
+          "example_sentence": {
+            "type": "string",
+            "maxLength": 6000,
+            "title": "Example Sentence",
+            "default": ""
+          },
+          "mnemonic": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 6000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mnemonic"
+          },
+          "etymology": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 6000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Etymology"
+          },
+          "tag_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "title": "Tag Ids"
+          },
+          "reference_language": {
+            "type": "string",
+            "enum": [
+              "en",
+              "hi",
+              "hi-Latn"
+            ],
+            "title": "Reference Language",
+            "default": "en"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "accept",
+          "word",
+          "definition"
+        ],
+        "title": "CandidateDecision"
+      },
+      "CardState": {
+        "properties": {
+          "card_id": {
+            "type": "integer",
+            "title": "Card Id"
+          },
+          "state": {
+            "type": "integer",
+            "title": "State"
+          },
+          "step": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step"
+          },
+          "stability": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stability"
+          },
+          "difficulty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difficulty"
+          },
+          "due": {
+            "type": "string",
+            "title": "Due"
+          },
+          "last_review": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Review"
+          }
+        },
+        "type": "object",
+        "required": [
+          "card_id",
+          "state",
+          "due"
+        ],
+        "title": "CardState"
+      },
+      "ChatMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 12000,
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "ChatMessage"
+      },
+      "Concept": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "weight": {
+            "type": "number",
+            "maximum": 100.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Weight",
+            "default": 1
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": true
+          },
+          "accepted_alternatives": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "title": "Accepted Alternatives"
+          },
+          "qualifiers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "title": "Qualifiers"
+          },
+          "misconceptions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "title": "Misconceptions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "text"
+        ],
+        "title": "Concept"
+      },
+      "ConceptResult": {
+        "properties": {
+          "concept_id": {
+            "type": "string",
+            "title": "Concept Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "weight": {
+            "type": "number",
+            "title": "Weight"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required"
+          },
+          "alignment": {
+            "type": "number",
+            "title": "Alignment"
+          },
+          "entailment": {
+            "type": "number",
+            "title": "Entailment"
+          },
+          "neutrality": {
+            "type": "number",
+            "title": "Neutrality"
+          },
+          "contradiction": {
+            "type": "number",
+            "title": "Contradiction"
+          },
+          "support": {
+            "type": "number",
+            "title": "Support"
+          },
+          "evidence_span": {
+            "type": "string",
+            "title": "Evidence Span"
+          },
+          "contradiction_span": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contradiction Span"
+          },
+          "qualifier_support": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Qualifier Support"
+          },
+          "misconception_support": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Misconception Support"
+          }
+        },
+        "type": "object",
+        "required": [
+          "concept_id",
+          "text",
+          "weight",
+          "required",
+          "alignment",
+          "entailment",
+          "neutrality",
+          "contradiction",
+          "support",
+          "evidence_span"
+        ],
+        "title": "ConceptResult"
+      },
+      "Correction": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "enum": [
+                  1,
+                  3
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "rating",
+          "reason"
+        ],
+        "title": "Correction"
+      },
+      "CreateTagRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CreateTagRequest"
+      },
+      "CreateWordRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "definition": {
+            "type": "string",
+            "title": "Definition"
+          },
+          "example_sentence": {
+            "type": "string",
+            "title": "Example Sentence"
+          },
+          "mnemonic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mnemonic"
+          },
+          "source_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Type"
+          },
+          "created_at": {
+            "type": "integer",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "integer",
+            "title": "Updated At"
+          },
+          "sense_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sense Id"
+          },
+          "etymology": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Etymology"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "word",
+          "definition",
+          "example_sentence",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "CreateWordRequest"
+      },
+      "DraftSave": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Request Id"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/CandidateDecision"
+            },
+            "type": "array",
+            "maxItems": 300,
+            "minItems": 1,
+            "title": "Candidates"
+          },
+          "expected_draft_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Draft Revision"
+          },
+          "operation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Operation Id"
+          },
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Expected Revision"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "candidates",
+          "operation_id",
+          "expected_revision"
+        ],
+        "title": "DraftSave"
+      },
+      "ExtractedWord": {
+        "properties": {
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "definition": {
+            "type": "string",
+            "title": "Definition"
+          },
+          "example_sentence": {
+            "type": "string",
+            "title": "Example Sentence"
+          },
+          "mnemonic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mnemonic"
+          }
+        },
+        "type": "object",
+        "required": [
+          "word",
+          "definition",
+          "example_sentence"
+        ],
+        "title": "ExtractedWord"
+      },
+      "ExtractionRequest": {
+        "properties": {
+          "input_type": {
+            "type": "string",
+            "enum": [
+              "image",
+              "text",
+              "word"
+            ],
+            "title": "Input Type"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          },
+          "instructions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instructions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "input_type",
+          "content"
+        ],
+        "title": "ExtractionRequest"
+      },
+      "FitRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "recall",
+              "flashcard"
+            ],
+            "title": "Mode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "mode"
+        ],
+        "title": "FitRequest"
+      },
+      "GenerateStoryRequest": {
+        "properties": {
+          "words": {
+            "items": {
+              "$ref": "#/components/schemas/WordItem"
+            },
+            "type": "array",
+            "title": "Words"
+          },
+          "custom_prompt": {
+            "type": "string",
+            "title": "Custom Prompt",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "words"
+        ],
+        "title": "GenerateStoryRequest"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "JobMutation": {
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Operation Id"
+          },
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Revision"
+          }
+        },
+        "type": "object",
+        "required": [
+          "operation_id",
+          "expected_revision"
+        ],
+        "title": "JobMutation"
+      },
+      "LegacyArchive": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "data"
+        ],
+        "title": "LegacyArchive"
+      },
+      "LlmCall": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "task": {
+            "type": "string",
+            "title": "Task"
+          },
+          "called_at": {
+            "type": "integer",
+            "title": "Called At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "model",
+          "task",
+          "called_at"
+        ],
+        "title": "LlmCall"
+      },
+      "LlmStatsResponse": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "enum": [
+              "today",
+              "week",
+              "month",
+              "all"
+            ],
+            "title": "Period"
+          },
+          "total_calls": {
+            "type": "integer",
+            "title": "Total Calls"
+          },
+          "by_provider": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderCount"
+            },
+            "type": "array",
+            "title": "By Provider"
+          },
+          "calls": {
+            "items": {
+              "$ref": "#/components/schemas/LlmCall"
+            },
+            "type": "array",
+            "title": "Calls"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "total_calls",
+          "by_provider",
+          "calls"
+        ],
+        "title": "LlmStatsResponse"
+      },
+      "MemoryState": {
+        "properties": {
+          "learner_id": {
+            "type": "string",
+            "title": "Learner Id",
+            "default": "personal"
+          },
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "recall",
+              "flashcard"
+            ],
+            "title": "Mode"
+          },
+          "state_version": {
+            "type": "integer",
+            "title": "State Version"
+          },
+          "progress_generation": {
+            "type": "integer",
+            "title": "Progress Generation"
+          },
+          "parameter_version": {
+            "type": "string",
+            "title": "Parameter Version"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
+          "card": {
+            "$ref": "#/components/schemas/CardState"
+          },
+          "due": {
+            "type": "string",
+            "title": "Due"
+          },
+          "retrievability": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retrievability"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_id",
+          "mode",
+          "state_version",
+          "progress_generation",
+          "parameter_version",
+          "updated_at",
+          "card",
+          "due"
+        ],
+        "title": "MemoryState"
+      },
+      "MergeTagRequest": {
+        "properties": {
+          "target_tag_id": {
+            "type": "string",
+            "title": "Target Tag Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_tag_id"
+        ],
+        "title": "MergeTagRequest"
+      },
+      "PromptRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "prompt_text": {
+            "type": "string",
+            "title": "Prompt Text"
+          },
+          "default_text": {
+            "type": "string",
+            "title": "Default Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "prompt_text",
+          "default_text"
+        ],
+        "title": "PromptRecord"
+      },
+      "PromptUpdateRequest": {
+        "properties": {
+          "prompt_text": {
+            "type": "string",
+            "title": "Prompt Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "prompt_text"
+        ],
+        "title": "PromptUpdateRequest"
+      },
+      "ProviderCount": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "model",
+          "count"
+        ],
+        "title": "ProviderCount"
+      },
+      "ProvidersResponse": {
+        "properties": {
+          "providers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Providers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "providers"
+        ],
+        "title": "ProvidersResponse"
+      },
+      "Reset": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "expected_generation": {
+            "type": "integer",
+            "title": "Expected Generation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "expected_generation"
+        ],
+        "title": "Reset"
+      },
+      "ReviewEventSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "recall",
+              "flashcard"
+            ],
+            "title": "Mode"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "answered_at": {
+            "type": "string",
+            "title": "Answered At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "acknowledged",
+              "practice"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "assessment_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessment Id"
+          },
+          "experimental": {
+            "type": "boolean",
+            "title": "Experimental",
+            "default": false
+          },
+          "progress_generation": {
+            "type": "integer",
+            "title": "Progress Generation"
+          },
+          "device_id": {
+            "type": "string",
+            "title": "Device Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "item_id",
+          "mode",
+          "rating",
+          "answered_at",
+          "status",
+          "progress_generation",
+          "device_id"
+        ],
+        "title": "ReviewEventSummary"
+      },
+      "ReviewResult": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "acknowledged",
+              "practice"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "memory_state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MemoryState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reconciled": {
+            "type": "boolean",
+            "title": "Reconciled",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "title": "ReviewResult"
+      },
+      "ReviewSubmission": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "recall",
+              "flashcard"
+            ],
+            "title": "Mode"
+          },
+          "answered_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Answered At"
+          },
+          "device_sequence": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Device Sequence"
+          },
+          "content_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Content Revision"
+          },
+          "progress_generation": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Progress Generation"
+          },
+          "expected_state_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected State Version"
+          },
+          "settings_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settings Revision"
+          },
+          "parameter_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameter Version"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "enum": [
+                  1,
+                  3
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "assessment_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessment Id"
+          },
+          "assisted": {
+            "type": "boolean",
+            "title": "Assisted",
+            "default": false
+          },
+          "revealed": {
+            "type": "boolean",
+            "title": "Revealed",
+            "default": false
+          },
+          "offline": {
+            "type": "boolean",
+            "title": "Offline",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "item_id",
+          "mode",
+          "answered_at",
+          "device_sequence",
+          "content_revision",
+          "progress_generation"
+        ],
+        "title": "ReviewSubmission"
+      },
+      "RubricInput": {
+        "properties": {
+          "operation_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operation Id"
+          },
+          "content_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Content Revision"
+          },
+          "reference_language": {
+            "type": "string",
+            "enum": [
+              "en",
+              "hi",
+              "hi-Latn"
+            ],
+            "title": "Reference Language",
+            "default": "en"
+          },
+          "concepts": {
+            "items": {
+              "$ref": "#/components/schemas/Concept"
+            },
+            "type": "array",
+            "maxItems": 16,
+            "minItems": 1,
+            "title": "Concepts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content_revision",
+          "concepts"
+        ],
+        "title": "RubricInput"
+      },
+      "RubricRecord": {
+        "properties": {
+          "operation_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operation Id"
+          },
+          "content_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Content Revision"
+          },
+          "reference_language": {
+            "type": "string",
+            "enum": [
+              "en",
+              "hi",
+              "hi-Latn"
+            ],
+            "title": "Reference Language",
+            "default": "en"
+          },
+          "concepts": {
+            "items": {
+              "$ref": "#/components/schemas/Concept"
+            },
+            "type": "array",
+            "maxItems": 16,
+            "minItems": 1,
+            "title": "Concepts"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "approved",
+              "retired"
+            ],
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "integer",
+            "title": "Created At"
+          },
+          "approved_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content_revision",
+          "concepts",
+          "id",
+          "item_id",
+          "revision",
+          "status",
+          "created_at"
+        ],
+        "title": "RubricRecord"
+      },
+      "SavedStory": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "tag_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag Id"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "created_at": {
+            "type": "integer",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "content",
+          "created_at"
+        ],
+        "title": "SavedStory"
+      },
+      "Settings": {
+        "properties": {
+          "learner_id": {
+            "type": "string",
+            "title": "Learner Id",
+            "default": "personal"
+          },
+          "desired_retention": {
+            "type": "number",
+            "title": "Desired Retention"
+          },
+          "experimental_grading": {
+            "type": "boolean",
+            "title": "Experimental Grading"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "progress_generation": {
+            "type": "integer",
+            "title": "Progress Generation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "desired_retention",
+          "experimental_grading",
+          "revision",
+          "progress_generation"
+        ],
+        "title": "Settings"
+      },
+      "SettingsUpdate": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "desired_retention": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 0.99,
+                "minimum": 0.7
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Desired Retention"
+          },
+          "experimental_grading": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Experimental Grading"
+          },
+          "expected_revision": {
+            "type": "integer",
+            "title": "Expected Revision"
+          }
+        },
+        "type": "object",
+        "required": [
+          "expected_revision"
+        ],
+        "title": "SettingsUpdate"
+      },
+      "Snapshot": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "server_time": {
+            "type": "string",
+            "title": "Server Time"
+          },
+          "words": {
+            "items": {
+              "$ref": "#/components/schemas/WordRecord"
+            },
+            "type": "array",
+            "title": "Words"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/TagInfo"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "memory_states": {
+            "items": {
+              "$ref": "#/components/schemas/MemoryState"
+            },
+            "type": "array",
+            "title": "Memory States"
+          },
+          "reviews": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewEventSummary"
+            },
+            "type": "array",
+            "title": "Reviews"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/Settings"
+          },
+          "rubrics": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Rubrics"
+          },
+          "parameter_versions": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Parameter Versions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "server_time",
+          "words",
+          "tags",
+          "memory_states",
+          "reviews",
+          "settings",
+          "rubrics",
+          "parameter_versions"
+        ],
+        "title": "Snapshot"
+      },
+      "Start": {
+        "properties": {
+          "device_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Device Name"
+          },
+          "operation_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operation Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "device_name"
+        ],
+        "title": "Start"
+      },
+      "StoryResponse": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "content"
+        ],
+        "title": "StoryResponse"
+      },
+      "TagInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "TagInfo"
+      },
+      "TagRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "word_count": {
+            "type": "integer",
+            "title": "Word Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "TagRecord"
+      },
+      "TextUpload": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Request Id"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 100000,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "instructions": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Instructions",
+            "default": ""
+          },
+          "extraction_mode": {
+            "type": "string",
+            "enum": [
+              "general_document",
+              "vocabulary_mcq"
+            ],
+            "title": "Extraction Mode",
+            "default": "general_document"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "text"
+        ],
+        "title": "TextUpload"
+      },
+      "TutorChatRequest": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Item Id"
+          },
+          "answer": {
+            "type": "string",
+            "maxLength": 12000,
+            "title": "Answer"
+          },
+          "attempt_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Attempt Id"
+          },
+          "content_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Content Revision"
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 30,
+            "title": "Language",
+            "default": "en"
+          },
+          "assisted": {
+            "type": "boolean",
+            "title": "Assisted",
+            "default": false
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "title": "History"
+          },
+          "is_retry": {
+            "type": "boolean",
+            "title": "Is Retry",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_id",
+          "answer",
+          "attempt_id",
+          "content_revision"
+        ],
+        "title": "TutorChatRequest"
+      },
+      "TutorResponse": {
+        "properties": {
+          "assessment": {
+            "$ref": "#/components/schemas/AssessmentResult"
+          },
+          "response": {
+            "type": "string",
+            "title": "Response"
+          },
+          "evaluation": {
+            "type": "string",
+            "enum": [
+              "correct",
+              "partial",
+              "incorrect",
+              "uncertain"
+            ],
+            "title": "Evaluation"
+          },
+          "hint_provided": {
+            "type": "boolean",
+            "title": "Hint Provided",
+            "default": false
+          },
+          "audio_b64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio B64"
+          },
+          "audio_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assessment",
+          "response",
+          "evaluation"
+        ],
+        "title": "TutorResponse"
+      },
+      "UpdateTagRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "UpdateTagRequest"
+      },
+      "UpdateWordRequest": {
+        "properties": {
+          "word": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Word"
+          },
+          "definition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "example_sentence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Example Sentence"
+          },
+          "mnemonic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mnemonic"
+          },
+          "etymology": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Etymology"
+          },
+          "expected_content_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Content Revision"
+          }
+        },
+        "type": "object",
+        "title": "UpdateWordRequest"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "WordItem": {
+        "properties": {
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "definition": {
+            "type": "string",
+            "title": "Definition"
+          }
+        },
+        "type": "object",
+        "required": [
+          "word",
+          "definition"
+        ],
+        "title": "WordItem"
+      },
+      "WordRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "definition": {
+            "type": "string",
+            "title": "Definition"
+          },
+          "example_sentence": {
+            "type": "string",
+            "title": "Example Sentence"
+          },
+          "mnemonic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mnemonic"
+          },
+          "source_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Type"
+          },
+          "created_at": {
+            "type": "integer",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "integer",
+            "title": "Updated At"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
+          },
+          "sense_id": {
+            "type": "string",
+            "title": "Sense Id"
+          },
+          "content_revision": {
+            "type": "integer",
+            "title": "Content Revision",
+            "default": 1
+          },
+          "etymology": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Etymology"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/TagInfo"
+            },
+            "type": "array",
+            "title": "Tags",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "word",
+          "definition",
+          "example_sentence",
+          "created_at",
+          "updated_at",
+          "sense_id"
+        ],
+        "title": "WordRecord"
+      }
+    }
+  }
+}

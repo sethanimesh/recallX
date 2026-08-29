@@ -21,6 +21,7 @@ export interface WordRow {
   id: string;
   word: string;
   definition: string;
+  content_revision?: number;
   example_sentence: string;
   mnemonic: string | null;
   source_id: string | null;
@@ -35,10 +36,10 @@ export interface WordRow {
 
 export async function createOrGetTag(name: string): Promise<string> {
   const trimmed = name.trim();
-  const id = Crypto.randomUUID();
+  let id = Crypto.randomUUID();
   try {
-    await postTag({ id, name: trimmed });
-    await db.insert(tags).values({ id, name: trimmed });
+    const saved = await postTag({ id, name: trimmed }); id = saved?.id ?? id;
+    await db.insert(tags).values({ id, name: trimmed }).onConflictDoNothing();
     return id;
   } catch (err) {
     if (err instanceof WordServerError && err.statusCode === 409) {
@@ -132,6 +133,7 @@ export async function fetchWordsByTag(tagId: string): Promise<WordRow[]> {
       id: words.id,
       word: words.word,
       definition: words.definition,
+      content_revision: words.content_revision,
       example_sentence: words.example_sentence,
       mnemonic: words.mnemonic,
       source_id: words.source_id,
@@ -155,6 +157,7 @@ export async function fetchAllWords(): Promise<WordRow[]> {
       id: words.id,
       word: words.word,
       definition: words.definition,
+      content_revision: words.content_revision,
       example_sentence: words.example_sentence,
       mnemonic: words.mnemonic,
       source_id: words.source_id,

@@ -10,7 +10,7 @@ export async function insertManualWord(
   definition: string,
   exampleSentence: string,
 ): Promise<{ id: string; isNew: boolean }> {
-  const id = Crypto.randomUUID();
+  let id = Crypto.randomUUID();
   const now = Date.now();
   const nowDate = new Date(now);
 
@@ -20,13 +20,13 @@ export async function insertManualWord(
   let existing = await db
     .select({ id: words.id })
     .from(words)
-    .where(sql`lower(${words.word}) = lower(${capitalized})`);
+    .where(sql`lower(${words.word}) = lower(${capitalized}) AND ${words.definition} = ${definition.trim()} AND ${words.deleted_at} IS NULL`);
   if (existing.length > 0) {
     return { id: existing[0].id, isNew: false };
   }
 
   try {
-    await postWord({
+    const saved = await postWord({
       id,
       word: capitalized,
       definition: definition.trim(),
@@ -36,13 +36,14 @@ export async function insertManualWord(
       created_at: now,
       updated_at: now,
     });
+    id = saved?.id ?? id;
   } catch (err) {
     if (err instanceof WordServerError && err.statusCode === 409) {
       await syncFromServer();
       existing = await db
         .select({ id: words.id })
         .from(words)
-        .where(sql`lower(${words.word}) = lower(${capitalized})`);
+        .where(sql`lower(${words.word}) = lower(${capitalized}) AND ${words.definition} = ${definition.trim()} AND ${words.deleted_at} IS NULL`);
       if (existing.length > 0) {
         return { id: existing[0].id, isNew: false };
       }
@@ -63,6 +64,6 @@ export async function insertManualWord(
     source_id: null,
     created_at: nowDate,
     updated_at: nowDate,
-  });
+  }).onConflictDoNothing();
   return { id, isNew: true };
 }

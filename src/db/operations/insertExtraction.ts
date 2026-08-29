@@ -19,14 +19,14 @@ export async function insertExtraction(
   const results: Array<{ id: string; word: string; isNew: boolean }> = [];
 
   for (const w of extractedWords) {
-    const id = Crypto.randomUUID();
+    let id = Crypto.randomUUID();
     w.word = w.word.trim().replace(/^\w/, (c) => c.toUpperCase());
     
     // Check local db first
     let existing = await db
       .select({ id: wordsTable.id })
       .from(wordsTable)
-      .where(sql`lower(${wordsTable.word}) = lower(${w.word})`);
+      .where(sql`lower(${wordsTable.word}) = lower(${w.word}) AND ${wordsTable.definition} = ${w.definition.trim()} AND ${wordsTable.deleted_at} IS NULL`);
       
     if (existing.length > 0) {
       results.push({ id: existing[0].id, word: w.word, isNew: false });
@@ -34,7 +34,7 @@ export async function insertExtraction(
     }
 
     try {
-      await postWord({
+      const saved = await postWord({
         id,
         word: w.word,
         definition: w.definition,
@@ -44,6 +44,7 @@ export async function insertExtraction(
         created_at: now,
         updated_at: now,
       });
+      id = saved?.id ?? id;
       toInsert.push({ word: w, id });
       results.push({ id, word: w.word, isNew: true });
     } catch (err) {
@@ -52,7 +53,7 @@ export async function insertExtraction(
         existing = await db
           .select({ id: wordsTable.id })
           .from(wordsTable)
-          .where(sql`lower(${wordsTable.word}) = lower(${w.word})`);
+          .where(sql`lower(${wordsTable.word}) = lower(${w.word}) AND ${wordsTable.definition} = ${w.definition.trim()} AND ${wordsTable.deleted_at} IS NULL`);
         
         if (existing.length > 0) {
           results.push({ id: existing[0].id, word: w.word, isNew: false });
@@ -89,7 +90,7 @@ export async function insertExtraction(
           created_at: nowDate,
           updated_at: nowDate,
         })),
-      );
+      ).onConflictDoNothing();
     });
   }
 

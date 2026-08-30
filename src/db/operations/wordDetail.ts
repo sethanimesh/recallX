@@ -15,6 +15,7 @@ export async function isDuplicateWord(word: string): Promise<boolean> {
 export interface WordWithSource {
   id: string;
   word: string;
+  content_revision?: number;
   definition: string;
   example_sentence: string;
   mnemonic: string | null;
@@ -32,6 +33,7 @@ export async function fetchWordWithSource(id: string): Promise<WordWithSource | 
     return {
       id: row.id,
       word: row.word,
+      content_revision: row.content_revision,
       definition: row.definition,
       example_sentence: row.example_sentence,
       mnemonic: row.mnemonic,
@@ -45,6 +47,7 @@ export async function fetchWordWithSource(id: string): Promise<WordWithSource | 
   return {
     id: row.id,
     word: row.word,
+    content_revision: row.content_revision,
     definition: row.definition,
     example_sentence: row.example_sentence,
     mnemonic: row.mnemonic,
@@ -69,12 +72,15 @@ export async function updateWordField(
   id: string,
   field: 'word' | 'definition' | 'example_sentence' | 'mnemonic',
   value: string,
-): Promise<void> {
+  expectedRevision?: number,
+): Promise<number> {
   let updatedValue = value.trim();
   if (field === 'word') {
     updatedValue = updatedValue.replace(/^\w/, (c) => c.toUpperCase());
   }
-  await patchWord(id, { [field]: updatedValue });
+  const existing = await db.select().from(words).where(eq(words.id, id));
+  const result = await patchWord(id, { [field]: updatedValue, expected_content_revision: expectedRevision ?? existing[0]?.content_revision ?? 1 });
+  if (result?.content_revision) await db.update(words).set({ content_revision: result.content_revision }).where(eq(words.id, id));
   const now = new Date();
   if (field === 'word') {
     await db.update(words).set({ word: updatedValue, updated_at: now }).where(eq(words.id, id));
@@ -85,10 +91,12 @@ export async function updateWordField(
   } else {
     await db.update(words).set({ mnemonic: updatedValue, updated_at: now }).where(eq(words.id, id));
   }
+  return result?.content_revision ?? existing[0]?.content_revision ?? 1;
 }
 
 export async function softDeleteWord(id: string): Promise<void> {
-  const result = await deleteWord(id);
+  const existing = await db.select().from(words).where(eq(words.id, id));
+  const result = await deleteWord(id, undefined, existing[0]?.content_revision);
   const deletedAtMs = result?.deleted_at ? new Date(result.deleted_at) : new Date();
   await db.update(words).set({ deleted_at: deletedAtMs }).where(eq(words.id, id));
 }

@@ -1,16 +1,18 @@
 import 'react-native-reanimated';
 
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { useColorScheme, View, Text, StyleSheet } from 'react-native';
+import { useColorScheme, View, Text, StyleSheet, AppState, Platform } from 'react-native';
 import { runMigrations } from '@/src/db/client';
 import { syncFromServer } from '@/src/db/operations/sync';
-import { initSettings } from '@/src/config/settings';
+import { initSettings, getToken, subscribeIdentity } from '@/src/config/settings';
 import { LoadingScreen } from '@/src/components/LoadingScreen';
 import { palette } from '@/src/utils/theme';
 import { TVFocusable } from '@/src/components/TVFocusable';
 import { scaleSize, scaleFont } from '@/src/utils/tvConfig';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { subscribeLibraryMutations } from '@/src/api/wordServerClient';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -48,22 +50,28 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [ready, setReady] = useState(false);
   const [syncError, setSyncError] = useState(false);
+  const [paired, setPaired] = useState(!!getToken());
+  const [storageError, setStorageError] = useState('');
 
   useEffect(() => {
+    if (Platform.OS === 'web' && !__DEV__ && 'serviceWorker' in navigator) {
+      void navigator.serviceWorker.register('/sw.js').catch(error => console.warn('Offline app shell could not be cached:', error));
+    }
     async function init() {
       const minDelay = new Promise<void>((r) => setTimeout(r, 2800));
       try {
-        await initSettings();
+        await initSettings(); setPaired(!!getToken());
       } catch (err) {
         console.warn('[Settings] Init error:', err);
       }
       try {
         await runMigrations();
       } catch (err) {
-        console.error('[DB] Migration error:', err);
+        setStorageError(err instanceof Error ? err.message : 'Local storage could not open.');
+        setReady(true); return;
       }
       try {
-        await syncFromServer();
+        if (getToken()) await syncFromServer();
       } catch (err) {
         console.warn('[Sync] Failed — using cached data:', err);
         setSyncError(true);
@@ -72,6 +80,14 @@ export default function RootLayout() {
       setReady(true);
     }
     init();
+    const unsubscribe = subscribeIdentity(() => setPaired(!!getToken()));
+    const refresh = () => { if (getToken()) void syncFromServer().then(() => setSyncError(false)).catch(() => setSyncError(true)); };
+    // A snapshot already in flight may precede the acknowledged library edit.
+    const unsubscribeMutations = subscribeLibraryMutations(() => { if (getToken()) void syncFromServer().catch(() => {}).then(refresh); });
+    const subscription = AppState.addEventListener('change', state => { if (state === 'active') refresh(); });
+    const interval = setInterval(() => { if (AppState.currentState === 'active') refresh(); }, 30000);
+    if (Platform.OS === 'web') window.addEventListener('online', refresh);
+    return () => { unsubscribe(); unsubscribeMutations(); subscription.remove(); clearInterval(interval); if (Platform.OS === 'web') window.removeEventListener('online', refresh); };
   }, []);
 
   const isDark = colorScheme === 'dark';
@@ -80,16 +96,21 @@ export default function RootLayout() {
     return <LoadingScreen />;
   }
 
+  if (storageError) return <View style={{ padding: 32, gap: 20 }}><Text>Local storage unavailable</Text><Text>{storageError}</Text><Text>On web, use localhost or HTTPS in a current browser. Pending work requires working persistent browser storage.</Text></View>;
+
   return (
     <ThemeProvider value={isDark ? CustomDarkTheme : CustomLightTheme}>
+      {(!paired || syncError) && <SafeAreaView edges={['top']} style={{ backgroundColor: '#FEF3C7' }}>
+      {!paired && <TVFocusable onPress={() => router.push('/connection' as any)} style={{ padding: 14, backgroundColor: '#FEF3C7' }}><Text>Pair this device to sync your library and reviews</Text></TVFocusable>}
       {syncError && (
         <View style={[styles.banner, isDark && { backgroundColor: '#78350F' }]}>
-          <Text style={[styles.bannerText, isDark && { color: '#FDE68A' }]}>Could not sync — showing cached data</Text>
+          <TVFocusable onPress={() => router.push('/connection' as any)}><Text style={[styles.bannerText, isDark && { color: '#FDE68A' }]}>Could not sync — open connection and retry</Text></TVFocusable>
           <TVFocusable onPress={() => setSyncError(false)}>
             <Text style={[styles.bannerDismiss, isDark && { color: '#FDE68A' }]}>✕</Text>
           </TVFocusable>
         </View>
       )}
+      </SafeAreaView>}
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="ingest" options={{ presentation: 'modal', headerShown: false }} />

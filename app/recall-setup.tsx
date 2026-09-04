@@ -1,309 +1,82 @@
-import { useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  Platform,
-  StyleSheet,
-  ListRenderItemInfo,
-} from 'react-native';
+import { useState, useCallback } from 'react';
+import { View, Text, FlatList, Platform, StyleSheet, ListRenderItemInfo, AppState } from 'react-native';
 import { TVFocusable } from '@/src/components/TVFocusable';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
-import { Ionicons } from '@expo/vector-icons';
-import { getAllTags, fetchAllWords, fetchWordsByTag, type Tag } from '@/src/db/operations/tags';
-import { fetchDueWords, fetchDueWordsFc } from '@/src/db/operations/srs';
-import { fetchTodayWordCount } from '@/src/db/operations/sessionHistory';
+import { getAllTags, fetchAllWords, fetchWordsByTag, type Tag, type WordRow } from '@/src/db/operations/tags';
+import { allOperations, getSnapshot } from '@/src/db/operations/central';
 import { useThemeColors } from '@/src/utils/theme';
 
 type DeckOption = { id: string | null; name: string };
-export type Mode = 'adaptive' | 'classic' | 'flashcard' | 'tutor';
-export type FcMode = 'passive' | 'self-rated';
-
+export type Mode = 'recall' | 'flashcard' | 'tutor';
 export default function RecallSetupScreen() {
-  const router = useRouter();
-  const insets = useDynamicInsets();
-  const colors = useThemeColors();
-
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-  const [wordCount, setWordCount] = useState(0);
-  const [mode, setMode] = useState<Mode>('adaptive');
-  const [fcMode, setFcMode] = useState<FcMode>('passive');
+  const router = useRouter(); const insets = useDynamicInsets(); const colors = useThemeColors();
+  const [tags, setTags] = useState<Tag[]>([]); const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  const [wordCount, setWordCount] = useState(0); const [todayCount, setTodayCount] = useState(0);
+  const [mode, setMode] = useState<Mode>(Platform.isTV ? 'flashcard' : 'recall');
   const [sortOrder, setSortOrder] = useState<'jumbled' | 'alphabetical' | 'newest'>('jumbled');
-  const [todayCount, setTodayCount] = useState(0);
-
-  useFocusEffect(
-    useCallback(() => {
-      getAllTags().then(setTags);
-      fetchTodayWordCount().then(setTodayCount).catch(() => {});
-    }, [])
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-    async function computeCount() {
-      let count = 0;
-      if (mode === 'adaptive' || mode === 'tutor') {
-        const rows = selectedTagId !== null
-          ? await fetchDueWords(selectedTagId)
-          : await fetchDueWords();
-        count = rows.length;
-      } else if (mode === 'classic') {
-        const rows = selectedTagId === null
-          ? await fetchAllWords()
-          : await fetchWordsByTag(selectedTagId);
-        count = rows.length;
-      } else {
-        // flashcard
-        if (fcMode === 'self-rated') {
-          const rows = selectedTagId !== null
-            ? await fetchDueWordsFc(selectedTagId)
-            : await fetchDueWordsFc();
-          count = rows.length;
-        } else {
-          const rows = selectedTagId === null
-            ? await fetchAllWords()
-            : await fetchWordsByTag(selectedTagId);
-          count = rows.length;
-        }
-      }
-      if (!cancelled) setWordCount(count);
+  const [error, setError] = useState('');
+  useFocusEffect(useCallback(() => {
+    let mounted = true; let loading = false;
+    async function refresh() {
+      if (loading) return; loading = true;
+      try {
+        const [tagRows, all, selected, snapshot, operations] = await Promise.all([
+          getAllTags(), fetchAllWords(), selectedTagId ? fetchWordsByTag(selectedTagId) : Promise.resolve(null), getSnapshot(), allOperations(),
+        ]);
+        if (!mounted) return;
+        setTags(tagRows);
+        if (!snapshot) { setWordCount(0); setTodayCount(0); setError('Pair and sync this device before reviewing.'); return; }
+        const pending = new Set(operations.filter(operation => operation.status === 'pending').map(operation => { const review = JSON.parse(operation.payload); return `${review.item_id}:${review.mode}`; }));
+        const available = (rows: WordRow[]) => mode === 'tutor' ? rows : rows.filter(word => {
+          const state = snapshot.memory_states.find(state => state.item_id === word.id && state.mode === mode);
+          return !pending.has(`${word.id}:${mode}`) && (!state || new Date(state.due).getTime() <= Date.now());
+        });
+        const day = new Date(); day.setHours(0, 0, 0, 0);
+        setWordCount(available(selected ?? all).length);
+        setTodayCount(available(all).filter(word => word.created_at >= day).length); setError('');
+      } catch (error) { if (mounted) setError(error instanceof Error ? error.message : 'Could not load your confirmed schedule.'); }
+      finally { loading = false; }
     }
-    computeCount().catch(() => {});
-    return () => { cancelled = true; };
-  }, [selectedTagId, mode, fcMode]);
-
-  const handleStart = useCallback(() => {
-    if (mode === 'flashcard') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      router.push({ pathname: '/flashcard' as any, params: { tagId: selectedTagId ?? '', fcMode, sortOrder } });
-    } else if (mode === 'tutor') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      router.push({ pathname: '/tutor' as any, params: { tagId: selectedTagId ?? '', sortOrder } });
-    } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      router.push({ pathname: '/recall' as any, params: { tagId: selectedTagId ?? '', mode, sortOrder } });
-    }
-  }, [router, selectedTagId, mode, fcMode, sortOrder]);
-
-  const handleTodayWords = useCallback(() => {
-    if (mode === 'flashcard') {
-      router.push({ pathname: '/flashcard' as any, params: { tagId: '', fcMode, todayOnly: 'true', sortOrder } });
-    } else if (mode === 'tutor') {
-      router.push({ pathname: '/tutor' as any, params: { tagId: '', todayOnly: 'true', sortOrder } });
-    } else {
-      router.push({ pathname: '/recall' as any, params: { tagId: '', mode, todayOnly: 'true', sortOrder } });
-    }
-  }, [router, mode, fcMode, sortOrder]);
-
-  const deckOptions: DeckOption[] = [{ id: null, name: 'All Words' }, ...tags];
-
-  const renderItem = useCallback(
-    ({ item }: ListRenderItemInfo<DeckOption>) => {
-      const isSelected = item.id === selectedTagId;
-      return (
-        <TVFocusable
-          style={[styles.row, { backgroundColor: colors.card }, isSelected && { backgroundColor: colors.primary }]}
-          onPress={() => setSelectedTagId(item.id)}
-          accessibilityRole="radio"
-          accessibilityState={{ selected: isSelected }}
-        >
-          <Text style={[styles.rowText, { color: colors.text }, isSelected && { color: '#fff', fontWeight: '600' }]}>{item.name}</Text>
-        </TVFocusable>
-      );
-    },
-    [selectedTagId, colors],
-  );
-
-  const allCaughtUp = (mode === 'adaptive' || mode === 'tutor') && wordCount === 0;
-  const fcAllCaughtUp = mode === 'flashcard' && fcMode === 'self-rated' && wordCount === 0;
-
-  const wordCountSuffix =
-    mode === 'adaptive' || mode === 'tutor' || (mode === 'flashcard' && fcMode === 'self-rated')
-      ? ' due today'
-      : '';
-
-  return (
-    <View style={[styles.container, { paddingBottom: insets.bottom + 16, backgroundColor: colors.background }]}>
-      <Text style={[styles.heading, { color: colors.text }]}>Choose a deck</Text>
-
-      <Text style={[styles.subHeading, { color: colors.textSecondary }]}>Review Mode</Text>
-      <View style={styles.modeGrid}>
-        {(['adaptive', 'classic', 'flashcard', 'tutor'] as Mode[]).map((m, index) => {
-          const isActive = mode === m;
-          let iconName: keyof typeof Ionicons.glyphMap = 'sparkles-outline';
-          let label = 'Adaptive';
-          if (m === 'classic') {
-            iconName = 'book-outline';
-            label = 'Classic';
-          } else if (m === 'flashcard') {
-            iconName = 'albums-outline';
-            label = 'Flashcard';
-          } else if (m === 'tutor') {
-            iconName = 'chatbubble-ellipses-outline';
-            label = 'AI Tutor';
-          }
-
-          return (
-            <TVFocusable
-              key={m}
-              style={[
-                styles.modeCard,
-                { backgroundColor: colors.inputBackground, borderColor: 'transparent' },
-                isActive && { backgroundColor: colors.accent, borderColor: colors.primary }
-              ]}
-              onPress={() => setMode(m)}
-              hasTVPreferredFocus={index === 0}
-              testID={`mode-${m}`}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: isActive }}
-            >
-              <Ionicons
-                name={iconName}
-                size={18}
-                color={isActive ? colors.primary : colors.textSecondary}
-                style={styles.modeIcon}
-              />
-              <Text style={[
-                styles.modeCardText,
-                { color: colors.textSecondary },
-                isActive && { color: colors.primary, fontWeight: '700' }
-              ]}>
-                {label}
-              </Text>
-            </TVFocusable>
-          );
-        })}
-      </View>
-
-      {mode === 'flashcard' && (
-        <View style={[styles.fcModeToggle, { backgroundColor: colors.inputBackground }]}>
-          {(['passive', 'self-rated'] as FcMode[]).map(fm => (
-            <TVFocusable
-              key={fm}
-              style={[
-                styles.modeButton,
-                { backgroundColor: 'transparent' },
-                fcMode === fm && { backgroundColor: colors.card, shadowColor: colors.shadow }
-              ]}
-              onPress={() => setFcMode(fm)}
-              testID={`fcmode-${fm}`}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: fcMode === fm }}
-            >
-              <Text style={[
-                styles.modeButtonText,
-                { color: colors.textSecondary },
-                fcMode === fm && { color: colors.text, fontWeight: '700' }
-              ]}>
-                {fm === 'passive' ? 'Passive' : 'Self-Rated'}
-              </Text>
-            </TVFocusable>
-          ))}
-        </View>
-      )}
-
-      <Text style={[styles.subHeading, { color: colors.textSecondary }]}>Sort Order</Text>
-      <View style={[styles.sortToggle, { backgroundColor: colors.inputBackground }]}>
-        {(['jumbled', 'alphabetical', 'newest'] as const).map(so => (
-          <TVFocusable
-            key={so}
-            style={[
-              styles.modeButton,
-              { backgroundColor: 'transparent' },
-              sortOrder === so && { backgroundColor: colors.card, shadowColor: colors.shadow }
-            ]}
-            onPress={() => setSortOrder(so)}
-            testID={`sort-${so}`}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: sortOrder === so }}
-          >
-            <Text style={[
-              styles.modeButtonText,
-              { color: colors.textSecondary },
-              sortOrder === so && { color: colors.text, fontWeight: '700' }
-            ]}>
-              {so === 'jumbled' ? 'Jumbled' : so === 'alphabetical' ? 'Alphabetical' : 'Newest'}
-            </Text>
-          </TVFocusable>
-        ))}
-      </View>
-
-      <FlatList
-        data={deckOptions}
-        keyExtractor={(item) => item.id ?? '__all__'}
-        renderItem={renderItem}
-        ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: colors.border }]} />}
-        style={styles.list}
-        contentContainerStyle={[styles.listContent, { borderColor: colors.border }]}
-        removeClippedSubviews={true}
-        initialNumToRender={10}
-        maxToRenderPerBatch={5}
-        windowSize={5}
-      />
-
-      <Text style={[styles.wordCount, { color: colors.textSecondary }]} testID="word-count-label">
-        {`${wordCount}`}{` ${wordCount === 1 ? 'word' : 'words'}${wordCountSuffix}`}
-      </Text>
-
-      {allCaughtUp && (
-        <Text style={[styles.caughtUpLabel, { color: colors.success }]} testID="caught-up-label">
-          All caught up! No words due today.
-        </Text>
-      )}
-
-      {fcAllCaughtUp && (
-        <Text style={[styles.caughtUpLabel, { color: colors.success }]} testID="fc-caught-up-label">
-          All caught up! No words due today.
-        </Text>
-      )}
-
-      {wordCount === 0 && (mode === 'classic' || (mode === 'flashcard' && fcMode === 'passive')) && (
-        <Text style={[styles.noWordsLabel, { color: colors.error }]} testID="no-words-label">
-          No words to review
-        </Text>
-      )}
-
-      <TVFocusable
-        style={[
-          styles.todayButton,
-          { backgroundColor: '#8B5CF6' },
-          todayCount === 0 && { backgroundColor: colors.inputBackground }
-        ]}
-        onPress={handleTodayWords}
-        disabled={todayCount === 0}
-        testID="today-words-button"
-      >
-        <Text style={[
-          styles.todayButtonText,
-          todayCount === 0 && { color: colors.textSecondary }
-        ]}>
-          Today's Words ({todayCount})
-        </Text>
-      </TVFocusable>
-
-      <TVFocusable
-        style={[
-          styles.startButton,
-          { backgroundColor: colors.primary },
-          wordCount === 0 && { backgroundColor: colors.inputBackground }
-        ]}
-        onPress={handleStart}
-        disabled={wordCount === 0}
-        accessibilityRole="button"
-        accessibilityState={{ disabled: wordCount === 0 }}
-        testID="start-button"
-      >
-        <Text style={[
-          styles.startButtonText,
-          wordCount === 0 && { color: colors.textSecondary }
-        ]}>
-          Start
-        </Text>
-      </TVFocusable>
-    </View>
-  );
+    void refresh();
+    const timer = setInterval(() => { if (AppState.currentState === 'active') void refresh(); }, 30000);
+    const subscription = AppState.addEventListener('change', state => { if (state === 'active') void refresh(); });
+    return () => { mounted = false; clearInterval(timer); subscription.remove(); };
+  }, [mode, selectedTagId]));
+  function start(todayOnly = false) {
+    const params = { tagId: todayOnly ? '' : selectedTagId ?? '', sortOrder, ...(todayOnly ? { todayOnly: 'true' } : {}) };
+    if (mode === 'flashcard') router.push({ pathname: '/flashcard', params: { ...params, fcMode: 'self-rated' } });
+    else if (mode === 'tutor') router.push({ pathname: '/tutor', params });
+    else router.push({ pathname: '/recall', params });
+  }
+  const renderItem = useCallback(({ item }: ListRenderItemInfo<DeckOption>) => <TVFocusable
+    style={[styles.row, { backgroundColor: item.id === selectedTagId ? colors.primary : colors.card }]}
+    onPress={() => setSelectedTagId(item.id)} accessibilityRole="radio" accessibilityState={{ selected: item.id === selectedTagId }}>
+    <Text style={[styles.rowText, { color: item.id === selectedTagId ? '#fff' : colors.text }]}>{item.name}</Text>
+  </TVFocusable>, [selectedTagId, colors]);
+  const options: Array<{ mode: Mode; label: string }> = Platform.isTV ? [{ mode: 'flashcard', label: 'Self-rated flashcards' }] : [
+    { mode: 'recall', label: 'Scheduled recall' }, { mode: 'flashcard', label: 'Self-rated flashcards' }, { mode: 'tutor', label: 'Tutor practice' },
+  ];
+  return <View style={[styles.container, { paddingBottom: insets.bottom + 16, backgroundColor: colors.background }]}>
+    <Text style={[styles.heading, { color: colors.text }]}>Choose a deck</Text>
+    <Text style={[styles.subHeading, { color: colors.textSecondary }]}>Review mode</Text>
+    <View style={styles.modeGrid}>{options.map((option, index) => <TVFocusable key={option.mode} testID={`mode-${option.mode}`} hasTVPreferredFocus={index === 0}
+      accessibilityRole="radio" accessibilityState={{ selected: mode === option.mode }} onPress={() => setMode(option.mode)}
+      style={[styles.modeCard, { backgroundColor: mode === option.mode ? colors.accent : colors.inputBackground, borderColor: mode === option.mode ? colors.primary : 'transparent' }]}>
+      <Text style={[styles.modeCardText, { color: mode === option.mode ? colors.primary : colors.text }]}>{option.label}</Text>
+    </TVFocusable>)}</View>
+    <Text style={{ color: colors.textSecondary }}>{mode === 'tutor' ? 'Practice any item with feedback. Your schedule stays unchanged.' : mode === 'flashcard' ? 'Reveal each answer, then rate your recall. Offline ratings wait for server confirmation.' : 'Explain each meaning. Semantic assessment needs the server and an approved rubric.'}</Text>
+    <Text style={[styles.subHeading, { color: colors.textSecondary }]}>Sort Order</Text>
+    <View style={[styles.sortToggle, { backgroundColor: colors.inputBackground }]}>{(['jumbled', 'alphabetical', 'newest'] as const).map(order => <TVFocusable key={order}
+      testID={`sort-${order}`} onPress={() => setSortOrder(order)} accessibilityRole="radio" accessibilityState={{ selected: sortOrder === order }}
+      style={[styles.modeButton, sortOrder === order && { backgroundColor: colors.card }]}><Text style={{ color: colors.text }}>{order === 'jumbled' ? 'Jumbled' : order === 'alphabetical' ? 'Alphabetical' : 'Newest'}</Text></TVFocusable>)}</View>
+    <FlatList data={[{ id: null, name: 'All Words' }, ...tags]} keyExtractor={item => item.id ?? '__all__'} renderItem={renderItem} style={styles.list} contentContainerStyle={[styles.listContent, { borderColor: colors.border }]} />
+    {!!error && <Text accessibilityRole="alert" style={{ color: colors.error }}>{error}</Text>}
+    <Text style={[styles.wordCount, { color: colors.textSecondary }]} testID="word-count-label">{`${wordCount} ${wordCount === 1 ? 'word' : 'words'}${mode === 'tutor' ? ' available for practice' : ' due now'}`}</Text>
+    {!error && wordCount === 0 && <Text style={[styles.caughtUpLabel, { color: colors.textSecondary }]}>{mode === 'tutor' ? 'No words to practice.' : 'All caught up! No words due now.'}</Text>}
+    <TVFocusable style={[styles.todayButton, { backgroundColor: todayCount ? '#8B5CF6' : colors.inputBackground }]} onPress={() => start(true)} disabled={!todayCount} testID="today-words-button"><Text style={[styles.todayButtonText, !todayCount && { color: colors.textSecondary }]}>Today's Words ({todayCount})</Text></TVFocusable>
+    <TVFocusable style={[styles.startButton, { backgroundColor: wordCount ? colors.primary : colors.inputBackground }]} onPress={() => start()} disabled={!wordCount} testID="start-button" accessibilityRole="button" accessibilityState={{ disabled: !wordCount }}><Text style={[styles.startButtonText, !wordCount && { color: colors.textSecondary }]}>Start</Text></TVFocusable>
+  </View>;
 }
 
 const styles = StyleSheet.create({

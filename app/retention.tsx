@@ -1,15 +1,13 @@
-import { useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { useCallback, useState, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, AppState } from 'react-native';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import { useThemeColors } from '@/src/utils/theme';
-import { db } from '@/src/db/client';
-import { words } from '@/src/db/schema';
-import { isNull } from 'drizzle-orm';
+import { getSnapshot } from '@/src/db/operations/central';
 
 
-type WordRow = typeof words.$inferSelect;
+type WordRow = { id: string; word: string; definition: string; srs_next_review_at: Date | null; fc_next_review_at: Date | null };
 
 type Bucket = {
   label: string;
@@ -26,20 +24,32 @@ export default function RetentionScreen() {
   const [allWords, setAllWords] = useState<WordRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<'recall' | 'flashcard'>('recall');
+  const [error, setError] = useState('');
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
+    let mounted = true; let refreshing = false;
     async function loadData() {
+      if (refreshing) return; refreshing = true;
       try {
-        const data = await db.select().from(words).where(isNull(words.deleted_at));
-        setAllWords(data);
+        const snapshot = await getSnapshot();
+        if (mounted) setError(snapshot ? '' : 'Pair and sync this device to view your confirmed schedule.');
+        const data = snapshot?.words.filter(word => word.deleted_at == null).map(word => {
+          const recall = snapshot.memory_states.find(state => state.item_id === word.id && state.mode === 'recall');
+          const flashcard = snapshot.memory_states.find(state => state.item_id === word.id && state.mode === 'flashcard');
+          return { id: word.id, word: word.word, definition: word.definition, srs_next_review_at: recall ? new Date(recall.due) : null, fc_next_review_at: flashcard ? new Date(flashcard.due) : null };
+        }) ?? [];
+        if (mounted) setAllWords(data);
       } catch (err) {
-        console.error(err);
+        if (mounted) setError(err instanceof Error ? err.message : 'Could not read your confirmed schedule.');
       } finally {
-        setLoading(false);
+        refreshing = false; if (mounted) setLoading(false);
       }
     }
-    loadData();
-  }, []);
+    void loadData();
+    const timer = setInterval(() => { if (AppState.currentState === 'active') void loadData(); }, 30000);
+    const subscription = AppState.addEventListener('change', state => { if (state === 'active') void loadData(); });
+    return () => { mounted = false; clearInterval(timer); subscription.remove(); };
+  }, []));
 
   const { buckets, maxCount, vergeWords } = useMemo(() => {
     const now = new Date();
@@ -129,6 +139,7 @@ export default function RetentionScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 20 }]}>
+          {!!error && <Text accessibilityRole="alert" style={{ color: colors.error }}>{error}</Text>}
           <View style={styles.toggleRow}>
             <TouchableOpacity 
               style={[styles.toggleBtn, mode === 'recall' && { backgroundColor: colors.primary }]} 
@@ -145,9 +156,9 @@ export default function RetentionScreen() {
           </View>
 
           <View style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>Forgetting Curve</Text>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Scheduled reviews</Text>
             <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-              Words scheduled for review based on memory strength
+              Server-confirmed due dates from FSRS
             </Text>
 
             <View style={styles.chartContainer}>
@@ -177,11 +188,11 @@ export default function RetentionScreen() {
               <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 0, marginLeft: 8 }]}>On the Verge</Text>
             </View>
             <Text style={[styles.cardSubtitle, { color: colors.textSecondary, marginBottom: 16 }]}>
-              These words are due or overdue. Review them now to prevent forgetting!
+              These words are due or overdue according to your confirmed schedule.
             </Text>
 
             {vergeWords.length === 0 ? (
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>You're all caught up!</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{error ? 'Confirmed schedule unavailable.' : "You're all caught up!"}</Text>
             ) : (
               vergeWords.slice(0, 10).map((w, idx) => {
                 const reviewAt = mode === 'recall' ? w.srs_next_review_at : w.fc_next_review_at;
@@ -210,7 +221,7 @@ export default function RetentionScreen() {
             {vergeWords.length > 0 && (
               <TouchableOpacity 
                 style={[styles.reviewBtn, { backgroundColor: colors.primary }]}
-                onPress={() => router.push(mode === 'recall' ? '/recall-setup' : '/flashcard')}
+                onPress={() => router.push(mode === 'recall' ? '/recall-setup' : '/flashcard?fcMode=self-rated' as any)}
               >
                 <Text style={styles.reviewBtnText}>Review Now</Text>
               </TouchableOpacity>

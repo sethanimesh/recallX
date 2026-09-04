@@ -1,36 +1,11 @@
-import { getBackendUrl, getCommonHeaders } from '@/src/config/settings';
-
-export interface GradeResult {
-  correct: boolean;
-  feedback: string;
+import { api, ApiError } from './centralClient';
+export type Decision = 'correct' | 'incorrect' | 'partial' | 'uncertain';
+import type { AssessmentRequest, AssessmentResult, ConceptResult } from './generated';
+export type { AssessmentRequest } from './generated';
+export type GradeResult = AssessmentResult & { decision: Decision; experimental: boolean; coverage: number | null; confidence: number | null; concept_results: ConceptResult[] };
+export function checkedAssessment(result: AssessmentResult): GradeResult {
+  if (!result.assessment_id || !['correct', 'incorrect', 'partial', 'uncertain'].includes(result.decision ?? '')) throw new ApiError('Invalid assessment response. No review was saved.', 502);
+  return { ...result, decision: result.decision!, experimental: result.experimental ?? false, coverage: result.coverage ?? null, confidence: result.confidence ?? null, concept_results: result.concept_results ?? [] };
 }
-
-export class GradeError extends Error {
-  constructor(message: string, public readonly statusCode: number) {
-    super(message);
-    this.name = 'GradeError';
-  }
-}
-
-export async function gradeAnswer(
-  word: string,
-  userAnswer: string,
-  storedDefinition: string,
-  baseUrl?: string,
-): Promise<GradeResult> {
-  const url = `${(baseUrl ?? getBackendUrl()).replace(/\/$/, '')}/grade`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getCommonHeaders() },
-    body: JSON.stringify({ word, user_answer: userAnswer, stored_definition: storedDefinition }),
-  });
-  if (!response.ok) {
-    let detail = `HTTP ${response.status}`;
-    try {
-      const err = await response.json();
-      detail = err?.detail ?? detail;
-    } catch {}
-    throw new GradeError(`Grade failed: ${detail}`, response.status);
-  }
-  return (await response.json()) as GradeResult;
-}
+export class GradeError extends Error { constructor(message: string, public statusCode: number) { super(message); } }
+export const gradeAnswer = async (payload: AssessmentRequest): Promise<GradeResult> => checkedAssessment(await api<AssessmentResult>('/grade', { ...payload, language: payload.language ?? 'en', assisted: payload.assisted ?? false }));

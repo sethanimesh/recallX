@@ -210,6 +210,8 @@ export default function CropScreen() {
         uri: result.uri,
         base64: result.base64,
         mimeType: 'image/jpeg',
+        originalUri: uri!,
+        crop: { ...cropRect, originalWidth: imageSize.w, originalHeight: imageSize.h },
       });
       router.back();
     } catch (err) {

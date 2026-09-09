@@ -4,6 +4,8 @@ export interface CropResult {
   uri: string;
   base64: string;
   mimeType: 'image/jpeg';
+  originalUri?: string;
+  crop?: import('@/src/api/types').CropMetadata;
 }
 
 let _result: CropResult | null = null;

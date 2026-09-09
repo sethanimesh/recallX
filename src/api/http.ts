@@ -21,6 +21,9 @@ export class HttpExtractionClient implements ExtractionClient {
   }
 
   async extractWords(input: ImageInput | TextInput): Promise<ExtractedWord[]> {
+    if (input.type === 'text' && /^(file|content|blob):\/\//i.test(input.content.trim())) {
+      throw new ExtractionError('Upload the document bytes through document import; a file URI is not text.', 422);
+    }
     const base = (this.baseUrl ?? getBackendUrl()).replace(/\/$/, '');
     const body =
       input.type === 'image'

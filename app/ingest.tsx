@@ -7,15 +7,13 @@ import { takePendingCropResult } from '@/src/store/pendingCropResult';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import { activeExtractionClient } from '@/src/api/index';
-import type { ImageInput, TextInput } from '@/src/api/types';
+import type { DocumentUpload, ImageInput, IngestionJob } from '@/src/api/types';
+import { listIngestionJobs, getIngestionJob, retryIngestionJob, cancelIngestionJob } from '@/src/api/ingestionClient';
+import { queueDocumentImport, queueTextImport, retryPendingImport, pendingImports, type PendingImport } from '@/src/db/operations/pendingImports';
 import ExtractionProgress from '@/src/components/ExtractionProgress';
-import { setPendingExtraction } from '@/src/store/pendingWords';
 import { getSavedInstructions, addSavedInstruction, removeSavedInstruction } from '@/src/store/savedInstructions';
 import type { Tag } from '@/src/db/operations/tags';
 import { useThemeColors } from '@/src/utils/theme';
-
-const DONE_DISPLAY_MS = 600;
 
 type ModalState =
   | { phase: 'idle' }
@@ -34,26 +32,67 @@ export default function IngestScreen() {
   const colors = useThemeColors();
   const tagId = firstParam(params.tagId)?.trim();
   const tagName = firstParam(params.tagName)?.trim();
-  const defaultTags: Tag[] = tagId && tagName ? [{ id: tagId, name: tagName }] : [];
-  const defaultTagsRef = useRef<Tag[]>(defaultTags);
-  defaultTagsRef.current = defaultTags;
   const [modalState, setModalState] = useState<ModalState>({ phase: 'idle' });
   const lastActivePhaseRef = useRef<'uploading' | 'analyzing' | 'done'>('uploading');
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
   
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [customInstructions, setCustomInstructions] = useState('');
   const [savedInstructions, setSavedInstructions] = useState<string[]>([]);
+  const [job, setJob] = useState<IngestionJob | null>(null);
+  const [recentJobs, setRecentJobs] = useState<IngestionJob[]>([]);
+  const [uploads, setUploads] = useState<PendingImport[]>([]);
+  const [uploadId, setUploadId] = useState<string | null>(null);
+  const [textMode, setTextMode] = useState(false);
+  const [pastedText, setPastedText] = useState('');
+  const [extractionMode, setExtractionMode] = useState<'general_document' | 'vocabulary_mcq'>('general_document');
+
+  const openReview = useCallback((id: string) => {
+    router.push({ pathname: '/review', params: { jobId: id, ...(tagId ? { tagId, tagName: tagName ?? '' } : {}) } });
+  }, [tagId, tagName]);
+
+  useFocusEffect(useCallback(() => {
+    listIngestionJobs().then(setRecentJobs).catch(() => {});
+    pendingImports().then(setUploads).catch(() => {});
+  }, []));
+
+  useEffect(() => {
+    if (!job || !['queued', 'parsing', 'extracting'].includes(job.status)) return;
+    let active = true;
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = async () => {
+      try {
+        const next = await getIngestionJob(job.id);
+        if (!active) return;
+        setJob(next);
+        if (next.status === 'ready') {
+          setModalState({ phase: 'idle' });
+          openReview(next.id);
+          return;
+        }
+        if (next.status === 'failed') {
+          setModalState({ phase: 'error', message: next.error_message ?? 'Import failed' });
+          return;
+        }
+        if (next.status === 'completed' || next.status === 'cancelled') {
+          setModalState({ phase: 'idle' });
+          return;
+        }
+      } catch { /* Server state survives a lost connection; keep polling. */ }
+      if (active) timer = setTimeout(poll, 2000);
+    };
+    timer = setTimeout(poll, 1000);
+    return () => { active = false; clearTimeout(timer); };
+  }, [job?.id, job?.status, openReview]);
 
   useEffect(() => {
     getSavedInstructions().then(setSavedInstructions);
   }, []);
 
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);
 
@@ -70,28 +109,35 @@ export default function IngestScreen() {
           uri: cropResult.uri,
           base64: cropResult.base64,
           mimeType: cropResult.mimeType,
+          originalUri: cropResult.originalUri,
+          crop: cropResult.crop,
         });
       }
     }, [])
   );
 
-  async function startExtraction(input: ImageInput | TextInput) {
+  async function startExtraction(input: ImageInput | DocumentUpload) {
     if (isCustomMode && customInstructions.trim()) {
       input.instructions = customInstructions.trim();
       addSavedInstruction(customInstructions).then(setSavedInstructions);
     }
     if (isMountedRef.current) setModalState({ phase: 'uploading' });
     lastActivePhaseRef.current = 'uploading';
-    if (isMountedRef.current) setModalState({ phase: 'analyzing' });
-    lastActivePhaseRef.current = 'analyzing';
     try {
-      const extracted = await activeExtractionClient.extractWords(input);
-      const sourceType = input.type === 'image' ? 'image' : 'pdf';
-      const sourceUri = input.type === 'image' ? input.uri : input.content;
-      setPendingExtraction({ words: extracted, sourceUri, sourceType, defaultTags: defaultTagsRef.current });
-      if (isMountedRef.current) setModalState({ phase: 'done' });
-      lastActivePhaseRef.current = 'done';
-      timerRef.current = setTimeout(() => router.push('/review'), DONE_DISPLAY_MS);
+      const upload: DocumentUpload = 'name' in input ? input : {
+        type: 'image', uri: input.originalUri ?? input.uri, name: 'photo.jpg',
+        mimeType: input.mimeType, instructions: input.instructions, crop: input.crop,
+      };
+      const id = await queueDocumentImport({ ...upload, extractionMode });
+      setUploadId(id);
+      const created = await retryPendingImport(id);
+      setUploadId(null);
+      setUploads(await pendingImports());
+      if (isMountedRef.current) {
+        setJob(created);
+        setModalState({ phase: 'analyzing' });
+        lastActivePhaseRef.current = 'analyzing';
+      }
     } catch (err) {
       if (isMountedRef.current)
         setModalState({ phase: 'error', message: err instanceof Error ? err.message : 'Unknown error' });
@@ -123,9 +169,32 @@ export default function IngestScreen() {
   }
 
   async function handleDocument() {
-    const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf' });
+    const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
     if (result.canceled) return;
-    await startExtraction({ type: 'text', content: result.assets[0].uri });
+    const asset = result.assets[0];
+    await startExtraction({ type: 'pdf', uri: asset.uri, name: asset.name, mimeType: 'application/pdf', file: asset.file });
+  }
+
+  async function resumeImport(id: string) {
+    try {
+      const current = await getIngestionJob(id);
+      if (current.status === 'ready') { openReview(id); return; }
+      if (current.status === 'completed') { Alert.alert('Import complete', 'This import has no remaining candidates.'); setRecentJobs(await listIngestionJobs()); return; }
+      if (current.status === 'failed' || current.status === 'cancelled') {
+        setJob(await retryIngestionJob(id, current.control_revision));
+      } else { setJob(current); }
+      setModalState({ phase: 'analyzing' });
+    } catch (error) { Alert.alert('Import unavailable', error instanceof Error ? error.message : 'Please try again.'); }
+  }
+
+  async function resumeUpload(id: string) {
+    setUploadId(id); setJob(null); setModalState({ phase: 'uploading' });
+    try {
+      const created = await retryPendingImport(id);
+      setUploadId(null); setUploads(await pendingImports()); setJob(created);
+      if (created.status === 'ready') { setModalState({ phase: 'idle' }); openReview(created.id); }
+      else setModalState({ phase: 'analyzing' });
+    } catch (error) { setModalState({ phase: 'error', message: error instanceof Error ? error.message : String(error) }); }
   }
 
   return (
@@ -135,14 +204,38 @@ export default function IngestScreen() {
       </TouchableOpacity>
 
       <Text style={[styles.title, { color: colors.text }]}>Add Words</Text>
+      {modalState.phase === 'idle' && <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+        {(['general_document', 'vocabulary_mcq'] as const).map(mode => <TouchableOpacity key={mode} onPress={() => setExtractionMode(mode)} style={{ padding: 10, borderWidth: 1, borderRadius: 8, borderColor: extractionMode === mode ? colors.primary : colors.border }}><Text style={{ color: colors.text }}>{mode === 'general_document' ? 'Document' : 'Vocabulary MCQ'}</Text></TouchableOpacity>)}
+      </View>}
 
       {modalState.phase !== 'idle' ? (
+        <View>
         <ExtractionProgress
           phase={modalState.phase === 'error' ? 'error' : modalState.phase}
           errorMessage={modalState.phase === 'error' ? modalState.message : undefined}
-          onRetry={() => setModalState({ phase: 'idle' })}
+          onRetry={() => uploadId ? resumeUpload(uploadId) : job ? resumeImport(job.id) : setModalState({ phase: 'idle' })}
           failedAtPhase={modalState.phase === 'error' ? lastActivePhaseRef.current : undefined}
         />
+        {job && <>
+          <Text accessibilityLiveRegion="polite" style={{ color: colors.text, marginVertical: 12 }}>
+            {job.status === 'queued' ? 'Queued on your Mac' : `${job.pages_done} of ${job.pages_total} pages parsed · ${job.stage.split(':')[0]}`}
+          </Text>
+          <Text style={{ color: colors.textSecondary }}>You can leave this screen. Resume the import from Add Words on any paired device.</Text>
+          <TouchableOpacity onPress={() => cancelIngestionJob(job.id, job.control_revision).then(next => { setJob(next); setModalState({ phase: 'idle' }); }).catch(error => Alert.alert('Could not cancel', String(error)))} style={{ padding: 16 }}>
+            <Text style={{ color: colors.error }}>Cancel import</Text>
+          </TouchableOpacity>
+        </>}
+        </View>
+      ) : textMode ? (
+        <View style={{ gap: 12 }}>
+          <RNTextInput accessibilityLabel="Pasted document text" multiline value={pastedText} onChangeText={setPastedText} placeholder="Paste a passage to import" placeholderTextColor={colors.textSecondary} style={[styles.input, { minHeight: 160, color: colors.text, borderColor: colors.border }]} />
+          <TouchableOpacity disabled={!pastedText.trim()} onPress={async () => {
+            setModalState({ phase: 'uploading' });
+            try { const id = await queueTextImport(pastedText, customInstructions, extractionMode); await resumeUpload(id); }
+            catch (e) { setModalState({ phase: 'error', message: e instanceof Error ? e.message : String(e) }); }
+          }} style={[styles.sourceButton, { backgroundColor: colors.inputBackground }]}><Text style={{ color: colors.primary }}>Import passage</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => setTextMode(false)} style={{ padding: 12 }}><Text style={{ color: colors.primary }}>Choose another source</Text></TouchableOpacity>
+        </View>
       ) : isCustomMode ? (
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
@@ -258,7 +351,29 @@ export default function IngestScreen() {
             <Ionicons name="color-wand-outline" size={24} color={colors.primary} style={styles.icon} />
             <Text style={[styles.buttonLabel, { color: colors.text }]}>Custom Extraction</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={[styles.sourceButton, { backgroundColor: colors.inputBackground }]} onPress={() => setTextMode(true)}>
+            <Ionicons name="clipboard-outline" size={24} color={colors.primary} style={styles.icon} />
+            <Text style={[styles.buttonLabel, { color: colors.text }]}>Paste text</Text>
+          </TouchableOpacity>
         </View>
+      )}
+      {modalState.phase === 'idle' && uploads.length > 0 && <View style={{ marginTop: 16 }}>
+        <Text style={{ color: colors.text, fontWeight: '700' }}>Uploads awaiting acknowledgment</Text>
+        {uploads.map(upload => <TouchableOpacity key={upload.id} onPress={() => resumeUpload(upload.id)} style={{ paddingVertical: 12 }}>
+          <Text style={{ color: colors.primary }}>{upload.name} — retry saved upload</Text>
+          {!!upload.error && <Text style={{ color: colors.textSecondary }}>{upload.error}</Text>}
+        </TouchableOpacity>)}
+      </View>}
+      {modalState.phase === 'idle' && recentJobs.some(j => j.status !== 'completed') && (
+        <ScrollView style={{ maxHeight: 220, marginTop: 16 }}>
+          <Text style={{ color: colors.text, fontWeight: '700', marginBottom: 8 }}>Resume imports</Text>
+          {recentJobs.filter(j => j.status !== 'completed').map(j => (
+            <TouchableOpacity key={j.id} onPress={() => resumeImport(j.id)} style={{ paddingVertical: 12 }}>
+              <Text style={{ color: colors.primary }}>{j.filename}</Text>
+              <Text style={{ color: colors.textSecondary }}>{j.status === 'ready' ? 'Ready to review' : j.status === 'failed' ? 'Failed — tap to retry' : j.status === 'cancelled' ? 'Cancelled — tap to resume' : `${j.pages_done}/${j.pages_total} pages · ${j.status}`}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       )}
     </SafeAreaView>
   );

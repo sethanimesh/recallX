@@ -8,7 +8,8 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import IngestionReviewScreen from '@/src/screens/IngestionReviewScreen';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,6 +24,12 @@ import type { ExtractedWord } from '@/src/api/types';
 import { useThemeColors } from '@/src/utils/theme';
 
 export default function ReviewScreen() {
+  const { jobId, tagId, tagName } = useLocalSearchParams<{ jobId?: string; tagId?: string; tagName?: string }>();
+  if (jobId) return <IngestionReviewScreen jobId={jobId} defaultTag={tagId && tagName ? { id: tagId, name: tagName } : undefined} />;
+  return <LegacyReviewScreen />;
+}
+
+function LegacyReviewScreen() {
   const insets = useDynamicInsets();
   const colors = useThemeColors();
   const [words, setWords] = useState<ExtractedWord[]>([]);
@@ -39,7 +46,7 @@ export default function ReviewScreen() {
   useEffect(() => {
     const pending = takePendingExtraction();
     if (!pending || pending.words.length === 0) {
-      router.replace('/(tabs)');
+      router.dismissAll();
       return;
     }
     setWords(pending.words);
@@ -67,11 +74,7 @@ export default function ReviewScreen() {
     async (finalDecisions: boolean[], wordList: ExtractedWord[], uri: string, type: 'image' | 'pdf', tags: Map<number, Tag[]>) => {
       const accepted = buildReviewResult(wordList, finalDecisions);
       if (accepted.length === 0) {
-        if (initialTagId) {
-          router.replace({ pathname: '/(tabs)', params: { tagId: initialTagId } });
-        } else {
-          router.replace('/(tabs)');
-        }
+        router.dismissAll();
         return;
       }
       setSaving(true);
@@ -102,11 +105,7 @@ export default function ReviewScreen() {
         });
         await Promise.all(tagOps);
 
-        if (initialTagId) {
-          router.replace({ pathname: '/(tabs)', params: { tagId: initialTagId } });
-        } else {
-          router.replace('/(tabs)');
-        }
+        router.dismissAll();
       } catch (err) {
         setSaving(false);
         const message = err instanceof Error ? err.message : String(err);
@@ -122,18 +121,14 @@ export default function ReviewScreen() {
               text: 'Skip to Library',
               style: 'cancel',
               onPress: () => {
-                if (initialTagId) {
-                  router.replace({ pathname: '/(tabs)', params: { tagId: initialTagId } });
-                } else {
-                  router.replace('/(tabs)');
-                }
+                router.dismissAll();
               },
             },
           ],
         );
       }
     },
-    [setSaving, initialTagId],
+    [setSaving],
   );
 
   const handleDecision = useCallback(

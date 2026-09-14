@@ -210,8 +210,8 @@ export default function WordDetailScreen() {
     if (trimmed && trimmed !== wordData?.word) {
       const capitalized = trimmed.replace(/^\w/, (c) => c.toUpperCase());
       try {
-        await updateWordField(id!, 'word', trimmed);
-        setWordData((prev) => (prev ? { ...prev, word: capitalized } : prev));
+        const revision = await updateWordField(id!, 'word', trimmed, wordData?.content_revision);
+        setWordData((prev) => (prev ? { ...prev, word: capitalized, content_revision: revision ?? prev.content_revision } : prev));
       } catch (err: any) {
         setDraftWord(wordData?.word ?? ''); // revert to original value
         const errMsg = err?.message || '';
@@ -225,7 +225,7 @@ export default function WordDetailScreen() {
       // Revert if empty or unchanged
       setDraftWord(wordData?.word ?? '');
     }
-  }, [draftWord, wordData?.word, id]);
+  }, [draftWord, wordData?.word, wordData?.content_revision, id]);
 
   const load = useCallback(async () => {
     if (!id) {
@@ -323,26 +323,26 @@ export default function WordDetailScreen() {
 
   const saveDefinition = useCallback(
     async (newVal: string) => {
-      await updateWordField(id!, 'definition', newVal);
-      setWordData((prev) => (prev ? { ...prev, definition: newVal } : prev));
+      const revision = await updateWordField(id!, 'definition', newVal, wordData?.content_revision);
+      setWordData((prev) => (prev ? { ...prev, definition: newVal, content_revision: revision ?? prev.content_revision } : prev));
     },
-    [id],
+    [id, wordData?.content_revision],
   );
 
   const saveExampleSentence = useCallback(
     async (newVal: string) => {
-      await updateWordField(id!, 'example_sentence', newVal);
-      setWordData((prev) => (prev ? { ...prev, example_sentence: newVal } : prev));
+      const revision = await updateWordField(id!, 'example_sentence', newVal, wordData?.content_revision);
+      setWordData((prev) => (prev ? { ...prev, example_sentence: newVal, content_revision: revision ?? prev.content_revision } : prev));
     },
-    [id],
+    [id, wordData?.content_revision],
   );
 
   const saveMnemonic = useCallback(
     async (newVal: string) => {
-      await updateWordField(id!, 'mnemonic', newVal);
-      setWordData((prev) => (prev ? { ...prev, mnemonic: newVal } : prev));
+      const revision = await updateWordField(id!, 'mnemonic', newVal, wordData?.content_revision);
+      setWordData((prev) => (prev ? { ...prev, mnemonic: newVal, content_revision: revision ?? prev.content_revision } : prev));
     },
-    [id],
+    [id, wordData?.content_revision],
   );
 
   const handleGenerateMnemonic = useCallback(async () => {
@@ -512,6 +512,9 @@ export default function WordDetailScreen() {
           style={[styles.scrollView, { backgroundColor: colors.background }]}
           contentContainerStyle={[styles.content, { paddingBottom: 32 }]}
         >
+        <TVFocusable onPress={() => router.push({ pathname: '/rubric' as any, params: { id } })} style={{ padding: 16 }}><Text style={{ color: colors.primary, fontSize: 18 }}>Review and approve grading rubric</Text></TVFocusable>
+        <TVFocusable onPress={() => router.push({ pathname: '/history' as any, params: { id } })} style={{ padding: 16 }}><Text style={{ color: colors.primary, fontSize: 18 }}>Shared review history and corrections</Text></TVFocusable>
+        <TVFocusable onPress={() => router.push({ pathname: '/sources' as any, params: { id } })} style={{ padding: 16 }}><Text style={{ color: colors.primary, fontSize: 18 }}>Source evidence and original documents</Text></TVFocusable>
           {/* Word heading (always visible) */}
           <Text style={[styles.wordHeading, { color: colors.text, marginBottom: 16 }]}>{wordData.word}</Text>
 
@@ -622,6 +625,9 @@ export default function WordDetailScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: 32 + insets.bottom }]}
         keyboardShouldPersistTaps="handled"
       >
+        <TVFocusable onPress={() => router.push({ pathname: '/rubric' as any, params: { id } })} style={{ padding: 16 }}><Text style={{ color: colors.primary, fontSize: 18 }}>Review and approve grading rubric</Text></TVFocusable>
+        <TVFocusable onPress={() => router.push({ pathname: '/history' as any, params: { id } })} style={{ padding: 16 }}><Text style={{ color: colors.primary, fontSize: 18 }}>Shared review history and corrections</Text></TVFocusable>
+        <TVFocusable onPress={() => router.push({ pathname: '/sources' as any, params: { id } })} style={{ padding: 16 }}><Text style={{ color: colors.primary, fontSize: 18 }}>Source evidence and original documents</Text></TVFocusable>
         {/* Word heading */}
         <View style={styles.wordHeaderRow}>
           {editingWord ? (
@@ -765,9 +771,9 @@ export default function WordDetailScreen() {
 
           {/* Review history */}
           <View style={[styles.historySection, { borderTopColor: colors.border }]}>
-            <Text style={[styles.historyLabel, { color: colors.textSecondary }]}>Review history</Text>
+            <Text style={[styles.historyLabel, { color: colors.textSecondary }]}>Legacy local history</Text>
             {history.length === 0 ? (
-              <Text style={[styles.historyEmpty, { color: colors.textSecondary }]}>Not reviewed yet</Text>
+              <Text style={[styles.historyEmpty, { color: colors.textSecondary }]}>No legacy reviews on this device</Text>
             ) : (
               history.map((r, i) => (
                 <View key={i} style={styles.historyRow}>

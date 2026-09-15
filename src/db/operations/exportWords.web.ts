@@ -1,5 +1,6 @@
 import {
   buildFilename,
+  prepareExport,
   fetchWordsForExport,
   serializeWordsToCsv,
   serializeWordsToJson,
@@ -26,8 +27,7 @@ export async function saveWordsExport(
   directory: any, // Ignored on Web
   sortOrder?: 'alphabetical' | 'newest' | 'oldest',
 ): Promise<ExportResult> {
-  const exportWords = await fetchWordsForExport(tagIds, sortOrder);
-  const content = format === 'json' ? serializeWordsToJson(exportWords) : serializeWordsToCsv(exportWords);
+  const { content, count } = await prepareExport(format, tagIds, sortOrder);
   const filename = buildFilename(format);
 
   // Create standard browser blob and download link
@@ -45,7 +45,7 @@ export async function saveWordsExport(
   return {
     uri: 'Browser Downloads',
     filename,
-    count: exportWords.length,
+    count,
     format,
   };
 }

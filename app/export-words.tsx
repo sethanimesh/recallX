@@ -133,7 +133,7 @@ export default function ExportWordsScreen() {
       );
     } catch (err) {
       console.warn('[ExportWords] save failed:', err);
-      Alert.alert('Export Failed', 'Could not save the export file.');
+      Alert.alert('Export Failed', err instanceof Error ? err.message : 'Could not save the export file.');
     } finally {
       setExportingFormat(null);
     }
@@ -257,7 +257,7 @@ export default function ExportWordsScreen() {
             {loading ? 'Loading words…' : `${filteredWords.length} ${filteredWords.length === 1 ? 'word' : 'words'} ready`}
           </Text>
           <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-            JSON preserves full structure. CSV is better for spreadsheets.
+            CSV exports the filtered word list above. JSON exports your complete shared learning history, confirmed schedules, settings, and grading evidence from the server. It needs a connection and includes source links, not the original PDF or image files.
           </Text>
           {isEmpty && !loading && (
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No words match the selected tags.</Text>
@@ -272,14 +272,14 @@ export default function ExportWordsScreen() {
             style={[
               styles.button,
               { backgroundColor: colors.text },
-              (loading || isEmpty || exportingFormat !== null || !selectedDirectory) && styles.buttonDisabled,
+              (exportingFormat !== null || !selectedDirectory) && styles.buttonDisabled,
             ]}
             onPress={() => handleExport('json')}
             activeOpacity={0.8}
-            disabled={loading || isEmpty || exportingFormat !== null || !selectedDirectory}
+            disabled={exportingFormat !== null || !selectedDirectory}
           >
             <Text style={[styles.buttonText, { color: colors.card }]}>
-              {exportingFormat === 'json' ? 'Saving JSON…' : 'Export JSON'}
+              {exportingFormat === 'json' ? 'Saving JSON…' : 'Complete learning history (JSON)'}
             </Text>
           </TouchableOpacity>
 

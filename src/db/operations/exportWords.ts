@@ -2,6 +2,7 @@
 import { Directory, File } from 'expo-file-system';
 import {
   buildFilename,
+  prepareExport,
   fetchWordsForExport,
   serializeWordsToCsv,
   serializeWordsToJson,
@@ -27,10 +28,9 @@ export async function saveWordsExport(
   directory: Directory,
   sortOrder?: 'alphabetical' | 'newest' | 'oldest',
 ): Promise<ExportResult> {
-  const exportWords = await fetchWordsForExport(tagIds, sortOrder);
+  const { content, count } = await prepareExport(format, tagIds, sortOrder);
   const filename = buildFilename(format);
   const file = new File(directory, filename);
-  const content = format === 'json' ? serializeWordsToJson(exportWords) : serializeWordsToCsv(exportWords);
 
   file.create({ overwrite: true, intermediates: true });
   file.write(content);
@@ -38,7 +38,7 @@ export async function saveWordsExport(
   return {
     uri: file.uri,
     filename,
-    count: exportWords.length,
+    count,
     format,
   };
 }

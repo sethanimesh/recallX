@@ -1,6 +1,7 @@
 import { db } from '@/src/db/client';
 import { sources, tags, words, wordTags } from '@/src/db/schema';
 import { asc, eq, isNull } from 'drizzle-orm';
+import { api } from '@/src/api/centralClient';
 
 export type ExportFormat = 'json' | 'csv';
 
@@ -117,7 +118,17 @@ export function serializeWordsToCsv(exportWords: ExportWordRecord[]): string {
 
 export function buildFilename(format: ExportFormat): string {
   const now = new Date().toISOString().replace(/[:.]/g, '-');
-  return `recallx-words-${now}.${format}`;
+  return `recallx-${format === 'json' ? 'learning-history' : 'words'}-${now}.${format}`;
+}
+
+/** JSON is an authenticated server archive; CSV remains a filtered vocabulary table. */
+export async function prepareExport(format: ExportFormat, tagIds?: string[], sortOrder?: 'alphabetical' | 'newest' | 'oldest'): Promise<{ content: string; count: number }> {
+  if (format === 'json') {
+    const archive = await api<{ words: unknown[] }>('/export');
+    return { content: `${JSON.stringify(archive, null, 2)}\n`, count: archive.words.length };
+  }
+  const records = await fetchWordsForExport(tagIds, sortOrder);
+  return { content: serializeWordsToCsv(records), count: records.length };
 }
 
 async function fetchAllExportWordRows(): Promise<ExportWordRow[]> {

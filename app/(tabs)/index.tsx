@@ -22,7 +22,6 @@ import { setNav } from '@/src/store/libraryNav';
 import { useThemeColors } from '@/src/utils/theme';
 import { getDefaultSortOrder } from '@/src/config/settings';
 import { TVFocusable } from '@/src/components/TVFocusable';
-import { scaleSize, scaleFont } from '@/src/utils/tvConfig';
 
 type WordRow = {
   id: string;
@@ -223,6 +222,9 @@ export default function LibraryScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      {Platform.isTV && <View style={{ flexDirection: 'row', gap: 12, padding: 16 }}>
+        {([['Review', '/flashcard?fcMode=self-rated'], ['Progress', '/retention'], ['Settings', '/(tabs)/settings'], ['Sync', '/connection']] as const).map(([label, path]) => <TVFocusable key={label} onPress={() => router.push(path as any)} style={{ padding: 16, backgroundColor: colors.card }}><Text style={{ color: colors.text, fontSize: 22 }}>{label}</Text></TVFocusable>)}
+      </View>}
       {/* Search bar — hidden on TV */}
       {!Platform.isTV && (
         <View testID="library-search-row" style={[styles.searchRow, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}>
@@ -249,18 +251,8 @@ export default function LibraryScreen() {
         </View>
       )}
 
-      {/* Inline Add Word button for TV */}
-      {Platform.isTV && (
-        <TVFocusable
-          testID="library-add-button-tv"
-          style={[styles.tvAddButton, { backgroundColor: colors.primary }]}
-          onPress={handleAddPress}
-          hasTVPreferredFocus={sortedAndFiltered.length === 0}
-        >
-          <Ionicons name="add" size={22} color="#fff" />
-          <Text style={styles.tvAddButtonText}>Add Word</Text>
-        </TVFocusable>
-      )}
+
+
 
       {/* Tag filter strip */}
       {filterTags.length > 0 && (
@@ -585,22 +577,5 @@ const styles = StyleSheet.create({
   sortMenuItemText: {
     fontSize: 14,
     fontWeight: '500',
-  },
-  tvAddButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 12,
-    marginTop: 8,
-    marginBottom: 4,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    gap: 8,
-  },
-  tvAddButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
   },
 });

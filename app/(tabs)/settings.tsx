@@ -8,6 +8,7 @@ import { useDynamicInsets } from '@/src/hooks/useDynamicInsets';
 import Constants from 'expo-constants';
 import {
   getBackendUrl,
+  getCommonHeaders,
   getPreferredProvider,
   setPreferredProvider,
   resetSRSProgress,
@@ -55,7 +56,7 @@ export default function SettingsScreen() {
       setProvidersStatus('loading');
       async function loadProviders() {
         try {
-          const res = await fetch(`${getBackendUrl()}/providers`);
+          const res = await fetch(`${getBackendUrl()}/providers`, { headers: getCommonHeaders() });
           if (!res.ok) throw new Error('Failed');
           const data = await res.json();
           setProviders(data.providers as string[]);
@@ -155,6 +156,10 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         <Text style={[styles.title, { color: colors.text, backgroundColor: colors.background }]}>Settings</Text>
 
+        <TVFocusable style={[styles.row, { backgroundColor: colors.card }]} onPress={() => router.push('/connection' as any)}><Text style={[styles.rowLabel, { color: colors.text }]}>Connection and sync</Text></TVFocusable>
+        <TVFocusable style={[styles.row, { backgroundColor: colors.card }]} onPress={() => router.push('/learning-settings' as any)}><Text style={[styles.rowLabel, { color: colors.text }]}>Retention target and grading</Text></TVFocusable>
+        <TVFocusable style={[styles.row, { backgroundColor: colors.card }]} onPress={() => router.push('/history' as any)}><Text style={[styles.rowLabel, { color: colors.text }]}>Shared review history</Text></TVFocusable>
+        <TVFocusable style={[styles.row, { backgroundColor: colors.card }]} onPress={() => router.push('/optimization' as any)}><Text style={[styles.rowLabel, { color: colors.text }]}>Personal scheduling parameters</Text></TVFocusable>
         <View style={styles.section}>
         <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>LIBRARY</Text>
 

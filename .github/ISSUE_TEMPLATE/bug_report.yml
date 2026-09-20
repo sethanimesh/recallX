@@ -1,0 +1,29 @@
+name: Bug report
+description: Report a reproducible problem in the app or API.
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and observed behavior
+      description: Describe the workflow and what went wrong.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Use minimal synthetic data. Remove credentials and personal learning history.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include OS, app platform, Node/Python versions, and relevant configuration without private values.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Supporting evidence
+      description: Include a screenshot, sanitized error, or failed check when useful.

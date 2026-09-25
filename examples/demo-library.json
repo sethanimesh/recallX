@@ -1,0 +1,53 @@
+{
+  "description": "Constructed vocabulary fixtures for the isolated local demo; no real learner history.",
+  "words": [
+    {
+      "word": "Ephemeral",
+      "definition": "Lasting for a very short time.",
+      "example_sentence": "The rainbow was ephemeral, fading within minutes.",
+      "mnemonic": "Think of a flower that blooms for one day."
+    },
+    {
+      "word": "Lucid",
+      "definition": "Clear and easy to understand.",
+      "example_sentence": "She gave a lucid explanation of the experiment.",
+      "mnemonic": "A clear window makes the view lucid."
+    },
+    {
+      "word": "Resilient",
+      "definition": "Able to recover after difficulty or change.",
+      "example_sentence": "The resilient system recovered after the worker stopped.",
+      "mnemonic": "A spring returns to its shape."
+    },
+    {
+      "word": "Pragmatic",
+      "definition": "Guided by practical results rather than theory alone.",
+      "example_sentence": "A pragmatic design kept the first version simple.",
+      "mnemonic": "Practice first, then refine the theory."
+    },
+    {
+      "word": "Nuance",
+      "definition": "A subtle difference in meaning, expression or feeling.",
+      "example_sentence": "The two definitions differ by a small nuance.",
+      "mnemonic": "Notice the shade between two nearby colours."
+    },
+    {
+      "word": "Meticulous",
+      "definition": "Showing great attention to detail.",
+      "example_sentence": "The meticulous notes made the experiment reproducible.",
+      "mnemonic": "Check every small piece."
+    },
+    {
+      "word": "Ambiguous",
+      "definition": "Open to more than one interpretation.",
+      "example_sentence": "The ambiguous answer did not establish the intended meaning.",
+      "mnemonic": "Two possible paths from one sentence."
+    },
+    {
+      "word": "Tenacious",
+      "definition": "Persistent and unwilling to give up easily.",
+      "example_sentence": "The tenacious researcher investigated the failed result.",
+      "mnemonic": "Hold on to the problem until it is understood."
+    }
+  ]
+}

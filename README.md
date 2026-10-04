@@ -102,7 +102,7 @@ The [evaluation guide](evaluation/README.md) distinguishes reproducing summaries
 
 Project-specific code implements the client workflows, durable sync/review envelopes, content and rubric versioning, source/job recovery, assessment policy and evaluation harness. FSRS scheduling/optimization, model checkpoints, OCR and application frameworks come from upstream projects; this repository does not claim to introduce those algorithms or train those models.
 
-The [recorded development timeline](docs/development.md) links the January–July 2026 commits and the later implementation and evaluation work. Its first recorded commit is **7 January 2026**. Commit history and documented observations are kept separate.
+The Git history records the January–July 2026 development work and later implementation and evaluation changes. Its first recorded commit is **7 January 2026**. Commit history and documented observations are kept separate.
 
 The main finding is that a high aggregate score is insufficient for a multilingual correctness decision: noise sensitivity and language-specific coverage can still fail the release criteria. The next questions are whether independently annotated learner answers support a useful operating point, how OCR behaves on varied source documents, and whether prospective personal history supports better scheduling.
 

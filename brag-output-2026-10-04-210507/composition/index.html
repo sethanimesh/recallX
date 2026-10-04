@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RecallX — the same words on every screen</title>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <style>
+    :root { --bg:#F3F4F6; --card:#FFFFFF; --ink:#111827; --muted:#596273; --blue:#3B82F6; --button:#2563EB; --line:#E5E7EB; --dark:#12141C; --green:#047857; }
+    * { box-sizing:border-box; }
+    html, body { margin:0; width:1920px; height:1080px; overflow:hidden; background:var(--bg); }
+    body { color:var(--ink); font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    #root { position:relative; width:1920px; height:1080px; overflow:hidden; }
+    .scene { position:absolute; inset:0; width:1920px; height:1080px; overflow:hidden; background:var(--bg); opacity:0; }
+    #scene1 { opacity:1; }
+    .scene::before { content:""; position:absolute; width:920px; height:920px; top:65px; right:80px; border-radius:50%; background:radial-gradient(circle,rgba(59,130,246,.10),rgba(59,130,246,.035) 42%,transparent 72%); pointer-events:none; }
+    .scene::after { content:""; position:absolute; left:120px; right:120px; bottom:60px; height:1px; background:#DCE3EE; }
+    .inner { position:relative; z-index:1; display:flex; flex-direction:column; width:100%; height:100%; padding:64px 120px 96px; }
+    .topline { display:flex; align-items:center; gap:14px; color:#596273; font-size:19px; line-height:1; font-weight:650; letter-spacing:.08em; text-transform:uppercase; }
+    .brand-mark { display:grid; place-items:center; width:42px; height:42px; border-radius:14px; background:var(--blue); color:#fff; font-size:22px; font-weight:800; letter-spacing:-.06em; box-shadow:0 8px 18px rgba(59,130,246,.2); }
+    .brand-word { color:var(--ink); font-size:23px; font-weight:760; letter-spacing:-.035em; text-transform:none; }
+    .page-index { position:absolute; top:76px; right:124px; color:#627188; font-size:17px; font-weight:650; letter-spacing:.1em; }
+    .eyebrow { color:#46607F; font-size:17px; font-weight:730; letter-spacing:.13em; line-height:1.2; text-transform:uppercase; }
+    .headline { margin:0; max-width:1220px; color:var(--ink); font-size:76px; line-height:1.03; font-weight:760; letter-spacing:-.055em; }
+    .subline { margin:0; max-width:670px; color:var(--muted); font-size:27px; line-height:1.38; }
+    .scene-title { display:flex; flex-direction:column; gap:18px; margin-top:62px; }
+    .device-label { margin:0 auto 13px; color:#4B5563; font-size:17px; font-weight:730; letter-spacing:.09em; text-align:center; text-transform:uppercase; }
+    .device-label::before { content:""; display:inline-block; width:7px; height:7px; margin:0 10px 2px 0; border-radius:50%; background:var(--blue); }
+
+    /* Shared device frames */
+    .phone-shell { position:relative; display:flex; width:360px; height:742px; padding:12px; overflow:hidden; border:1px solid #3D4451; border-radius:50px; background:#10131B; box-shadow:0 30px 66px rgba(17,24,39,.22),0 10px 24px rgba(17,24,39,.09); }
+    .phone-screen { position:relative; display:flex; flex-direction:column; width:100%; height:100%; min-height:0; padding:25px 20px 22px; overflow:hidden; border-radius:39px; background:#F3F4F6; }
+    .phone-status { position:relative; display:flex; align-items:center; justify-content:space-between; flex:none; margin:0 3px 22px; color:#384150; font-size:14px; font-weight:720; }
+    .island { position:absolute; left:50%; top:-15px; width:92px; height:23px; border-radius:20px; background:#10131B; transform:translateX(-50%); }
+    .mini-nav { display:flex; align-items:center; justify-content:space-between; flex:none; margin-bottom:19px; color:#596273; font-size:14px; font-weight:620; }
+    .mini-nav strong { color:var(--ink); font-size:16px; font-weight:760; }
+    .phone-title { margin:0 0 6px; color:var(--ink); font-size:20px; font-weight:700; }
+    .phone-count { margin-bottom:19px; color:#667085; font-size:14px; }
+    .word-row { padding:13px 14px; border-bottom:1px solid var(--line); background:#F9FAFB; }
+    .word-row b { display:block; margin-bottom:3px; color:var(--ink); font-size:16px; font-weight:650; }
+    .word-row span { display:block; overflow:hidden; color:#596273; font-size:13px; white-space:nowrap; text-overflow:ellipsis; }
+    .mobile-search { display:flex; align-items:center; gap:9px; height:42px; flex:none; margin:0 0 11px; padding:0 12px; border:1px solid #D7DDE5; border-radius:9px; background:#F8FAFC; color:#667085; font-size:14px; }
+    .mobile-list { flex:1; min-height:0; overflow:hidden; border:1px solid var(--line); border-radius:11px; }
+    .mobile-tabs { display:flex; justify-content:space-between; flex:none; margin:12px -6px 0; padding:10px 3px 0; border-top:1px solid #DDE2E8; color:#667085; font-size:10px; font-weight:560; }
+    .mobile-tabs span:first-child { color:#2563EB; font-weight:700; }
+    .fab { position:absolute; right:20px; bottom:74px; display:grid; place-items:center; width:52px; height:52px; border-radius:50%; background:#121826; color:white; font-size:29px; box-shadow:0 5px 14px #10131b30; }
+
+    .laptop { width:585px; filter:drop-shadow(0 26px 32px rgba(17,24,39,.16)); }
+    .laptop-screen { padding:12px 12px 10px; border:1px solid #303543; border-radius:17px 17px 10px 10px; background:#171B25; }
+    .browser-chrome { display:flex; align-items:center; gap:7px; height:24px; padding:0 4px 8px; }
+    .browser-chrome i { width:8px; height:8px; border-radius:50%; background:#778191; opacity:.72; }
+    .browser-url { height:13px; margin-left:9px; flex:1; border-radius:8px; background:#282E3A; }
+    .laptop-screen img { display:block; width:100%; height:auto; border-radius:4px; }
+    .laptop-base { position:relative; width:110%; height:16px; margin-left:-5%; border-radius:2px 2px 15px 15px; background:linear-gradient(180deg,#CCD3DE,#9AA4B2); }
+    .laptop-base::after { content:""; position:absolute; left:43%; top:0; width:14%; height:5px; border-radius:0 0 8px 8px; background:#8993A2; }
+
+    .tv-set { width:650px; filter:drop-shadow(0 25px 35px rgba(17,24,39,.18)); }
+    .tv-screen { position:relative; min-height:340px; padding:21px; overflow:hidden; border:14px solid #151923; border-radius:20px; background:#F3F4F6; box-shadow:inset 0 0 0 1px #353B49; }
+    .tv-screen::before { content:""; position:absolute; left:50%; bottom:-14px; width:68px; height:10px; border-radius:0 0 8px 8px; background:#151923; }
+    .tv-stand { width:135px; height:32px; margin:-1px auto 0; background:linear-gradient(180deg,#B0B8C4,#E2E6EC); clip-path:polygon(35% 0,65% 0,84% 88%,100% 100%,0 100%,16% 88%); }
+    .tv-content { position:relative; display:flex; flex-direction:column; gap:10px; min-height:260px; padding:20px 22px; border:1px solid var(--line); border-radius:15px; background:white; }
+    .tv-shortcuts { display:flex; align-items:center; gap:10px; }
+    .tv-shortcut { padding:8px 11px; border-radius:8px; background:#F3F4F6; color:#344054; font-size:13px; font-weight:650; }
+    .tv-shortcut.active { outline:2px solid var(--blue); background:#EFF6FF; color:#1D4ED8; }
+    .tv-list { display:grid; grid-template-columns:1fr 1fr; gap:7px 20px; margin-top:3px; }
+    .tv-row { padding:7px 9px; border-bottom:1px solid var(--line); color:#172033; font-size:16px; font-weight:630; }
+    .tv-kicker { color:#657181; font-size:14px; font-weight:700; letter-spacing:.035em; }
+    .tv-word { color:#111827; font-size:35px; font-weight:750; letter-spacing:-.035em; }
+    .tv-definition { color:#596273; font-size:17px; line-height:1.35; }
+    .tv-example { color:#687385; font-size:15px; line-height:1.35; }
+    .tv-control { display:flex; justify-content:center; align-items:center; min-height:45px; padding:9px 14px; border:2px solid #D6DCE5; border-radius:11px; background:white; color:#263247; font-size:15px; font-weight:650; }
+    .tv-control.active { border-color:var(--blue); background:#EFF6FF; color:#1D4ED8; box-shadow:0 0 0 4px rgba(59,130,246,.15); }
+
+    /* Opening device trio */
+    .hero-devices { display:grid; grid-template-columns:590px 365px 660px; align-items:end; justify-content:space-between; gap:32px; flex:1; min-height:0; margin-top:26px; }
+    .hero-devices .laptop { width:560px; }
+    .hero-devices .phone-shell { width:318px; height:635px; }
+    .hero-devices .phone-screen { padding:23px 17px 18px; }
+    .hero-devices .phone-status { margin-bottom:18px; }
+    .hero-devices .mini-nav { margin-bottom:15px; }
+    .hero-devices .word-row { padding:10px 11px; }
+    .hero-devices .word-row b { font-size:14px; }
+    .hero-devices .word-row span { font-size:11px; }
+    .hero-devices .mobile-search { height:35px; font-size:12px; }
+    .hero-devices .mobile-tabs { font-size:9px; }
+    .hero-devices .tv-set { width:640px; }
+    .hero-devices .tv-screen { min-height:380px; padding:15px; border-width:12px; }
+    .hero-devices .tv-content { min-height:340px; padding:16px; gap:8px; }
+    .hero-devices .tv-shortcut { padding:7px 8px; font-size:12px; }
+    .hero-devices .tv-list { gap:4px 10px; }
+    .hero-devices .tv-row { padding:5px 7px; font-size:13px; }
+
+    /* Focused mobile library and setup views */
+    .mobile-layout { display:grid; grid-template-columns:720px 420px; align-items:center; justify-content:space-between; flex:1; max-width:1450px; width:100%; margin:20px auto 0; }
+    .copy-stack { display:flex; flex-direction:column; gap:22px; max-width:700px; }
+    .copy-stack .headline { font-size:78px; }
+    .phone-hero { width:400px; height:816px; justify-self:center; }
+    .phone-hero .phone-screen { padding:28px 23px 24px; }
+    .phone-hero .phone-status { margin-bottom:25px; }
+    .phone-hero .mobile-search { min-height:46px; }
+    .phone-hero .word-row { padding:14px 15px; }
+    .phone-hero .word-row b { font-size:17px; }
+    .phone-hero .word-row span { font-size:14px; }
+    .phone-hero .mobile-tabs { margin-top:13px; padding-top:12px; font-size:12px; }
+
+    .setup-screen { padding:24px 21px 22px; gap:11px; background:#FFFFFF; }
+    .setup-screen .setup-heading { margin:0 0 1px; font-size:22px; font-weight:720; }
+    .setup-label { margin:4px 0 0; color:#6B7280; font-size:12px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; }
+    .mode-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+    .mode-card { min-height:41px; padding:10px 9px; border:1.5px solid transparent; border-radius:9px; background:#F3F4F6; color:#4B5563; font-size:12px; font-weight:550; }
+    .mode-card.selected { border-color:var(--blue); background:#EFF6FF; color:#1D4ED8; font-weight:730; }
+    .setup-note { margin:0; color:#667085; font-size:11px; line-height:1.35; }
+    .sort-toggle { display:flex; padding:3px; border-radius:9px; background:#F3F4F6; }
+    .sort-toggle span { flex:1; padding:7px 3px; border-radius:7px; color:#667085; font-size:11px; text-align:center; }
+    .sort-toggle .selected { background:#fff; color:#111827; font-weight:700; box-shadow:0 1px 3px #00000018; }
+    .deck-list { flex:1; min-height:42px; display:flex; align-items:center; padding:9px 12px; border:1px solid var(--line); border-radius:9px; color:#111827; font-size:13px; font-weight:620; }
+    .setup-count { color:#6B7280; font-size:12px; text-align:center; }
+    .primary-btn { display:flex; align-items:center; justify-content:center; min-height:43px; padding:11px; border-radius:10px; background:var(--blue); color:#fff; font-size:14px; font-weight:700; text-align:center; }
+    .today-btn { display:flex; align-items:center; justify-content:center; min-height:39px; padding:8px; border-radius:10px; background:#7C3AED; color:#fff; font-size:12px; font-weight:700; }
+    .setup-screen .primary-btn { background:#2563EB; }
+
+    /* Review components match CentralReviewScreen states */
+    .review-screen { padding:24px 23px 22px; background:#F3F4F6; }
+    .review-screen .phone-status { margin-bottom:20px; }
+    .review-screen .mini-nav { margin-bottom:21px; }
+    .review-screen .phone-title { font-size:21px; margin-bottom:8px; }
+    .review-screen .phone-count { margin-bottom:18px; font-size:15px; }
+    .review-card-stack { position:relative; min-height:180px; flex:none; }
+    .review-card { display:flex; flex-direction:column; justify-content:center; gap:13px; min-height:180px; padding:23px 20px; border:1px solid var(--line); border-radius:12px; background:#fff; box-shadow:0 1px 3px rgba(15,23,42,.05); }
+    .review-card .review-word { color:#111827; font-size:34px; line-height:1.08; font-weight:720; letter-spacing:-.035em; }
+    .review-card .review-def { color:#293241; font-size:17px; line-height:1.35; }
+    .review-card .review-example { color:#667085; font-size:15px; line-height:1.35; }
+    .review-card .review-hint { color:#6C7786; font-size:11px; font-weight:650; letter-spacing:.04em; }
+    #mobile-answer-card { position:absolute; inset:0; opacity:0; }
+    .review-action { display:flex; flex-direction:column; gap:10px; margin-top:14px; }
+    .review-action .primary-btn { min-height:46px; border-radius:10px; background:var(--button); font-size:17px; }
+    .rating-actions { display:none; flex-direction:column; gap:10px; opacity:0; pointer-events:none; }
+    .rating-actions .primary-btn { min-height:45px; border-radius:10px; background:var(--button); font-size:16px; }
+    .exit-btn { display:flex; align-items:center; justify-content:center; min-height:44px; margin-top:10px; border-radius:10px; background:var(--button); color:#fff; font-size:16px; font-weight:680; }
+    .review-receipt { display:none; flex-direction:column; gap:9px; margin-top:11px; opacity:0; pointer-events:none; }
+    .receipt-copy { color:#111827; font-size:13px; line-height:1.35; }
+    .receipt-due { padding-left:27px; color:#667085; font-size:11px; line-height:1.3; }
+    .receipt-mark { display:inline-grid; place-items:center; width:20px; height:20px; margin-right:7px; border-radius:50%; background:var(--green); color:#fff; font-size:12px; font-weight:800; }
+    .next-btn { display:flex; align-items:center; justify-content:center; min-height:44px; border-radius:10px; background:var(--button); color:#fff; font-size:16px; font-weight:680; }
+    .mobile-cursor { position:absolute; z-index:8; right:42px; bottom:125px; width:22px; height:22px; border:3px solid white; border-radius:50%; background:var(--blue); box-shadow:0 0 0 7px rgba(59,130,246,.16); opacity:0; }
+
+    /* Browser capture / history screens */
+    .web-layout { display:grid; grid-template-columns:500px 1030px; align-items:center; justify-content:space-between; flex:1; width:100%; max-width:1620px; margin:18px auto 0; }
+    .web-layout .copy-stack { max-width:480px; }
+    .web-layout .headline { font-size:72px; }
+    .web-layout .laptop { width:1010px; }
+    .web-note { display:inline-flex; align-items:center; gap:8px; color:#596273; font-size:14px; font-weight:620; }
+    .web-note::before { content:""; width:8px; height:8px; border-radius:50%; background:#047857; }
+    .history-layout { display:grid; grid-template-columns:510px 1030px; align-items:center; justify-content:space-between; flex:1; width:100%; max-width:1620px; margin:18px auto 0; }
+    .history-layout .laptop { width:1000px; }
+    .history-page { min-height:430px; padding:28px 34px; background:#F3F4F6; color:#111827; }
+    .history-page h3 { margin:0 0 12px; font-size:27px; }
+    .history-page .history-caption { margin:0 0 20px; color:#667085; font-size:15px; }
+    .history-page .refresh { display:inline-block; margin-bottom:17px; color:#2563EB; font-size:15px; font-weight:650; }
+    .history-entry { display:flex; align-items:center; justify-content:space-between; min-height:92px; padding:17px 19px; border:1px solid #E5E7EB; border-radius:12px; background:#fff; }
+    .history-entry + .history-entry { margin-top:10px; }
+    .history-word { margin-bottom:7px; font-size:20px; font-weight:700; }
+    .history-meta { color:#596273; font-size:14px; }
+    .history-action { color:#2563EB; font-size:14px; font-weight:650; }
+
+    /* TV-specific review reconstruction based on Platform.isTV layout */
+    .tv-layout { display:grid; grid-template-columns:470px 1fr; align-items:center; gap:55px; flex:1; width:100%; max-width:1620px; margin:15px auto 0; }
+    .tv-layout .copy-stack { max-width:470px; }
+    .tv-layout .headline { font-size:68px; }
+    .tv-layout .tv-set { width:1050px; }
+    .tv-layout .tv-screen { height:590px; min-height:0; padding:31px; border-width:19px; border-radius:25px; }
+    .tv-layout .tv-content { height:100%; min-height:0; padding:30px 38px; gap:14px; border-radius:17px; }
+    .tv-layout .tv-kicker { font-size:18px; }
+    .tv-layout .tv-word { font-size:47px; }
+    .tv-layout .tv-definition { font-size:24px; line-height:1.42; }
+    .tv-layout .tv-example { font-size:19px; }
+    .tv-layout .tv-control { min-height:59px; font-size:20px; }
+    .tv-layout .tv-stand { width:180px; height:42px; }
+    .tv-review-card { position:relative; display:flex; flex-direction:column; flex:1; gap:12px; }
+    .tv-answer-state { position:absolute; inset:74px 38px 30px; display:flex; flex-direction:column; gap:12px; opacity:0; }
+    .tv-rating-stack { display:flex; flex-direction:column; gap:9px; margin-top:auto; opacity:0; }
+    .tv-save-state { position:absolute; inset:74px 38px 30px; display:flex; flex-direction:column; gap:12px; opacity:0; }
+    .tv-due { color:#667085; font-size:17px; }
+
+    /* Outro */
+    .outro-layout { display:grid; grid-template-columns:650px 1fr; align-items:center; gap:50px; flex:1; max-width:1620px; width:100%; margin:15px auto 0; }
+    .outro-copy { display:flex; flex-direction:column; align-items:flex-start; gap:22px; }
+    .outro-logo { display:flex; align-items:center; gap:19px; color:#111827; font-size:82px; line-height:1; font-weight:780; letter-spacing:-.07em; }
+    .outro-logo .brand-mark { width:68px; height:68px; font-size:34px; border-radius:21px; }
+    .platform-rail { color:#5E6878; font-size:21px; font-weight:650; letter-spacing:.02em; }
+    .platform-rail span+span::before { content:""; display:inline-block; width:6px; height:6px; margin:0 18px 4px 0; border-radius:50%; background:var(--blue); }
+    .outro-devices { display:grid; grid-template-columns:325px 540px; align-items:center; justify-content:end; gap:34px; }
+    .outro-devices .phone-shell { width:290px; height:595px; justify-self:center; }
+    .outro-devices .phone-screen { padding:21px 16px 18px; }
+    .outro-devices .mobile-search { height:35px; font-size:12px; }
+    .outro-devices .word-row { padding:9px 10px; }
+    .outro-devices .word-row b { font-size:13px; }
+    .outro-devices .word-row span { font-size:10px; }
+    .outro-device-stack { display:flex; flex-direction:column; gap:23px; align-items:center; }
+    .outro-devices .laptop { width:520px; }
+    .outro-devices .tv-set { width:520px; }
+    .outro-devices .tv-screen { min-height:260px; padding:12px; border-width:11px; }
+    .outro-devices .tv-content { min-height:228px; padding:14px; gap:8px; }
+    .outro-devices .tv-shortcuts { gap:5px; }
+    .outro-devices .tv-shortcut { padding:5px 7px; font-size:10px; }
+    .outro-devices .tv-row { padding:4px 5px; font-size:11px; }
+    .outro-devices .tv-list { gap:2px 7px; }
+  </style>
+</head>
+<body>
+  <div id="root" data-composition-id="main" data-width="1920" data-height="1080" data-start="0" data-duration="24.6">
+    <section id="scene1" class="scene" aria-label="RecallX library on mobile, web, and Android TV">
+      <div class="inner">
+        <div class="topline s1-brand"><span class="brand-mark">R</span><span class="brand-word">RecallX</span><span>Vocabulary, together</span></div>
+        <div class="page-index">01 / 08</div>
+        <div class="scene-title"><div class="eyebrow">One shared learner library</div><h1 class="headline">Your words. Every screen.</h1></div>
+        <div class="hero-devices">
+          <div class="device-group s1-web"><div class="device-label">Web</div><div class="laptop"><div class="laptop-screen"><div class="browser-chrome"><i></i><i></i><i></i><div class="browser-url"></div></div><img src="assets/images/library-hero.png" alt="RecallX browser vocabulary library"></div><div class="laptop-base"></div></div></div>
+          <div class="device-group s1-mobile"><div class="device-label">Mobile</div><div class="phone-shell"><div class="phone-screen">
+            <div class="phone-status"><span>9:41</span><span class="island"></span><span>•••</span></div>
+            <div class="mobile-search">⌕ &nbsp; Search words... <span style="margin-left:auto">↕</span></div>
+            <div class="mobile-list">
+              <div class="word-row"><b>Ambiguous</b><span>Open to more than one interpretation.</span></div><div class="word-row"><b>Ephemeral</b><span>Lasting for a very short time.</span></div><div class="word-row"><b>Lucid</b><span>Clear and easy to understand.</span></div><div class="word-row"><b>Meticulous</b><span>Showing great attention to detail.</span></div><div class="word-row"><b>Nuance</b><span>A subtle difference in meaning.</span></div>
+            </div><div class="fab">+</div><div class="mobile-tabs"><span>Library</span><span>Practice</span><span>Story</span><span>Settings</span></div>
+          </div></div></div>
+          <div class="device-group s1-tv"><div class="device-label">Android TV</div><div class="tv-set"><div class="tv-screen"><div class="tv-content">
+            <div class="tv-shortcuts"><span class="tv-shortcut active">Review</span><span class="tv-shortcut">Progress</span><span class="tv-shortcut">Settings</span><span class="tv-shortcut">Sync</span></div>
+            <div class="tv-list"><div class="tv-row">Ambiguous</div><div class="tv-row">Ephemeral</div><div class="tv-row">Lucid</div><div class="tv-row">Meticulous</div><div class="tv-row">Nuance</div><div class="tv-row">Pragmatic</div><div class="tv-row">Resilient</div><div class="tv-row">Tenacious</div></div>
+          </div></div><div class="tv-stand"></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="scene2" class="scene" aria-label="RecallX mobile vocabulary library">
+      <div class="inner">
+        <div class="topline s2-brand"><span class="brand-mark">R</span><span class="brand-word">RecallX</span><span>On your phone</span></div><div class="page-index">02 / 08</div>
+        <div class="mobile-layout">
+          <div class="copy-stack s2-copy"><div class="eyebrow">The library</div><h2 class="headline">A good word is worth keeping.</h2><p class="subline">Search your saved vocabulary, open a word, or jump straight into review.</p></div>
+          <div class="phone-shell phone-hero s2-phone"><div class="phone-screen">
+            <div class="phone-status"><span>9:41</span><span class="island"></span><span>•••</span></div>
+            <div class="mobile-search">⌕ &nbsp; Search words... <span style="margin-left:auto">↕</span></div>
+            <div class="mobile-list">
+              <div class="word-row"><b>Ambiguous</b><span>Open to more than one interpretation.</span></div><div class="word-row"><b>Ephemeral</b><span>Lasting for a very short time.</span></div><div class="word-row"><b>Lucid</b><span>Clear and easy to understand.</span></div><div class="word-row"><b>Meticulous</b><span>Showing great attention to detail.</span></div><div class="word-row"><b>Nuance</b><span>A subtle difference in meaning, expression or feeling.</span></div><div class="word-row"><b>Pragmatic</b><span>Guided by practical results.</span></div>
+            </div><div class="fab">+</div><div class="mobile-tabs"><span>Library</span><span>Practice</span><span>Story</span><span>Settings</span></div>
+          </div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="scene3" class="scene" aria-label="Choose a deck and select self-rated flashcards">
+      <div class="inner">
+        <div class="topline s3-brand"><span class="brand-mark">R</span><span class="brand-word">RecallX</span><span>Set up a session</span></div><div class="page-index">03 / 08</div>
+        <div class="mobile-layout">
+          <div class="copy-stack s3-copy"><div class="eyebrow">Choose a deck</div><h2 class="headline">Pick how you want to practice.</h2><p class="subline">Choose a review mode, sort the cards, and start with words that are due.</p></div>
+          <div class="phone-shell phone-hero s3-phone"><div class="phone-screen setup-screen">
+            <div class="phone-status"><span>9:41</span><span class="island"></span><span>•••</span></div><h3 class="setup-heading">Choose a deck</h3>
+            <div class="setup-label">Review mode</div><div class="mode-grid"><div class="mode-card">Scheduled recall</div><div class="mode-card selected">Self-rated flashcards</div><div class="mode-card">Tutor practice</div></div>
+            <p class="setup-note">Reveal each answer, then rate your recall. Offline ratings wait for server confirmation.</p>
+            <div class="setup-label">Sort Order</div><div class="sort-toggle"><span>Jumbled</span><span class="selected">Alphabetical</span><span>Newest</span></div>
+            <div class="deck-list">All Words</div><div class="setup-count">20 words due now</div>
+            <div class="today-btn">Today's Words (12)</div><div class="primary-btn">Start</div>
+          </div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="scene4" class="scene" aria-label="Mobile self-rated review: prompt, reveal, rating, and saved receipt">
+      <div class="inner">
+        <div class="topline s4-brand"><span class="brand-mark">R</span><span class="brand-word">RecallX</span><span>Try to recall. Then reveal.</span></div><div class="page-index">04 / 08</div>
+        <div class="mobile-layout">
+          <div class="copy-stack s4-copy"><div class="eyebrow">Self-rated review · Mobile</div><h2 class="headline">Think first. Reveal when ready.</h2><p class="subline">A simple card flow: try the meaning, see an example, then rate your recall.</p></div>
+          <div class="phone-shell phone-hero s4-phone"><div class="phone-screen review-screen">
+            <div class="phone-status"><span>9:41</span><span class="island"></span><span>•••</span></div>
+            <div class="mini-nav"><span>‹ &nbsp; flashcard</span><strong>RecallX</strong></div>
+            <div class="phone-title">Self-rated review</div><div class="phone-count">1 / 20</div>
+            <div class="review-card-stack">
+              <div class="review-card" id="mobile-prompt-card"><div class="review-word">Alleviate</div></div>
+              <div class="review-card" id="mobile-answer-card"><div class="review-word">Alleviate</div><div class="review-def">to make pain, difficulty, or worry less severe</div><div class="review-example">A short walk helped alleviate her stress.</div></div>
+            </div>
+            <div class="review-action"><div class="primary-btn" id="mobile-reveal">Reveal answer</div><div class="rating-actions" id="mobile-ratings"><div class="primary-btn">Again — missed it</div><div class="primary-btn" id="mobile-good">Good — remembered</div></div></div>
+            <div class="exit-btn" id="mobile-exit">Exit review</div>
+            <div class="review-receipt" id="mobile-receipt"><div class="receipt-copy"><span class="receipt-mark">✓</span>Saved to your shared history and schedule.</div><div class="receipt-due">Next confirmed review: 10/4/2026, 9:35:10 PM</div><div class="next-btn">Next card</div><div class="exit-btn" style="margin-top:0">Exit review</div></div>
+            <div class="mobile-cursor" id="mobile-cursor"></div>
+          </div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="scene5" class="scene" aria-label="Actual captured RecallX web library">
+      <div class="inner">
+        <div class="topline s5-brand"><span class="brand-mark">R</span><span class="brand-word">RecallX</span><span>In your browser</span></div><div class="page-index">05 / 08</div>
+        <div class="web-layout">
+          <div class="copy-stack s5-copy"><div class="eyebrow">Web library</div><h2 class="headline">Your collection, ready to browse.</h2><p class="subline">A real capture of the web app, showing the same saved vocabulary and quick search.</p><div class="web-note">Captured from the running browser client</div></div>
+          <div class="laptop s5-laptop"><div class="laptop-screen"><div class="browser-chrome"><i></i><i></i><i></i><div class="browser-url"></div></div><img src="assets/images/web-library-capture.jpg" alt="Authentic RecallX browser library screenshot"></div><div class="laptop-base"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="scene6" class="scene" aria-label="Shared review history screen in the web app">
+      <div class="inner">
+        <div class="topline s6-brand"><span class="brand-mark">R</span><span class="brand-word">RecallX</span><span>One shared history</span></div><div class="page-index">06 / 08</div>
+        <div class="history-layout">
+          <div class="copy-stack s6-copy"><div class="eyebrow">Confirmed reviews</div><h2 class="headline">Every rating has a receipt.</h2><p class="subline">Review history keeps confirmed attempts visible, with a clear path to correct one.</p></div>
+          <div class="laptop s6-laptop"><div class="laptop-screen"><div class="browser-chrome"><i></i><i></i><i></i><div class="browser-url"></div></div><div class="history-page">
+            <h3>Shared review history</h3><p class="history-caption">1 confirmed attempts · schedules and corrections are managed by your server.</p><div class="refresh">Refresh history</div>
+            <div class="history-entry"><div><div class="history-word">Alleviate</div><div class="history-meta">flashcard · Good · 10/4/2026, 9:25:10 PM</div></div><div class="history-action">Correct this review</div></div>
+          </div></div><div class="laptop-base"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="scene7" class="scene" aria-label="Source-matched Android TV review flow with vertically stacked remote controls">
+      <div class="inner">
+        <div class="topline s7-brand"><span class="brand-mark">R</span><span class="brand-word">RecallX</span><span>Across the room</span></div><div class="page-index">07 / 08</div>
+        <div class="tv-layout">
+          <div class="copy-stack s7-copy"><div class="eyebrow">Android TV</div><h2 class="headline">Built for the remote.</h2><p class="subline">The TV review keeps the word large and moves through vertically stacked choices.</p></div>
+          <div class="tv-set s7-tv"><div class="tv-screen"><div class="tv-content" id="tv-review-screen">
+            <div class="tv-kicker">SELF-RATED REVIEW · 1 / 19</div>
+            <div class="tv-review-card" id="tv-prompt"><div class="tv-word">Ambiguous</div><div class="tv-control active" id="tv-reveal">Reveal answer</div></div>
+            <div class="tv-answer-state" id="tv-answer"><div class="tv-word">Ambiguous</div><div class="tv-definition">Open to more than one interpretation.</div><div class="tv-example">The ambiguous answer did not establish the intended meaning.</div><div class="tv-rating-stack" id="tv-ratings"><div class="tv-control">Again — missed it</div><div class="tv-control active" id="tv-good">Good — remembered</div></div></div>
+          </div></div><div class="tv-stand"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="scene8" class="scene" aria-label="RecallX closing across mobile, web, and Android TV">
+      <div class="inner">
+        <div class="page-index">08 / 08</div>
+        <div class="outro-layout">
+          <div class="outro-copy"><div class="outro-logo s8-logo"><span class="brand-mark">R</span><span>RecallX</span></div><div class="platform-rail s8-platforms"><span>Mobile</span><span>Web</span><span>Android TV</span></div><p class="subline s8-tagline">One library. One shared review history.</p></div>
+          <div class="outro-devices s8-devices">
+            <div class="device-group"><div class="device-label">Mobile</div><div class="phone-shell"><div class="phone-screen">
+              <div class="phone-status"><span>9:41</span><span class="island"></span><span>•••</span></div><div class="mobile-search">⌕ &nbsp; Search words...</div><div class="mobile-list"><div class="word-row"><b>Alleviate</b><span>Make less severe.</span></div><div class="word-row"><b>Ambiguous</b><span>More than one interpretation.</span></div><div class="word-row"><b>Austere</b><span>Simple and without excess.</span></div><div class="word-row"><b>Benevolent</b><span>Kind and well meaning.</span></div></div><div class="mobile-tabs"><span>Library</span><span>Practice</span><span>Story</span><span>Settings</span></div>
+            </div></div></div>
+            <div class="outro-device-stack">
+              <div class="device-group"><div class="device-label">Web</div><div class="laptop"><div class="laptop-screen"><div class="browser-chrome"><i></i><i></i><i></i><div class="browser-url"></div></div><img src="assets/images/library-close.png" alt="RecallX browser vocabulary library"></div><div class="laptop-base"></div></div></div>
+              <div class="device-group"><div class="device-label">Android TV</div><div class="tv-set"><div class="tv-screen"><div class="tv-content"><div class="tv-shortcuts"><span class="tv-shortcut active">Review</span><span class="tv-shortcut">Progress</span><span class="tv-shortcut">Settings</span><span class="tv-shortcut">Sync</span></div><div class="tv-list"><div class="tv-row">Alleviate</div><div class="tv-row">Ambiguous</div><div class="tv-row">Austere</div><div class="tv-row">Benevolent</div></div></div></div><div class="tv-stand"></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <audio id="recallx-music" data-start="0" data-duration="24.6" data-track-index="10" data-volume="0.22" src="assets/music/happy-beats-business-moves-vol-12-by-ende-dot-app.mp3"></audio>
+  <audio id="tap-reveal" data-start="8.74" data-duration="0.08" data-track-index="11" data-volume="0.58" src="assets/sfx/ui-click.ogg"></audio>
+  <audio id="card-reveal" data-start="9.288" data-duration="0.18" data-track-index="12" data-volume="0.4" src="assets/sfx/soft-reveal.ogg"></audio>
+  <audio id="rating-confirm" data-start="10.3" data-duration="0.15" data-track-index="13" data-volume="0.48" src="assets/sfx/confirm.ogg"></audio>
+  <audio id="tv-select" data-start="18.56" data-duration="0.08" data-track-index="14" data-volume="0.45" src="assets/sfx/ui-click.ogg"></audio>
+
+  <script>
+    window.__timelines = window.__timelines || {};
+    var tl = gsap.timeline({ paused:true });
+    var cross = .34;
+    function change(from, to, at) {
+      tl.to(from, { opacity:0, duration:cross, ease:"power2.inOut" }, at);
+      tl.fromTo(to, { opacity:0 }, { opacity:1, duration:cross, ease:"power2.inOut" }, at);
+    }
+
+    // Scene 1 is readable on frame zero. Each new section adds a distinct screen state.
+    tl.from(".s1-brand", { y:-12, opacity:0, duration:.38, ease:"power3.out" }, .12);
+    tl.from(".hero-devices .device-group", { y:24, opacity:0, duration:.52, ease:"power2.out", stagger:.1 }, .36);
+
+    change("#scene1", "#scene2", 2.35);
+    tl.from(".s2-copy", { x:-28, opacity:0, duration:.48, ease:"expo.out" }, 2.52);
+    tl.from(".s2-phone", { y:24, scale:.99, opacity:0, duration:.52, ease:"power2.out" }, 2.58);
+
+    change("#scene2", "#scene3", 4.95);
+    tl.from(".s3-copy", { x:-28, opacity:0, duration:.45, ease:"expo.out" }, 5.1);
+    tl.from(".s3-phone", { y:22, scale:.99, opacity:0, duration:.5, ease:"power2.out" }, 5.12);
+    tl.from(".setup-screen .mode-card", { y:8, opacity:0, duration:.22, ease:"power2.out", stagger:.07 }, 5.58);
+    tl.to(".setup-screen .primary-btn", { scale:1.035, duration:.25, ease:"back.out(1.25)" }, 6.72);
+    tl.to(".setup-screen .primary-btn", { scale:1, duration:.2, ease:"sine.out" }, 6.97);
+
+    change("#scene3", "#scene4", 7.35);
+    tl.from(".s4-copy", { x:-28, opacity:0, duration:.45, ease:"expo.out" }, 7.5);
+    tl.from(".s4-phone", { y:22, scale:.99, opacity:0, duration:.52, ease:"power2.out" }, 7.55);
+    tl.to("#mobile-cursor", { opacity:1, duration:.12 }, 8.85);
+    tl.to("#mobile-reveal", { scale:.97, duration:.11, ease:"power1.inOut" }, 8.91);
+    tl.to("#mobile-reveal", { scale:1, duration:.15, ease:"back.out(1.45)" }, 9.02);
+    tl.to("#mobile-prompt-card", { x:-10, opacity:0, duration:.14, ease:"power2.in" }, 9.14);
+    tl.fromTo("#mobile-answer-card", { x:14, opacity:0 }, { x:0, opacity:1, duration:.28, ease:"power3.out" }, 9.288); // beat-locked: 9.288s
+    tl.to("#mobile-reveal", { opacity:0, y:7, duration:.16, ease:"power2.in" }, 9.32);
+    tl.set("#mobile-ratings", { display:"flex" }, 9.58);
+    tl.to("#mobile-ratings", { opacity:1, duration:.28, ease:"power2.out", onStart:function(){document.querySelector('#mobile-ratings').style.pointerEvents='auto';} }, 9.58);
+    tl.to("#mobile-cursor", { x:74, y:90, duration:.43, ease:"power2.inOut" }, 9.72);
+    tl.to("#mobile-good", { scale:.97, duration:.1, ease:"power1.inOut" }, 10.2);
+    tl.to("#mobile-good", { scale:1, duration:.15, ease:"back.out(1.35)" }, 10.3);
+    tl.to("#mobile-ratings", { opacity:0, duration:.18, ease:"power2.in", onComplete:function(){document.querySelector('#mobile-ratings').style.pointerEvents='none';} }, 10.4);
+    tl.set("#mobile-ratings", { display:"none" }, 10.58);
+    tl.set("#mobile-receipt", { display:"flex" }, 10.58);
+    tl.to("#mobile-receipt", { opacity:1, duration:.28, ease:"power2.out", onStart:function(){document.querySelector('#mobile-receipt').style.pointerEvents='auto';} }, 10.58);
+    tl.to("#mobile-exit", { opacity:0, duration:.15, onComplete:function(){document.querySelector('#mobile-exit').style.display='none';} }, 10.58);
+
+    change("#scene4", "#scene5", 12.0);
+    tl.from(".s5-copy", { x:-28, opacity:0, duration:.48, ease:"expo.out" }, 12.16);
+    tl.from(".s5-laptop", { x:32, scale:.985, opacity:0, duration:.5, ease:"power3.out" }, 12.28);
+
+    change("#scene5", "#scene6", 14.55);
+    tl.from(".s6-copy", { x:-26, opacity:0, duration:.46, ease:"expo.out" }, 14.7);
+    tl.from(".s6-laptop", { x:30, scale:.99, opacity:0, duration:.48, ease:"power3.out" }, 14.82);
+    tl.from(".history-entry", { y:10, opacity:0, duration:.28, ease:"power2.out", stagger:.13 }, 15.14);
+
+    change("#scene6", "#scene7", 17.05);
+    tl.from(".s7-copy", { x:-24, opacity:0, duration:.46, ease:"expo.out" }, 17.2);
+    tl.from(".s7-tv", { x:24, scale:.99, opacity:0, duration:.5, ease:"power2.out" }, 17.24); // beat-locked arrival: 17.473s
+    tl.to("#tv-reveal", { scale:1.035, duration:.25, ease:"back.out(1.2)" }, 18.3);
+    tl.to("#tv-prompt", { opacity:0, duration:.18, ease:"power2.in" }, 18.33);
+    tl.fromTo("#tv-answer", { x:14, opacity:0 }, { x:0, opacity:1, duration:.3, ease:"power3.out" }, 18.56); // beat-locked: 18.564s
+    tl.to("#tv-ratings", { opacity:1, duration:.25, ease:"power2.out" }, 18.86);
+    tl.to("#tv-good", { scale:1.035, duration:.24, ease:"back.out(1.25)" }, 19.36);
+    tl.to("#tv-good", { scale:1, duration:.17, ease:"sine.out" }, 19.62);
+
+    change("#scene7", "#scene8", 21.1);
+    tl.from(".s8-logo", { y:14, scale:.98, opacity:0, duration:.5, ease:"power3.out" }, 21.24);
+    tl.from(".s8-platforms", { x:-14, opacity:0, duration:.38, ease:"expo.out" }, 21.52);
+    tl.from(".s8-tagline", { y:9, opacity:0, duration:.38, ease:"sine.out" }, 21.75);
+    tl.from(".s8-devices .device-group", { y:18, opacity:0, duration:.44, ease:"power2.out", stagger:.09 }, 21.28);
+    tl.to(".s8-logo", { scale:1.025, duration:.14, ease:"power1.out" }, 22.93); // beat-locked brand accent: 22.93s
+    tl.to(".s8-logo", { scale:1, duration:.18, ease:"sine.out" }, 23.07);
+
+    window.__timelines["main"] = tl;
+  </script>
+</body>
+</html>

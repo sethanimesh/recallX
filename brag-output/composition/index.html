@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RecallX — one library, every screen</title>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <style>
+    :root { --bg:#F3F4F6; --card:#FFFFFF; --ink:#111827; --muted:#596273; --blue:#3B82F6; --line:#E5E7EB; --deep:#12141C; }
+    * { box-sizing:border-box; }
+    html, body { margin:0; width:1920px; height:1080px; overflow:hidden; background:var(--bg); }
+    body { color:var(--ink); font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    #root { position:relative; width:1920px; height:1080px; overflow:hidden; background:#F3F4F6; }
+    .scene { position:absolute; inset:0; width:1920px; height:1080px; overflow:hidden; background:#F3F4F6; }
+    #scene2,#scene3,#scene4,#scene5,#scene6 { opacity:0; }
+    .scene::before { content:""; position:absolute; width:900px; height:900px; border-radius:50%; background:radial-gradient(circle, rgba(59,130,246,.11) 0%, rgba(59,130,246,.045) 34%, rgba(243,244,246,0) 72%); top:80px; right:110px; pointer-events:none; }
+    .scene::after { content:""; position:absolute; left:0; right:0; bottom:62px; height:1px; background:#DCE3EE; }
+    .scene-inner { position:relative; display:flex; flex-direction:column; width:100%; height:100%; padding:82px 128px 104px; gap:28px; z-index:1; }
+    .topline { display:flex; align-items:center; gap:16px; color:#596273; font-size:20px; font-weight:650; letter-spacing:.08em; text-transform:uppercase; }
+    .brand-mark { display:inline-grid; place-items:center; width:44px; height:44px; border-radius:14px; background:#3B82F6; color:#fff; font-size:23px; font-weight:800; letter-spacing:-.06em; box-shadow:0 8px 18px rgba(59,130,246,.22); }
+    .brand-word { color:#111827; font-size:24px; font-weight:760; letter-spacing:-.035em; text-transform:none; }
+    .eyebrow { color:#46607F; font-size:19px; line-height:1.15; font-weight:700; letter-spacing:.14em; text-transform:uppercase; }
+    .headline { margin:0; max-width:1140px; color:#111827; font-size:82px; line-height:1.04; font-weight:760; letter-spacing:-.055em; }
+    .subline { margin:0; color:#596273; font-size:27px; line-height:1.38; font-weight:450; max-width:720px; }
+    .page-index { position:absolute; right:132px; top:93px; color:#627188; font-size:18px; font-weight:650; letter-spacing:.1em; }
+    .device-label { display:flex; align-items:center; justify-content:center; gap:10px; margin:0 auto 14px; color:#4B5563; font-size:19px; font-weight:720; letter-spacing:.09em; text-transform:uppercase; }
+    .device-label::before { content:""; width:7px; height:7px; border-radius:50%; background:#3B82F6; }
+    .device-group { display:flex; flex-direction:column; justify-content:flex-end; align-items:center; min-width:0; }
+    .hero-stage { display:grid; grid-template-columns:570px 360px 600px; align-items:end; justify-content:space-between; gap:48px; width:100%; max-width:1640px; margin:8px auto 0; flex:1; min-height:680px; }
+    .phone-shell { position:relative; display:flex; width:340px; height:690px; padding:12px; overflow:hidden; border:1px solid #3D4451; border-radius:54px; background:#10131B; box-shadow:0 34px 70px rgba(17,24,39,.22), 0 10px 24px rgba(17,24,39,.1); }
+    .phone-screen { position:relative; display:flex; flex-direction:column; width:100%; height:100%; min-height:0; padding:28px 22px 24px; overflow:hidden; border-radius:43px; background:#F3F4F6; }
+    .phone-status { display:flex; align-items:center; justify-content:space-between; margin:0 2px 26px; color:#384150; font-size:15px; font-weight:720; }
+    .phone-status .island { position:absolute; left:50%; top:10px; width:94px; height:24px; border-radius:20px; background:#10131B; transform:translateX(-50%); }
+    .mini-nav { display:flex; justify-content:space-between; align-items:center; color:#596273; font-size:15px; font-weight:620; margin-bottom:34px; }
+    .mini-nav strong { color:#111827; font-size:16px; font-weight:760; }
+    .mini-title { color:#111827; font-size:18px; font-weight:700; margin-bottom:7px; }
+    .mini-count { color:#667085; font-size:14px; margin-bottom:25px; }
+    .word-card { display:flex; flex-direction:column; gap:12px; padding:23px 22px; border:1px solid #E5E7EB; border-radius:20px; background:#FFFFFF; box-shadow:0 10px 28px rgba(15,23,42,.06); }
+    .word-card .word { color:#111827; font-size:32px; font-weight:760; line-height:1.08; letter-spacing:-.04em; }
+    .word-card .definition { color:#596273; font-size:18px; line-height:1.38; }
+    .word-card .micro { color:#6C7786; font-size:13px; font-weight:620; }
+    .blue-button { display:flex; justify-content:center; align-items:center; min-height:50px; padding:12px 14px; border-radius:12px; background:#2563EB; color:#FFFFFF; font-size:16px; line-height:1.25; font-weight:680; text-align:center; box-shadow:0 6px 14px rgba(59,130,246,.2); }
+    .soft-button { display:flex; justify-content:center; align-items:center; min-height:47px; padding:11px 14px; border:1px solid #BFDBFE; border-radius:12px; background:#EFF6FF; color:#1D4ED8; font-size:15px; font-weight:700; text-align:center; }
+    .platform-rail { display:flex; justify-content:center; align-items:center; gap:17px; color:#657181; font-size:17px; font-weight:650; letter-spacing:.03em; }
+    .platform-rail span+span::before { content:""; display:inline-block; width:5px; height:5px; margin:0 17px 3px 0; border-radius:50%; background:#3B82F6; }
+    .laptop { width:550px; filter:drop-shadow(0 28px 34px rgba(17,24,39,.16)); }
+    .laptop-screen { padding:12px; border:1px solid #303543; border-radius:18px 18px 12px 12px; background:#171B25; }
+    .browser-chrome { display:flex; align-items:center; gap:7px; height:25px; padding:0 4px 9px; }
+    .browser-chrome i { width:8px; height:8px; border-radius:50%; background:#778191; opacity:.7; }
+    .browser-url { height:14px; margin-left:9px; flex:1; border-radius:8px; background:#282E3A; }
+    .laptop-screen img { display:block; width:100%; height:auto; border-radius:4px; }
+    .laptop-base { position:relative; width:110%; height:17px; margin-left:-5%; border-radius:2px 2px 16px 16px; background:linear-gradient(180deg,#CCD3DE,#9AA4B2); }
+    .laptop-base::after { content:""; position:absolute; left:43%; top:0; width:14%; height:5px; border-radius:0 0 8px 8px; background:#8993A2; }
+    .tv-set { width:590px; filter:drop-shadow(0 26px 35px rgba(17,24,39,.18)); }
+    .tv-screen { position:relative; min-height:330px; padding:24px; overflow:hidden; border:14px solid #151923; border-radius:20px; background:#F3F4F6; box-shadow:inset 0 0 0 1px #353B49; }
+    .tv-screen::before { content:""; position:absolute; left:50%; bottom:-14px; width:68px; height:10px; border-radius:0 0 8px 8px; background:#151923; }
+    .tv-content { display:flex; flex-direction:column; gap:11px; min-height:250px; padding:18px 20px; border:1px solid #E5E7EB; border-radius:16px; background:#FFFFFF; }
+    .tv-kicker { color:#657181; font-size:15px; font-weight:650; }
+    .tv-word { color:#111827; font-size:34px; font-weight:750; letter-spacing:-.035em; }
+    .tv-definition { color:#596273; font-size:18px; line-height:1.35; }
+    .tv-controls { display:flex; align-items:center; gap:12px; margin-top:auto; color:#596273; font-size:15px; }
+    .tv-controls b { color:#1D4ED8; }
+    .tv-stand { width:128px; height:34px; margin:-1px auto 0; background:linear-gradient(180deg,#B0B8C4,#E2E6EC); clip-path:polygon(35% 0,65% 0,84% 88%,100% 100%,0 100%,16% 88%); }
+    .phone-screen .ack-chip { display:flex; align-items:flex-start; gap:11px; padding:14px 15px; border:1px solid #B7E4CC; border-radius:13px; background:#ECFDF3; color:#155B36; font-size:14px; line-height:1.35; font-weight:650; }
+    .ack-check { display:grid; place-items:center; flex:0 0 auto; width:22px; height:22px; border-radius:50%; background:#047857; color:#FFFFFF; font-size:14px; font-weight:800; }
+    .hero-copy { display:flex; flex-direction:column; justify-content:flex-start; gap:20px; max-width:570px; padding-top:16px; }
+    .review-layout { display:grid; grid-template-columns:730px 460px; align-items:center; justify-content:space-between; flex:1; width:100%; max-width:1500px; margin:8px auto 0; }
+    .review-copy { display:flex; flex-direction:column; gap:24px; max-width:690px; }
+    .review-copy .headline { font-size:96px; }
+    .review-copy .subline { font-size:31px; max-width:630px; }
+    .review-phone { width:390px; height:770px; justify-self:center; }
+    .review-phone .phone-screen { padding:35px 26px 26px; }
+    .review-phone .phone-status { margin-bottom:35px; }
+    .review-phone .mini-nav { margin-bottom:42px; font-size:17px; }
+    .review-phone .mini-title { font-size:23px; margin-bottom:10px; }
+    .review-phone .mini-count { font-size:17px; margin-bottom:33px; }
+    .review-phone .word-card { min-height:250px; justify-content:center; padding:30px 28px; gap:18px; }
+    .review-phone .word-card .word { font-size:45px; }
+    .review-phone .word-card .definition { font-size:24px; line-height:1.4; }
+    .review-phone .blue-button { min-height:60px; font-size:21px; border-radius:14px; }
+    .review-phone .soft-button { min-height:59px; font-size:19px; border-radius:14px; }
+    .review-phone .phone-actions { display:flex; flex-direction:column; gap:12px; margin-top:17px; }
+    .review-phone .rating-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+    .review-phone .rating-row .soft-button { min-height:56px; padding:8px; font-size:16px; }
+    .card-prompt, .card-answer { transition:none; }
+    .card-answer { position:absolute; inset:0; opacity:0; transform:translateX(18px); pointer-events:none; }
+    .answer-bottom { margin-top:20px; }
+    .tap-dot { position:absolute; right:34px; bottom:105px; z-index:9; width:32px; height:32px; border:3px solid #FFFFFF; border-radius:50%; background:rgba(59,130,246,.92); box-shadow:0 0 0 8px rgba(59,130,246,.16); opacity:0; }
+    .web-layout { display:grid; grid-template-columns:1fr 1010px; align-items:center; gap:82px; flex:1; max-width:1600px; width:100%; margin:14px auto 0; }
+    .web-copy { display:flex; flex-direction:column; gap:23px; max-width:460px; }
+    .web-copy .headline { font-size:76px; }
+    .web-copy .subline { font-size:25px; }
+    .web-layout .laptop { width:1000px; }
+    .tv-layout { display:flex; flex-direction:column; justify-content:center; align-items:center; gap:26px; flex:1; }
+    .tv-layout .device-label { font-size:20px; margin-bottom:0; }
+    .tv-layout .tv-set { width:1120px; }
+    .tv-layout .tv-screen { min-height:0; height:560px; padding:42px; border-width:20px; border-radius:26px; }
+    .tv-layout .tv-content { min-height:100%; padding:34px 45px; gap:22px; border-radius:22px; }
+    .tv-layout .tv-kicker { font-size:22px; }
+    .tv-layout .tv-word { font-size:58px; }
+    .tv-layout .tv-definition { max-width:820px; font-size:33px; }
+    .tv-layout .tv-controls { gap:18px; font-size:23px; }
+    .tv-layout .tv-stand { width:190px; height:44px; }
+    .tv-focus { display:flex; justify-content:center; align-items:center; min-height:76px; padding:15px 25px; border:2px solid #D6DCE5; border-radius:15px; background:#FFFFFF; color:#263247; font-size:24px; font-weight:650; transition:none; }
+    .tv-focus.active { border-color:#3B82F6; background:#EFF6FF; color:#1D4ED8; box-shadow:0 0 0 5px rgba(59,130,246,.17); }
+    .share-layout { display:flex; flex-direction:column; gap:27px; flex:1; width:100%; align-items:stretch; justify-content:flex-start; max-width:1640px; margin:4px auto 0; }
+    .share-top { display:flex; align-items:flex-end; justify-content:space-between; gap:45px; min-height:180px; }
+    .share-top .headline { max-width:1000px; font-size:64px; line-height:1.06; }
+    .share-top .eyebrow { padding-bottom:10px; white-space:nowrap; }
+    .share-devices { display:grid; grid-template-columns:530px 330px 560px; align-items:end; justify-content:space-between; gap:42px; flex:1; }
+    .share-devices .laptop { width:530px; }
+    .share-devices .phone-shell { width:300px; height:565px; }
+    .share-devices .tv-set { width:560px; }
+    .share-devices .tv-screen { min-height:320px; }
+    .share-devices .device-label { font-size:17px; margin-bottom:11px; }
+    .share-phone .phone-screen { padding:27px 19px 22px; }
+    .share-phone .phone-status { margin-bottom:20px; }
+    .share-phone .mini-nav { margin-bottom:20px; }
+    .share-phone .word-card { padding:18px; gap:9px; }
+    .share-phone .word-card .word { font-size:27px; }
+    .share-phone .word-card .definition { font-size:15px; }
+    .share-phone .blue-button { min-height:43px; font-size:14px; }
+    .share-phone .ack-chip { padding:11px; font-size:12px; }
+    .share-phone .ack-check { width:19px; height:19px; font-size:12px; }
+    .closing-layout { display:grid; grid-template-columns:640px 1fr; align-items:center; gap:80px; flex:1; max-width:1600px; width:100%; margin:0 auto; }
+    .closing-copy { display:flex; flex-direction:column; align-items:flex-start; gap:24px; }
+    .closing-wordmark { display:flex; align-items:center; gap:20px; color:#111827; font-size:88px; line-height:1; font-weight:780; letter-spacing:-.07em; }
+    .closing-wordmark .brand-mark { width:72px; height:72px; font-size:36px; border-radius:22px; }
+    .closing-copy .subline { color:#263247; font-size:30px; font-weight:560; }
+    .closing-devices { display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:30px; }
+    .closing-devices .phone-shell { width:280px; height:565px; justify-self:end; }
+    .closing-devices .device-stack { display:flex; flex-direction:column; align-items:center; gap:32px; }
+    .closing-devices .laptop { width:540px; }
+    .closing-devices .tv-set { width:500px; }
+    .closing-devices .tv-screen { min-height:280px; }
+    .closing-devices .device-label { margin-bottom:10px; font-size:16px; }
+    .sync-orbit { position:absolute; top:427px; left:50%; width:235px; height:235px; margin-left:-117px; border:2px solid rgba(59,130,246,.25); border-radius:50%; pointer-events:none; opacity:.14; transform:scale(.96); }
+    .sync-orbit::after { content:""; position:absolute; inset:20px; border:1px dashed rgba(59,130,246,.44); border-radius:50%; }
+    .tickline { position:absolute; left:128px; right:128px; top:231px; height:1px; background:#DDE4EF; transform:scaleX(0); transform-origin:left center; }
+    .surface-shadow { filter:drop-shadow(0 18px 28px rgba(17,24,39,.10)); }
+  </style>
+</head>
+<body>
+  <div id="root" data-composition-id="main" data-width="1920" data-height="1080" data-start="0" data-duration="21">
+    <section id="scene1" class="scene" aria-label="One library across mobile, web and Android TV">
+      <div class="scene-inner">
+        <div class="topline s1-brand"><span class="brand-mark">R</span><span class="brand-word">RecallX</span><span>Vocabulary, together</span></div>
+        <div class="page-index s1-index">01 / 06</div>
+        <h1 class="headline s1-title">One library. Every screen.</h1>
+        <div class="tickline" id="s1-rule"></div>
+        <div class="hero-stage">
+          <div class="device-group s1-web">
+            <div class="device-label">Web</div>
+            <div class="laptop">
+              <div class="laptop-screen"><div class="browser-chrome"><i></i><i></i><i></i><div class="browser-url"></div></div><img src="assets/images/library-hero.png" alt="RecallX browser library"></div>
+              <div class="laptop-base"></div>
+            </div>
+          </div>
+          <div class="device-group s1-mobile">
+            <div class="device-label">Mobile</div>
+            <div class="phone-shell"><div class="phone-screen">
+              <div class="phone-status"><span>9:41</span><span class="island"></span><span>•••</span></div>
+              <div class="mini-nav"><strong>RecallX</strong><span>Library</span></div>
+              <div class="mini-title">Self-rated review</div><div class="mini-count">1 / 8</div>
+              <div class="word-card"><span class="micro">TODAY’S WORD</span><span class="word">Ephemeral</span><span class="definition">A word from your library, ready to review.</span><div class="blue-button">Reveal answer</div></div>
+              <div class="platform-rail" style="margin-top:auto;padding-top:24px;font-size:13px;gap:0"><span>Try</span><span>Reveal</span><span>Rate</span></div>
+            </div></div>
+          </div>
+          <div class="device-group s1-tv">
+            <div class="device-label">Android TV</div>
+            <div class="tv-set"><div class="tv-screen"><div class="tv-content"><div class="tv-kicker">SELF-RATED REVIEW · 1 / 8</div><div class="tv-word">Ephemeral</div><div class="tv-controls"><b>Reveal answer</b><span>Use remote to select</span></div></div></div><div class="tv-stand"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="scene2" class="scene" aria-label="Self-rated flashcard review on mobile">
+      <div class="scene-inner">
+        <div class="topline s2-brand"><span class="brand-mark">R</span><span class="brand-word">RecallX</span><span>On mobile</span></div>
+        <div class="page-index s2-index">02 / 06</div>
+        <div class="review-layout">
+          <div class="review-copy s2-copy">
+            <div class="eyebrow">A real review, one card at a time</div>
+            <h2 class="headline">Try to recall. Then reveal.</h2>
+            <p class="subline">A self-rated flashcard flow, built around the words in your library.</p>
+          </div>
+          <div class="phone-shell review-phone s2-phone"><div class="phone-screen">
+            <div class="phone-status"><span>9:41</span><span class="island"></span><span>•••</span></div>
+            <div class="mini-nav"><span>‹ &nbsp; flashcard</span><strong>RecallX</strong></div>
+            <div class="mini-title">Self-rated review</div><div class="mini-count">1 / 8</div>
+            <div class="word-card card-prompt" id="review-prompt"><span class="word">Ephemeral</span><div class="micro">TAKE A MOMENT TO RECALL THE MEANING</div></div>
+            <div class="word-card card-answer" id="review-answer"><span class="word">Ephemeral</span><span class="definition">Lasting for a very short time.</span><span class="micro">The rainbow was ephemeral, fading within minutes.</span></div>
+            <div class="phone-actions"><div class="blue-button" id="reveal-button">Reveal answer</div>
+              <div class="rating-row" id="rating-row" style="opacity:0"><div class="soft-button">Again — missed it</div><div class="blue-button">Good — remembered</div></div>
+            </div>
+            <div class="tap-dot" id="mobile-tap"></div>
+          </div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="scene3" class="scene" aria-label="RecallX vocabulary library in a web browser">
+      <div class="scene-inner">
+        <div class="topline s3-brand"><span class="brand-mark">R</span><span class="brand-word">RecallX</span><span>In your browser</span></div>
+        <div class="page-index s3-index">03 / 06</div>
+        <div class="web-layout">
+          <div class="web-copy s3-copy"><div class="eyebrow">Web library</div><h2 class="headline">Pick up where you left off.</h2><p class="subline">The same learner library, with each word and its meaning close at hand.</p><div class="platform-rail" style="justify-content:flex-start;margin-top:8px"><span>Search</span><span>Review</span><span>Return</span></div></div>
+          <div class="laptop s3-laptop"><div class="laptop-screen"><div class="browser-chrome"><i></i><i></i><i></i><div class="browser-url"></div></div><img src="assets/images/library-browser.png" alt="RecallX browser library with constructed vocabulary fixtures"></div><div class="laptop-base"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="scene4" class="scene" aria-label="RecallX self-rated flashcards on Android TV">
+      <div class="scene-inner">
+        <div class="topline s4-brand"><span class="brand-mark">R</span><span class="brand-word">RecallX</span><span>Across the room</span></div>
+        <div class="page-index s4-index">04 / 06</div>
+        <div class="tv-layout">
+          <div class="device-label s4-label">Android TV · Self-rated review</div>
+          <div class="tv-set s4-tv"><div class="tv-screen"><div class="tv-content" id="tv-content">
+            <div class="tv-kicker">SELF-RATED REVIEW&nbsp; · &nbsp;1 / 8</div>
+            <div class="tv-word">Ephemeral</div>
+            <div class="tv-definition">Lasting for a very short time.</div>
+            <div class="tv-controls"><div class="tv-focus active" id="tv-reveal">Reveal answer</div><div class="tv-focus" id="tv-good">Good — remembered</div></div>
+          </div></div><div class="tv-stand"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="scene5" class="scene" aria-label="One shared review history across all three devices">
+      <div class="scene-inner">
+        <div class="topline s5-brand" data-layout-allow-overlap="true"><span class="brand-mark">R</span><span class="brand-word">RecallX</span><span>One learner history</span></div>
+        <div class="page-index s5-index" data-layout-allow-overlap="true">05 / 06</div>
+        <div class="share-layout">
+          <div class="share-top"><h2 class="headline s5-title">Saved to your shared history and schedule.</h2><div class="eyebrow s5-label">One acknowledged review</div></div>
+          <div class="share-devices">
+            <div class="device-group s5-web"><div class="device-label">Web</div><div class="laptop"><div class="laptop-screen"><div class="browser-chrome"><i></i><i></i><i></i><div class="browser-url"></div></div><img src="assets/images/library-sync.png" alt="RecallX browser library"></div><div class="laptop-base"></div></div></div>
+            <div class="device-group s5-mobile"><div class="device-label">Mobile</div><div class="phone-shell share-phone"><div class="phone-screen">
+              <div class="phone-status"><span>9:41</span><span class="island"></span><span>•••</span></div>
+              <div class="mini-nav"><span>‹ &nbsp; flashcard</span><strong>RecallX</strong></div>
+              <div class="mini-title">Self-rated review</div><div class="mini-count">1 / 8</div>
+              <div class="word-card"><span class="word">Ephemeral</span><span class="definition">Lasting for a very short time.</span></div>
+              <div class="ack-chip" style="margin-top:15px"><span class="ack-check">✓</span><span>Saved to your shared history and schedule.</span></div>
+            </div></div></div>
+            <div class="device-group s5-tv"><div class="device-label">Android TV</div><div class="tv-set"><div class="tv-screen"><div class="tv-content"><div class="tv-kicker">SELF-RATED REVIEW · 1 / 8</div><div class="tv-word">Ephemeral</div><div class="tv-definition">Lasting for a very short time.</div><div class="tv-controls"><b>Good — remembered</b></div></div></div><div class="tv-stand"></div></div></div>
+          </div>
+        </div>
+        <div class="sync-orbit" id="s5-sync-glow" data-layout-ignore="true"></div>
+      </div>
+    </section>
+
+    <section id="scene6" class="scene" aria-label="RecallX closing brand and supported platforms">
+      <div class="scene-inner">
+        <div class="closing-layout">
+          <div class="closing-copy"><div class="closing-wordmark s6-logo"><span class="brand-mark">R</span><span>RecallX</span></div><div class="platform-rail s6-platforms" style="justify-content:flex-start;flex-wrap:wrap;row-gap:10px"><span>Mobile</span><span>Web</span><span>Android TV</span></div><p class="subline s6-tagline">One shared review history.</p></div>
+          <div class="closing-devices s6-devices">
+            <div class="device-group"><div class="device-label">Mobile</div><div class="phone-shell"><div class="phone-screen"><div class="phone-status"><span>9:41</span><span class="island"></span><span>•••</span></div><div class="mini-nav"><strong>RecallX</strong><span>Library</span></div><div class="mini-title">Self-rated review</div><div class="mini-count">1 / 8</div><div class="word-card"><span class="word">Ephemeral</span><span class="definition">Lasting for a very short time.</span></div><div class="blue-button" style="margin-top:17px">Good — remembered</div></div></div></div>
+            <div class="device-stack">
+              <div class="device-group"><div class="device-label">Web</div><div class="laptop"><div class="laptop-screen"><div class="browser-chrome"><i></i><i></i><i></i><div class="browser-url"></div></div><img src="assets/images/library-close.png" alt="RecallX web library"></div><div class="laptop-base"></div></div></div>
+              <div class="device-group"><div class="device-label">Android TV</div><div class="tv-set"><div class="tv-screen"><div class="tv-content"><div class="tv-kicker">SELF-RATED REVIEW</div><div class="tv-word">Ephemeral</div><div class="tv-controls"><b>Good — remembered</b></div></div></div><div class="tv-stand"></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <audio id="recallx-music" data-start="0" data-duration="21" data-track-index="10" data-volume="0.24" src="assets/music/recallx-bed-21s.mp3"></audio>
+  <audio id="tap-reveal" data-start="4.52" data-duration="0.06" data-track-index="11" data-volume="0.62" src="assets/sfx/ui-click.ogg"></audio>
+  <audio id="card-reveal" data-start="5.03" data-duration="0.18" data-track-index="12" data-volume="0.42" src="assets/sfx/soft-reveal.ogg"></audio>
+  <audio id="history-confirm" data-start="14.25" data-duration="0.12" data-track-index="13" data-volume="0.5" src="assets/sfx/confirm.ogg"></audio>
+
+  <script>
+    window.__timelines = window.__timelines || {};
+    var tl = gsap.timeline({ paused: true });
+    var cross = 0.42;
+
+    // Scene 1 starts fully readable on frame 0; only its structural rule draws in.
+    tl.to("#s1-rule", { scaleX:1, duration:.42, ease:"power2.out" }, .12);
+
+    // Scene 2: the flashcard reveal is a real user action inside the mobile flow.
+    tl.to("#scene1", { opacity:0, duration:cross, ease:"power2.inOut" }, 3);
+    tl.fromTo("#scene2", { opacity:0 }, { opacity:1, duration:cross, ease:"power2.inOut" }, 3);
+    tl.from(".s2-brand", { y:-16, opacity:0, duration:.45, ease:"power3.out" }, 3.12);
+    tl.from(".s2-copy", { x:-36, opacity:0, duration:.58, ease:"expo.out" }, 3.24);
+    tl.from(".s2-phone", { y:38, scale:.985, opacity:0, duration:.64, ease:"power2.out" }, 3.28);
+    tl.from(".review-phone .phone-status", { y:-12, opacity:0, duration:.3, ease:"sine.out" }, 3.54);
+    tl.from("#review-prompt", { y:14, opacity:0, duration:.38, ease:"back.out(1.08)" }, 3.72);
+    tl.from("#reveal-button", { y:13, opacity:0, duration:.34, ease:"power3.out" }, 4.04);
+    tl.to("#mobile-tap", { opacity:1, duration:.12, ease:"sine.out" }, 4.48);
+    tl.to("#mobile-tap", { x:0, y:0, scale:.86, duration:.12, ease:"power2.inOut" }, 4.54);
+    tl.to("#reveal-button", { scale:.97, duration:.1, ease:"power1.inOut" }, 4.55);
+    tl.to("#reveal-button", { scale:1, duration:.16, ease:"back.out(1.5)" }, 4.65);
+    tl.to("#review-prompt", { x:-12, opacity:0, duration:.23, ease:"power2.in" }, 4.81);
+    tl.fromTo("#review-answer", { x:18, opacity:0 }, { x:0, opacity:1, duration:.31, ease:"power3.out" }, 4.88);
+    tl.to("#reveal-button", { opacity:0, y:8, duration:.18, ease:"power2.in" }, 5.03);
+    tl.fromTo("#rating-row", { y:11, opacity:0 }, { y:0, opacity:1, duration:.38, ease:"back.out(1.08)" }, 5.33);
+    tl.to("#mobile-tap", { x:88, y:108, duration:.52, ease:"power2.inOut" }, 5.64);
+    tl.to("#rating-row .blue-button", { scale:.96, duration:.12, ease:"power1.inOut" }, 6.18);
+    tl.to("#rating-row .blue-button", { scale:1, duration:.18, ease:"back.out(1.45)" }, 6.3);
+
+    // Scene 3: one app library, now in a browser window. Main reveal lands at 8.74s.
+    tl.to("#scene2", { opacity:0, duration:cross, ease:"power2.inOut" }, 7);
+    tl.fromTo("#scene3", { opacity:0 }, { opacity:1, duration:cross, ease:"power2.inOut" }, 7);
+    tl.from(".s3-brand", { y:-16, opacity:0, duration:.4, ease:"sine.out" }, 7.12);
+    tl.from(".s3-copy", { x:-30, opacity:0, duration:.52, ease:"expo.out" }, 7.28);
+    tl.from(".s3-laptop", { x:46, scale:.97, opacity:0, duration:.45, ease:"power3.out" }, 8.74); // beat-locked: 8.74s
+
+    // Scene 4: TV comes forward after the browser, with a TV-style focus state.
+    tl.to("#scene3", { opacity:0, duration:cross, ease:"power2.inOut" }, 10);
+    tl.fromTo("#scene4", { opacity:0 }, { opacity:1, duration:cross, ease:"power2.inOut" }, 10);
+    tl.from(".s4-brand", { y:-16, opacity:0, duration:.4, ease:"power3.out" }, 10.12);
+    tl.from(".s4-label", { y:10, opacity:0, duration:.42, ease:"sine.out" }, 10.32);
+    tl.from(".s4-tv", { y:22, scale:.985, opacity:0, duration:.38, ease:"power3.out" }, 10.48);
+    tl.to("#tv-reveal", { scale:1.045, duration:.32, ease:"power2.out" }, 11.78);
+    tl.to("#tv-reveal", { scale:1, duration:.25, ease:"sine.out" }, 12.1);
+    tl.to("#tv-reveal", { backgroundColor:"#FFFFFF", borderColor:"#D6DCE5", color:"#263247", duration:.2, ease:"sine.out" }, 12.35);
+    tl.to("#tv-good", { backgroundColor:"#EFF6FF", borderColor:"#3B82F6", color:"#1D4ED8", duration:.2, ease:"power2.out" }, 12.35);
+    tl.to("#tv-good", { scale:1.045, duration:.24, ease:"back.out(1.2)" }, 12.57);
+    tl.to("#tv-good", { scale:1, duration:.15, ease:"power2.out" }, 12.81);
+
+    // Scene 5: the acknowledged save joins the same study card across devices.
+    tl.to("#scene4", { opacity:0, duration:cross, ease:"power2.inOut" }, 13);
+    tl.fromTo("#scene5", { opacity:0 }, { opacity:1, duration:cross, ease:"power2.inOut" }, 13);
+    tl.from(".s5-brand", { y:-14, opacity:0, duration:.42, ease:"sine.out" }, 13.1);
+    tl.from(".s5-title", { x:-24, opacity:0, duration:.48, ease:"expo.out" }, 13.23);
+    tl.from(".s5-label", { y:14, opacity:0, duration:.4, ease:"power2.out" }, 13.42);
+    tl.from(".s5-web", { x:-24, opacity:0, duration:.5, ease:"power2.out" }, 13.58);
+    tl.from(".s5-mobile", { y:26, opacity:0, duration:.54, ease:"back.out(1.1)" }, 13.45);
+    tl.from(".s5-tv", { x:24, opacity:0, duration:.48, ease:"sine.out" }, 13.72);
+    tl.from(".share-phone .ack-chip", { y:9, opacity:0, duration:.38, ease:"power3.out" }, 14.06);
+    tl.from("#s5-sync-glow", { scale:.86, opacity:0, duration:.6, ease:"sine.out" }, 14.2);
+
+    // Scene 6: quiet, held product lockup and the three supported surfaces.
+    tl.to("#scene5", { opacity:0, duration:.55, ease:"sine.inOut" }, 17.5);
+    tl.fromTo("#scene6", { opacity:0 }, { opacity:1, duration:.55, ease:"sine.inOut" }, 17.5);
+    tl.from(".s6-logo", { y:18, scale:.97, opacity:0, duration:.58, ease:"power3.out" }, 17.47); // beat-locked: 17.47s
+    tl.from(".s6-platforms", { x:-16, opacity:0, duration:.44, ease:"expo.out" }, 17.82);
+    tl.from(".s6-tagline", { y:10, opacity:0, duration:.42, ease:"sine.out" }, 18.1);
+    tl.from(".s6-devices .device-group", { y:22, opacity:0, duration:.48, ease:"power2.out", stagger:.1 }, 18.02);
+
+    // Pre-extracted music bands make one existing brand glow breathe very subtly.
+    if (window.RECALLX_AUDIO && window.RECALLX_AUDIO.frames) {
+      var data = window.RECALLX_AUDIO;
+      var visibleFrames = Math.min(data.totalFrames, Math.ceil(21 * data.fps));
+      for (var f = 0; f < visibleFrames; f++) {
+        (function(frameIndex, frame) {
+          tl.call(function() {
+            var bass = frame.bands && frame.bands.length ? frame.bands[0] : 0;
+            var pulse = frame.rms || 0;
+            gsap.set("#s5-sync-glow", { scale:1 + bass * .018, opacity:.1 + pulse * .075 });
+          }, [], frameIndex / data.fps);
+        })(f, data.frames[f]);
+      }
+    }
+
+    window.__timelines["main"] = tl;
+  </script>
+</body>
+</html>

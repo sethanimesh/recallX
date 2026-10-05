@@ -29,7 +29,7 @@ Generative providers may draft definitions, mnemonics and teaching content. They
 
 - [Assessment service](../../backend/assessment/service.py), [models](../../backend/assessment/inference.py), [selective scoring](../../backend/assessment/scoring.py) and [review policy](../../backend/routers/reviews.py).
 - [Assessment tests](../../backend/tests/test_assessment.py) cover absent rubrics, model failure, drift, contradiction, assistance and idempotency.
-- [Actual-model report](../../evidence/grading-report.md): the frozen synthetic evaluation passes no language gate. The visible experimental setting cannot override it.
+- Actual-model report: the frozen synthetic evaluation passes no language gate. The visible experimental setting cannot override it.
 
 ## Trade-offs and consequences
 

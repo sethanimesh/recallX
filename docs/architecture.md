@@ -80,7 +80,7 @@ Content revisions, rubric revisions, settings revisions, parameter versions and 
 
 An assessment request carries an item ID, content revision, attempt UUID, answer and language. The server loads the approved rubric. Qwen3-Embedding-0.6B aligns answer spans with each concept; mDeBERTa scores entailment, neutrality and contradiction for all spans. Required-concept coverage, weakest required support, contradiction, alignment and neutrality form the five scoring features.
 
-A versioned calibration artifact supplies coefficients, temperature, language thresholds and contradiction vetoes. Model/device drift, missing rubrics, unavailable models, unsupported language pairs or failed release gates produce `uncertain`. These outcomes cannot record forgetting. Tutor and assisted attempts remain practice. The [recorded evaluation](../evidence/grading-report.md) currently passes no language gate, so semantic assessment abstains in the documented configuration.
+A versioned calibration artifact supplies coefficients, temperature, language thresholds and contradiction vetoes. Model/device drift, missing rubrics, unavailable models, unsupported language pairs or failed release gates produce `uncertain`. These outcomes cannot record forgetting. Tutor and assisted attempts remain practice. The recorded evaluation currently passes no language gate, so semantic assessment abstains in the documented configuration.
 
 ## Durable ingestion
 
@@ -122,7 +122,7 @@ The database uses numbered checksum-checked migrations, write transactions, fore
 | Review policy and replay | [reviews.py](../backend/routers/reviews.py), [scheduling.py](../backend/services/scheduling.py) | [Central reviews](../backend/tests/test_central_reviews.py) |
 | Client durability | [central.ts](../src/db/operations/central.ts), [browser database](../src/db/client.web.ts) | [Queue checks](../src/db/operations/__tests__/central.test.ts), [browser persistence](../src/db/__tests__/webPersistence.test.ts) |
 | Assessment and gates | [service.py](../backend/assessment/service.py), [inference.py](../backend/assessment/inference.py), [scoring.py](../backend/assessment/scoring.py) | [Assessment checks](../backend/tests/test_assessment.py) |
-| Job recovery and parsing | [dispatch.py](../backend/ingestion/dispatch.py), [worker.py](../backend/ingestion/worker.py), [parser.py](../backend/ingestion/parser.py) | [Ingestion checks](../backend/tests/test_ingestion.py), [real queue smoke](../evidence/ingestion/redis-smoke.json) |
+| Job recovery and parsing | [dispatch.py](../backend/ingestion/dispatch.py), [worker.py](../backend/ingestion/worker.py), [parser.py](../backend/ingestion/parser.py) | [Ingestion checks](../backend/tests/test_ingestion.py), real queue smoke |
 | Inference ownership | [local_runtime.py](../backend/local_runtime.py), [mlx_service.py](../backend/ingestion/mlx_service.py) | [Lease checks](../backend/tests/test_inference_lease.py), [service teardown](../backend/tests/test_mlx_service.py) |
 
 The [decision records](adr/README.md) explain alternatives and consequences. The [methodology](methodology.md) describes how the implementation and evidence are assessed.

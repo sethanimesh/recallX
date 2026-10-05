@@ -30,4 +30,4 @@ Default addresses are `http://localhost:8877` for the browser and `http://127.0.
 
 *This view demonstrates a server-acknowledged self-rating. It is implementation evidence, not a measured learning outcome.*
 
-For a separate offline recovery sequence, see the [recorded stopped-host browser check](../evidence/web-recovery.md). [Client tests](../src/screens/__tests__) exercise acknowledgement loss, pending reviews and immutable retries without requiring a manual network interruption.
+[Client tests](../src/screens/__tests__) exercise acknowledgement loss, pending reviews and immutable retries without requiring a manual network interruption.

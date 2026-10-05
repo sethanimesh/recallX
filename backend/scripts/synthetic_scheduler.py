@@ -9,7 +9,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from fsrs import Card,Scheduler,Rating
 from services.optimization import fit,compare,predictions,eligibility
 
-parser=argparse.ArgumentParser();parser.add_argument('--output',default='evidence/synthetic-scheduling.json');args=parser.parse_args()
+parser=argparse.ArgumentParser();parser.add_argument('--output',default='evaluation/local/synthetic-scheduling.json');args=parser.parse_args()
 rng=random.Random(73);start=datetime(2024,1,1,tzinfo=timezone.utc)
 # This probability simulator deliberately represents a hypothetical learner, not observed outcomes.
 latent=list(Scheduler().parameters);latent[0]*=.65;latent[1]*=.75;latent[2]*=.65;latent[3]*=.8

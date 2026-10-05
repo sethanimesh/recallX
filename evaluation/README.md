@@ -13,8 +13,6 @@ The frozen experiment uses real local model outputs with constructed labels. **N
 | [grading/results/calibration/](grading/results/calibration/) | Frozen decision layer, per-language gates, metrics and ablations |
 | [grading/results/gate-enforcement.json](grading/results/gate-enforcement.json) | Failed gates enforced through HTTP contracts |
 | [grading/results/runtime-smoke.json](grading/results/runtime-smoke.json) | Actual isolated worker execution measurements |
-| [../evidence/synthetic-scheduling-reporting.json](../evidence/synthetic-scheduling-reporting.json) | Fresh hypothetical optimiser run with reporting-only semantics |
-| [../evidence/](../evidence/) | Verification, migration, OCR, queue, platform and synthetic-scheduler records |
 
 Routine tests use controlled providers where appropriate. The opt-in checkpoint test and inference runner load actual models; the small smoke cannot calibrate or establish accuracy. [Detailed grading instructions](grading/README.md) describe the policy, retention and profiler semantics.
 
@@ -76,9 +74,9 @@ backend/.venv/bin/python backend/scripts/smoke_ingestion_queue.py --report /tmp/
 backend/.venv-grading/bin/python backend/scripts/synthetic_scheduler.py --output /tmp/recallx-evaluation/synthetic-scheduling.json
 ```
 
-The [fresh scheduler artifact](../evidence/synthetic-scheduling-reporting.json) uses reporting-only comparison and cannot request activation. The preserved [historical JSON](../evidence/synthetic-scheduling.json) contains `test.activate: true` beside `test.used_for_activation: false` from its earlier helper invocation; its metrics are retained, and it did not activate any learner parameters. See [the scheduling comparison](../docs/evaluation.md#scheduling-comparison) for the distinction.
+The scheduler uses reporting-only comparison and cannot request activation. See [the scheduling comparison](../docs/evaluation.md#scheduling-comparison) for historical measurements.
 
-For OCR, provision the pinned models with `backend/.venv-ocr/bin/python backend/scripts/prepare_ocr_models.py` and use the isolated OCR/MLX environments described in [ingestion setup](../backend/ingestion/README.md). The OCR helper currently writes fixed paths under `evidence/ocr`; run it in a separate working copy to retain existing artifacts:
+For OCR, provision the pinned models with `backend/.venv-ocr/bin/python backend/scripts/prepare_ocr_models.py` and use the isolated OCR/MLX environments described in [ingestion setup](../backend/ingestion/README.md). The OCR helper writes generated artifacts under the ignored `evaluation/local/ocr` directory:
 
 ```sh
 backend/.venv/bin/python backend/scripts/smoke_ocr.py --accelerator cpu

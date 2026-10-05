@@ -29,10 +29,10 @@ NLI-only macro-F1 exceeds hybrid for English (0.867770 versus 0.859640) and Hind
 
 ## OCR execution depends on runtime compatibility
 
-The preserved [MLX-VLM 0.3.11 attempt](../evidence/ocr/smoke-mlx-0.3.11-failure.json) failed after 460.421 seconds with a local pipeline error. The [0.7.3 smoke](../evidence/ocr/smoke-mlx.json) later recognized the same two-sentence fixture exactly with valid boxes. This supports the pinned runtime's compatibility on the recorded Mac, not a broad OCR-quality claim or proof of one isolated root cause. Keep the failure artifact and the frozen runtime dependencies together when investigating changes.
+The historical MLX-VLM 0.3.11 attempt failed after 460.421 seconds with a local pipeline error. The 0.7.3 smoke later recognized the same two-sentence fixture exactly with valid boxes. This supports the pinned runtime's compatibility on the recorded Mac, not a broad OCR-quality claim or proof of one isolated root cause. The historical smoke artifacts have been removed; rerun the checks with the frozen runtime dependencies when investigating changes.
 
 ## Recovery checks test specific failure points
 
-The real [queue smoke](../evidence/ingestion/redis-smoke.json) deliberately refuses a broker connection, kills its worker after committing a native-PDF page and redelivers the job. The outbox and checkpoint preserve one page and one candidate after recovery. [Review regressions](../backend/tests/test_central_reviews.py) check duplicate UUIDs, delayed offline reviews, resets and corrections. These are targeted reliability checks; they do not establish recovery from every disk, process or network failure.
+The real queue smoke deliberately refuses a broker connection, kills its worker after committing a native-PDF page and redelivers the job. The outbox and checkpoint preserve one page and one candidate after recovery. [Review regressions](../backend/tests/test_central_reviews.py) check duplicate UUIDs, delayed offline reviews, resets and corrections. These are targeted reliability checks; they do not establish recovery from every disk, process or network failure.
 
 The practical findings are to preserve contradiction evidence without assuming fragments are complete claims, evaluate precision together with coverage, and keep model compatibility separate from model quality. [Limitations](limitations.md) identifies the further evidence needed.

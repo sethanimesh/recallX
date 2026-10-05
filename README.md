@@ -86,7 +86,7 @@ The evidence separates controlled tests, execution with real model checkpoints, 
 
 The embedding/NLI hybrid did **not** beat every baseline: NLI-only unselective macro-F1 was higher on the recorded English and Hindi test partitions. The project reports that negative result instead of treating the hybrid design as demonstrated superiority.
 
-Read the [evaluation protocol and baselines](docs/evaluation.md), [failure analysis](docs/failure-analysis.md), [limitations](docs/limitations.md) and [raw result navigation](evaluation/README.md). The [release evidence](evidence/release-status.md) records environments and the scope of earlier platform checks. These measurements are narrow experiments, not production traffic or prospective learner studies.
+Read the [evaluation protocol and baselines](docs/evaluation.md), [failure analysis](docs/failure-analysis.md), [limitations](docs/limitations.md) and [raw result navigation](evaluation/README.md). These measurements are narrow experiments, not production traffic or prospective learner studies.
 
 ## Verify and reproduce
 
@@ -114,7 +114,6 @@ The main finding is that a high aggregate score is insufficient for a multilingu
 | [backend/](backend/) | API, migrations, scheduling, ingestion and assessment workers |
 | [docs/](docs/) | Setup, architecture, decisions, methodology, evaluation and limitations |
 | [evaluation/](evaluation/) | Constructed datasets, experiment scripts and frozen grading results |
-| [evidence/](evidence/) | Runtime reports, migration checks and synthetic scheduling artifacts |
 | [examples/](examples/) | Public sample vocabulary for the isolated demo |
 | [.github/](.github/) | Automated checks and contribution templates |
 

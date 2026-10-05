@@ -10,7 +10,7 @@ The current scope is a single learner on a local Mac with phone, browser and TV 
 
 ## Starting point and comparisons
 
-The [preserved baseline](../evidence/baseline.md) identifies revision `6ea2f3e`, the existing local TV/navigation changes and original test results. It establishes what was checked before the current implementation; it is not an earlier learner study or model benchmark.
+The starting revision was `6ea2f3e`, with existing local TV/navigation changes. The historical baseline report has been removed; it was not a learner study or model benchmark.
 
 | Question | Comparison or criterion | What it can establish |
 | --- | --- | --- |
@@ -34,7 +34,7 @@ The [grading dataset](../evaluation/grading/README.md) contains 4,800 constructe
 
 The training partition fits the decision layer; development selects operating thresholds; calibration fits probability temperature; untouched test families determine language release gates. Checkpoint revisions, inference device, feature names and scorer version are part of the artifact contract. The pipeline rejects partial inference and drift. It reports precision among accepted answers, accepted coverage, contradiction passes, noise degradation and calibration, with declared ablations.
 
-The labels are synthetic hypotheses. Neither label provenance nor the family split makes them independently reviewed ground truth. The current recorded run enables no language; failed gates remain failed even when experimental grading is selected. See [evaluation](evaluation.md), [failure analysis](failure-analysis.md) and the [raw grading report](../evidence/grading-report.md) for results and limits.
+The labels are synthetic hypotheses. Neither label provenance nor the family split makes them independently reviewed ground truth. The current recorded run enables no language; failed gates remain failed even when experimental grading is selected. See [evaluation](evaluation.md), [failure analysis](failure-analysis.md) and the raw grading report for results and limits.
 
 ## Scheduling protocol
 
@@ -46,6 +46,6 @@ The [synthetic scheduling script](../backend/scripts/synthetic_scheduler.py) use
 
 ## Reproducibility and interpretation
 
-Use the [setup guide](setup.md) for pinned environment setup and commands, [evaluation guide](../evaluation/README.md) for experiment entry points and [verification record](../evidence/final-verification.json) for recorded checks. Source assets, data partitions, model revisions and relevant runtime settings belong with their results. Re-run experiments into a separate output directory so retained evidence remains inspectable.
+Use the [setup guide](setup.md) for pinned environment setup and commands, [evaluation guide](../evaluation/README.md) for experiment entry points for reproduction commands. Source assets, data partitions, model revisions and relevant runtime settings belong with their results. Re-run experiments into a separate output directory so retained evidence remains inspectable.
 
 Evidence supports claims at different levels: code describes implemented mechanisms; controlled tests check invariants; runtime smoke checks compatibility; constructed workloads measure behavior on those examples; prospective learner outcomes would support personalisation claims. The repository currently contains the first four forms. General multilingual robustness, broad OCR quality and real learning benefit remain open evaluation questions.

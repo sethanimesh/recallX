@@ -144,5 +144,5 @@ worker.process_job = functools.partial(worker.process_job, extractor=fixture)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--report", type=Path, default=ROOT.parent / "evidence" / "ingestion" / "redis-smoke.json")
+    parser.add_argument("--report", type=Path, default=ROOT.parent / "evaluation" / "local" / "ingestion" / "redis-smoke.json")
     run(parser.parse_args().report)

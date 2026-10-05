@@ -12,7 +12,7 @@ The repository has evidence for storage, recovery, model execution and a constru
 | Is semantic grading accurate enough to enable? | Family-disjoint constructed dataset, calibrated policy and fixed gates | Labels and translations have no independent human review |
 | Does parameter fitting improve prediction? | Seeded hypothetical histories versus default FSRS parameters | Synthetic prediction quality, not real learner retention |
 
-The [verification record](../evidence/final-verification.json) records 222 backend tests passed with one opt-in model test skipped, 51 client suites with 335 tests passed, type checking and generated-contract checks. The separately recorded real-model runs supply the model-execution evidence. [Platform evidence](../evidence/platforms.md) records browser and iPhone simulator checks; Android phone/TV evidence covers configuration generation, not completed device builds or runtime testing.
+The verification record records 222 backend tests passed with one opt-in model test skipped, 51 client suites with 335 tests passed, type checking and generated-contract checks. The separately recorded real-model runs supply the model-execution evidence. Platform evidence records browser and iPhone simulator checks; Android phone/TV evidence covers configuration generation, not completed device builds or runtime testing.
 
 ## Semantic-grading protocol
 
@@ -55,24 +55,26 @@ Source: `ablations.<variant>.<language>.heldout.unselective_macro_f1` in [evalua
 
 ## Scheduling comparison
 
-[Synthetic scheduling results](../evidence/synthetic-scheduling.json) use seed 73, 60 cards, 3,000 hypothetical events and a declared 5% attention-lapse floor. The actual FSRS optimiser fits 960 eligible training outcomes. Candidate parameters are compared with default FSRS-6 parameters on later windows.
+Synthetic scheduling results use seed 73, 60 cards, 3,000 hypothetical events and a declared 5% attention-lapse floor. The actual FSRS optimiser fits 960 eligible training outcomes. Candidate parameters are compared with default FSRS-6 parameters on later windows.
 
 | Synthetic window | Outcomes | Default log loss | Candidate log loss | Default Brier | Candidate Brier |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Validation | 1,020 | 0.217930 | 0.194023 | 0.042862 | 0.042818 |
 | Reporting | 960 | 0.266717 | 0.234112 | 0.055109 | 0.053863 |
 
-The validation log-loss difference has a paired-by-card bootstrap interval of [−0.034499, −0.013699] from 1,000 seeded resamples. The reporting window is unused for activation. Its historical artifact contains `activate: true` from the earlier comparison helper invocation alongside `used_for_activation: false`; no parameters were activated and no events were inserted into a learner database. A [fresh reporting-only run](../evidence/synthetic-scheduling-reporting.json) explicitly emits `status: reported`, `activate: false` and `used_for_activation: false`, with identical numeric metrics and outcome membership. The historical JSON is retained unchanged. These broad synthetic windows differ from the production policy's reserved next-100-outcome reporting window. No real retention or workload improvement follows from this simulation.
+The validation log-loss difference has a paired-by-card bootstrap interval of [−0.034499, −0.013699] from 1,000 seeded resamples. The reporting window is unused for activation. Its historical artifact contains `activate: true` from the earlier comparison helper invocation alongside `used_for_activation: false`; no parameters were activated and no events were inserted into a learner database. A fresh reporting-only run explicitly emits `status: reported`, `activate: false` and `used_for_activation: false`, with identical numeric metrics and outcome membership. The historical JSON reports have been removed; rerun the scheduler to generate fresh results. These broad synthetic windows differ from the production policy's reserved next-100-outcome reporting window. No real retention or workload improvement follows from this simulation.
 
 ## System and execution checks
 
+The historical verification, platform, scheduling, migration, queue, OCR and API reports have been removed. Their measurements below are historical summaries; use the reproduction commands to generate fresh reports.
+
 | Check | Recorded observation | Scope |
 | --- | --- | --- |
-| [Migration rehearsal](../evidence/migration-rehearsal.json) | Nine migrations; all 458 item IDs retained; integrity OK; no foreign-key violations | Copy of the preserved database; live database untouched |
-| [Queue recovery](../evidence/ingestion/redis-smoke.json) | Broker refusal, worker death after page checkpoint, replacement recovery and duplicate delivery passed | One real PDF page/candidate; fixture drafts |
-| [OCR compatibility](../evidence/ocr/smoke-mlx.json) | Two English sentences, character error rate 0, valid source boxes; 22.719 s | One rendered paragraph; startup and queue wait included |
+| Migration rehearsal | Nine migrations; all 458 item IDs retained; integrity OK; no foreign-key violations | Copy of the preserved database; live database untouched |
+| Queue recovery | Broker refusal, worker death after page checkpoint, replacement recovery and duplicate delivery passed | One real PDF page/candidate; fixture drafts |
+| OCR compatibility | Two English sentences, character error rate 0, valid source boxes; 22.719 s | One rendered paragraph; startup and queue wait included |
 | [Grading worker](../evaluation/grading/results/runtime-smoke.json) | First request 11.390 s; reused worker 0.644/0.322 s | Three clean constructed examples; gate bypass for execution only |
-| [API responsiveness](../evidence/api-responsiveness.json) | Snapshot median 4.55 ms, p95 11.06 ms | 40 sequential authenticated requests; two-item fixture; concurrency one |
+| API responsiveness | Snapshot median 4.55 ms, p95 11.06 ms | 40 sequential authenticated requests; two-item fixture; concurrency one |
 | [Gate enforcement](../evaluation/grading/results/gate-enforcement.json) | Nine uncertain assessments, zero reviews and zero model/provider calls | Frozen failed artifact; temporary database; forced audio failures included |
 
 Full [inference timing](../evaluation/grading/results/inference.summary.json) reports median 0.243 s and p95 0.673 s per example, with a 3.591 GB process RSS high-water mark. The final invocation resumed 702 records and computed 4,098; its 1,643.10 s wall time is not total experiment time. Reference embeddings were cached and measurements used a shared arm64 Mac. Sampled worker-process-tree RSS peaked at 2.576 GB. OCR's 2.243 GB sampled process RSS excludes separately accounted Metal allocations. Sampling can miss brief peaks and count shared pages more than once; these are distinct measurements, not total system memory or a controlled speed comparison.

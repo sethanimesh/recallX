@@ -28,7 +28,7 @@ Use native PDF text where suitable; otherwise run full layout/OCR. Preserve orig
 
 - [Dispatch](../../backend/ingestion/dispatch.py), [worker](../../backend/ingestion/worker.py), [parser](../../backend/ingestion/parser.py) and [acceptance service](../../backend/ingestion/service.py).
 - [Ingestion tests](../../backend/tests/test_ingestion.py) cover checkpoints, stale leases, cancellation, source corrections, revision conflicts and atomic acceptance.
-- [Real Redis/Celery recovery](../../evidence/ingestion/redis-smoke.json) uses actual PDF bytes and controlled drafting; it establishes the tested recovery behavior, not extraction quality.
+- Real Redis/Celery recovery uses actual PDF bytes and controlled drafting; it establishes the tested recovery behavior, not extraction quality.
 
 ## Trade-offs and consequences
 

@@ -28,7 +28,7 @@ Each default MLX OCR page owns a loopback recognition service and terminates it 
 
 - [Shared lease](../../backend/local_runtime.py), [grading worker](../../backend/assessment/worker.py), [OCR parser](../../backend/ingestion/parser.py) and [owned MLX service](../../backend/ingestion/mlx_service.py).
 - [Lease priority tests](../../backend/tests/test_inference_lease.py), [service teardown tests](../../backend/tests/test_mlx_service.py) and [optimiser process checks](../../backend/tests/test_optimization_policy.py).
-- [Real MLX smoke](../../evidence/ocr/smoke-mlx.json) establishes execution for two known sentences. Sampled process RSS excludes separately accounted Metal allocations and is not total unified-memory use.
+- Real MLX smoke establishes execution for two known sentences. Sampled process RSS excludes separately accounted Metal allocations and is not total unified-memory use.
 
 ## Trade-offs and consequences
 

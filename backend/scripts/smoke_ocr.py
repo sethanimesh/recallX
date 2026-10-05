@@ -26,7 +26,7 @@ def main():
     os.environ.setdefault("RECALLX_OCR_MODEL_DIR", str(models / "PaddleOCR-VL-1.6"))
     os.environ.setdefault("RECALLX_OCR_LAYOUT_DIR", str(models / "PP-DocLayoutV3"))
     os.environ.setdefault("RECALLX_OCR_MODEL_REVISION", manifest["PaddleOCR-VL-1.6"])
-    output = root.parent / "evidence" / "ocr"
+    output = root.parent / "evaluation" / "local" / "ocr"
     output.mkdir(parents=True, exist_ok=True)
     if args.accelerator == "mlx":
         os.environ["RECALLX_MLX_LOG_PATH"] = str(output / "smoke-mlx.service.log")
